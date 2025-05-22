@@ -2,9 +2,9 @@ import pandas as pd
 
 def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     # Fix: flatten single-column DataFrames to Series
-    high = df['High']
-    low = df['Low']
-    close = df['Close']
+    high = df['high']
+    low = df['low']
+    close = df['close']
 
     if isinstance(high, pd.DataFrame):
         high = high.squeeze("columns")
