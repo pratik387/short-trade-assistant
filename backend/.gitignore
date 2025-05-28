@@ -1,1 +1,4 @@
 __pycache__
+.env
+/data
+/kite_token.txt

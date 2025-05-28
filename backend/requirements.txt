@@ -7,3 +7,4 @@ yfinance
 numpy==1.23.5
 setuptools==65.5.0
 kiteconnect
+tinydb

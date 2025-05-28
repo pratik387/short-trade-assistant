@@ -4,7 +4,10 @@ from email_alert import send_exit_email
 import logging
 from dotenv import load_dotenv
 from services.kite_service import get_filtered_stock_suggestions
+from services.refresh_instrument_cache import refresh_index_cache
 from services.kite_auth import kite_router
+from services.portfolio_routes import router as portfolio_router
+from fastapi import Query
 
 app = FastAPI()
 
@@ -22,8 +25,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ✅ Use router from kite_auth (which includes /kite-login-url and /kite-callback)
 app.include_router(kite_router)
+app.include_router(portfolio_router)
 
 # Load other env variables if needed
 load_dotenv()
@@ -39,6 +42,17 @@ async def trigger_exit_email(request: Request):
     logger.warning("No symbol received for exit email")
     return {"status": "symbol missing"}
 
+# Accepted values for `index`:
+# "all" - All NSE stocks
+# "nifty_50" - NIFTY 50 index
+# "nifty_100" - NIFTY 100 index
+# "nifty_200" - NIFTY 200 index
+# "nifty_500" - NIFTY 500 index
+
 @app.get("/api/short-term-suggestions")
-def get_suggestions():
-    return get_filtered_stock_suggestions("day")
+def get_suggestions(interval: str = Query("day"), index: str = Query("all")):
+    return get_filtered_stock_suggestions(interval=interval, index=index)
+
+@app.post("/api/refresh-index-cache")
+def refresh_index_cache_route():
+    return refresh_index_cache()

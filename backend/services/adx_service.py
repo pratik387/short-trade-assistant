@@ -1,7 +1,6 @@
 import pandas as pd
 
 def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
-    # Fix: flatten single-column DataFrames to Series
     high = df['high']
     low = df['low']
     close = df['close']
@@ -24,11 +23,11 @@ def calculate_adx(df: pd.DataFrame, period: int = 14) -> pd.DataFrame:
     tr3 = abs(low - close.shift())
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
 
-    atr = tr.ewm(span=period, adjust=False).mean()
-    plus_di = 100 * (plus_dm.ewm(span=period, adjust=False).mean() / atr)
-    minus_di = 100 * (minus_dm.ewm(span=period, adjust=False).mean() / atr)
+    atr = tr.ewm(span=period, min_periods=period, adjust=False).mean()
+    plus_di = 100 * (plus_dm.ewm(span=period, min_periods=period, adjust=False).mean() / atr)
+    minus_di = 100 * (minus_dm.ewm(span=period, min_periods=period, adjust=False).mean() / atr)
     dx = (abs(plus_di - minus_di) / (plus_di + minus_di)) * 100
-    adx = dx.ewm(span=period, adjust=False).mean()
+    adx = dx.ewm(span=period, min_periods=period, adjust=False).mean()
 
     return pd.DataFrame({
         'ADX_14': adx,

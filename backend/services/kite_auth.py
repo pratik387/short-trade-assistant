@@ -20,12 +20,6 @@ TOKEN_FILE = Path(__file__).resolve().parents[1] / "kite_token.txt"
 kite = KiteConnect(api_key=KITE_API_KEY)
 kite_router = APIRouter()
 
-@kite_router.get("/kite-login-url")
-def kite_login_url_handler():
-    login_url = kite.login_url()
-    logger.info(f"Generated login URL: {login_url}")
-    return {"login_url": login_url}
-
 @kite_router.get("/kite-callback")
 def kite_callback_handler(request: Request):
     token = request.query_params.get("request_token")
@@ -48,3 +42,30 @@ def kite_callback_handler(request: Request):
 
     logger.warning("Missing request_token in callback")
     return {"status": "failed", "reason": "Missing request_token"}
+
+# Set access token from saved file
+def set_access_token_from_file():
+    if TOKEN_FILE.exists():
+        with open(TOKEN_FILE, "r") as f:
+            token = f.read().strip()
+            kite.set_access_token(token)
+            logger.info("Access token loaded from file")
+    else:
+        logger.warning("Access token file not found")
+
+# Validate token with retry once
+def validate_access_token():
+    try:
+        profile = kite.profile()
+        logger.info(f"Kite access verified for user: {profile['user_name']}")
+        return True
+    except Exception as e:
+        logger.warning(f"Initial token validation failed: {e}. Retrying...")
+        set_access_token_from_file()
+        try:
+            profile = kite.profile()
+            logger.info(f"Token revalidated successfully for user: {profile['user_name']}")
+            return True
+        except Exception as e2:
+            logger.error(f"Access token invalid after retry: {e2}. Please login via Zerodha to refresh token.")
+            return False
