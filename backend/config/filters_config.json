@@ -1,0 +1,22 @@
+{
+    "adx_threshold": 30,
+    "bb_lower": 0.2,
+    "bb_upper": 0.8,
+    "rsi_min": 40,
+    "rsi_max": 80,
+    "min_price": 50,
+    "min_volume": 100000,
+    "score_weights": {
+      "adx": 3,
+      "macd": 3,
+      "bb": 1,
+      "dmp_dmn": 1,
+      "price_sma": 2,
+      "candle_pattern": 2,
+      "rsi_above_avg": 1,
+      "stochastic": 2,
+      "obv": 2,
+      "atr": 1
+    }
+  }
+  

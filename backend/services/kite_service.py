@@ -1,28 +1,40 @@
 import pandas as pd
 from datetime import datetime, timedelta
-from kiteconnect import KiteConnect
-import os
 from dotenv import load_dotenv
 from pathlib import Path
 import logging
 import json
 from fastapi import APIRouter
-from services.kite_auth import kite, set_access_token_from_file, validate_access_token
-from services.adx_service import calculate_adx
-from services.rsi_service import calculate_rsi
-from services.bollinger_band_service import calculate_bollinger_bands
-from services.macd_service import calculate_macd
-from services.candle_pattern_service import is_bullish_engulfing, is_hammer
+
+from backend.authentication.kite_auth import kite, set_access_token_from_file, validate_access_token
+from backend.services.filters.adx_filter import calculate_adx
+from backend.services.filters.rsi_filter import calculate_rsi
+from backend.services.filters.bollinger_band_filter import calculate_bollinger_bands
+from backend.services.filters.macd_filter import calculate_macd
+from backend.services.filters.candle_pattern_filter import is_bullish_engulfing, is_hammer
+from backend.services.filters.stochastic_filter import calculate_stochastic
+from backend.services.filters.obv_filter import calculate_obv
+from backend.services.filters.atr_filter import calculate_atr
 
 # Setup logger
 logger = logging.getLogger("kite_service")
 
-# Load environment variables (if needed)
+# Load environment variables
 load_dotenv(dotenv_path=Path(__file__).resolve().parents[1] / ".env")
 
 router = APIRouter()
 
-# --- Stock suggestion logic ---
+FILTER_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "filters_config.json"
+
+
+def load_filter_config():
+    try:
+        with open(FILTER_CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"❌ Failed to load filter config: {e}")
+        return {}
+
 
 def get_index_symbols(index: str) -> list:
     DATA_DIR = Path(__file__).resolve().parents[1] / "data"
@@ -44,6 +56,18 @@ def get_index_symbols(index: str) -> list:
         logger.warning(f"⚠️ Failed reading index file {file_path}: {e}")
         return []
 
+def passes_hard_filters(row, config):
+    if row['ADX_14'] < config.get("adx_threshold", 30):
+        return False
+    if not (config.get("rsi_min", 40) <= row['RSI'] <= config.get("rsi_max", 80)):
+        return False
+    if row['MACD'] <= row['MACD_Signal']:
+        return False
+    if row['DMP_14'] <= row['DMN_14']:
+        return False
+    return True
+
+
 def _fetch_historical(symbol, from_date, to_date, interval, token):
     try:
         historical = kite.historical_data(
@@ -55,10 +79,14 @@ def _fetch_historical(symbol, from_date, to_date, interval, token):
         df = pd.DataFrame(historical)
         if not df.empty:
             df.set_index("date", inplace=True)
+            df = df.join(calculate_stochastic(df))
+        df = df.join(calculate_obv(df))
+        df = df.join(calculate_atr(df))
         return df
     except Exception as e:
         logger.error(f"Fetch failed for {symbol}: {e}")
         return pd.DataFrame()
+
 
 def fetch_kite_data(symbol: str, interval: str = "day", instrument_token: int = None):
     if not instrument_token:
@@ -105,16 +133,54 @@ def _prepare_indicators(df):
         df = df.join(rsi_series[["RSI"]])
     return df
 
-def _calculate_score(row):
+
+def _calculate_score(row, weights, config, avg_rsi=None, candle_match=False):
     score = 0
-    score += row['ADX_14'] > 25
-    score += row['MACD'] > row['MACD_Signal']
-    score += 0.2 < row['BB_%B'] < 0.8
-    score += row['DMP_14'] > row['DMN_14']
-    score += row.get('close', 0) > row.get('SMA_50', 0)
+    adx_threshold = config.get("adx_threshold", 30)
+    bb_lower = config.get("bb_lower", 0.2)
+    bb_upper = config.get("bb_upper", 0.8)
+
+    if row['ADX_14'] >= adx_threshold:
+        score += weights.get("adx", 1)
+    if row['MACD'] > row['MACD_Signal']:
+        score += weights.get("macd", 1)
+    if bb_lower < row['BB_%B'] < bb_upper:
+        score += weights.get("bb", 1)
+    if row['DMP_14'] > row['DMN_14']:
+        score += weights.get("dmp_dmn", 1)
+    if row.get('close', 0) > row.get('SMA_50', 0):
+        score += weights.get("price_sma", 1)
+    if avg_rsi is not None and row['RSI'] > avg_rsi:
+        score += weights.get("rsi_above_avg", 1)
+    if row.get('stochastic_k', 0) > 50:
+        score += weights.get("stochastic", 1)
+    if row.get('obv', 0) > 0:
+        score += weights.get("obv", 1)
+    if row.get('atr', 0) > 0:
+        score += weights.get("atr", 1)
+    if candle_match:
+        score += weights.get("candle_pattern", 1)
+
     return score
 
+
 def get_filtered_stock_suggestions(interval: str = "day", index: str = "all"):
+    config = load_filter_config()
+    weights = config.get("score_weights", {
+        "adx": 3,
+        "macd": 3,
+        "bb": 1,
+        "dmp_dmn": 1,
+        "price_sma": 2,
+        "candle_pattern": 2,
+        "rsi_above_avg": 1,
+        "stochastic": 2,
+        "obv": 2,
+        "atr": 1
+    })
+    min_price = config.get("min_price", 50)
+    min_volume = config.get("min_volume", 100000)
+
     set_access_token_from_file()
     if not validate_access_token():
         return []
@@ -132,43 +198,31 @@ def get_filtered_stock_suggestions(interval: str = "day", index: str = "all"):
         token = item.get("instrument_token")
 
         if not token:
-            logger.info(f"{symbol}: No instrument token, skipping.")
             continue
 
         df = fetch_kite_data(symbol, interval, token)
         if df.empty:
-            logger.info(f"{symbol}: No historical data fetched.")
             continue
 
         df = _prepare_indicators(df)
         latest = df.iloc[-1]
 
-        if latest['close'] <= 50.0:
-            logger.info(f"{symbol}: Skipped due to low price ({latest['close']})")
-            continue
-        if latest['volume'] < 100000:
-            logger.info(f"{symbol}: Skipped due to low volume ({latest['volume']})")
-            continue
-        if latest['EMA_20'] <= latest['EMA_50']:
-            logger.info(f"{symbol}: Skipped due to EMA20 ({latest['EMA_20']}) <= EMA50 ({latest['EMA_50']})")
+        if latest['close'] <= min_price or latest['volume'] < min_volume or latest['EMA_20'] <= latest['EMA_50']:
             continue
 
         required_cols = ['ADX_14', 'DMP_14', 'DMN_14', 'RSI', 'MACD', 'MACD_Signal', 'BB_%B']
-        missing_cols = [col for col in required_cols if col not in df.columns or pd.isna(df[col].iloc[-1])]
-        if missing_cols:
-            logger.info(f"{symbol}: Dropped due to missing or sparse columns: {missing_cols}")
+        if any(col not in df.columns or pd.isna(df[col].iloc[-1]) for col in required_cols):
+            continue
+
+        # Strict filter: must meet both ADX and RSI criteria
+        if not passes_hard_filters(latest, config):
             continue
 
         rsi_values.append(latest['RSI'])
-        score = _calculate_score(latest)
-
-        if is_bullish_engulfing(df.tail(2)) or is_hammer(df.tail(1)):
-            logger.info(f"{symbol}: Candlestick pattern match")
-            score += 1
+        candle_match = is_bullish_engulfing(df.tail(2)) or is_hammer(df.tail(1))
+        score = _calculate_score(latest, weights, config, candle_match=candle_match)
 
         stop_loss = round(latest['close'] * 0.97, 2)
-
-        logger.info(f"{symbol}: Score={score}, ADX={latest['ADX_14']}, RSI={latest['RSI']}, MACD={latest['MACD']}, BB%={latest['BB_%B']}, Volume={latest['volume']}")
 
         suggestions.append({
             "symbol": symbol,
@@ -179,36 +233,38 @@ def get_filtered_stock_suggestions(interval: str = "day", index: str = "all"):
             "macd": round(float(latest['MACD']), 2),
             "macd_signal": round(float(latest['MACD_Signal']), 2),
             "bb": round(float(latest['BB_%B']), 2),
+            "stochastic_k": round(float(latest.get('stochastic_k', 0)), 2),
+            "obv": round(float(latest.get('obv', 0)), 2),
+            "atr": round(float(latest.get('atr', 0)), 2),
             "volume": int(latest['volume']),
             "close": round(float(latest['close']), 2),
-            "stop_loss": round(float(stop_loss), 2),
-            "score": int(score),
-            "category": ""
+            "stop_loss": stop_loss,
+            "score": score
         })
+
 
     if not rsi_values:
         return []
 
     avg_rsi = sum(rsi_values) / len(rsi_values)
     for s in suggestions:
-        if s['rsi'] > avg_rsi:
-            s['score'] += 1
-        s['category'] = (
-            "momentum" if s['adx'] > 25 and s['macd'] > s['macd_signal'] else
-            "reversal" if s['rsi'] < 40 and s['bb'] < 0.2 else
-            "breakout" if s['bb'] > 0.85 else
-            "swing"
-        )
+        row_like = {
+            'ADX_14': s['adx'],
+            'MACD': s['macd'],
+            'MACD_Signal': s['macd_signal'],
+            'BB_%B': s['bb'],
+            'DMP_14': s['dmp'],
+            'DMN_14': s['dmn'],
+            'close': s['close'],
+            'SMA_50': s['close'],  # Approximate fallback if actual SMA_50 not stored
+            'RSI': s['rsi'],
+            'stochastic_k': s.get('stochastic_k', 0),
+            'obv': s.get('obv', 0),
+            'atr': s.get('atr', 0)
+        }
+        s['score'] = _calculate_score(row_like, weights, config, avg_rsi=avg_rsi)
 
-    from collections import defaultdict
-    grouped = defaultdict(list)
-    for s in sorted(suggestions, key=lambda x: x['score'], reverse=True):
-        if len(grouped[s['category']]) < 3:
-            grouped[s['category']].append(s)
+    top_stocks = sorted(suggestions, key=lambda x: (x['score'], x['rsi'], x['volume']), reverse=True)[:12]
 
-    final = []
-    for group in grouped.values():
-        final.extend(group)
-
-    logger.info(f"✅ Final list prepared with {len(final)} suggestions out of {len(instruments)} stocks")
-    return final
+    logger.info(f"✅ Top {len(top_stocks)} suggestions selected from {len(instruments)} stocks")
+    return top_stocks

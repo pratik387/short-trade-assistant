@@ -3,7 +3,7 @@ import pandas as pd
 import json
 from pathlib import Path
 from io import StringIO
-from services.kite_auth import kite
+from backend.authentication.kite_auth import kite
 import logging
 
 logger = logging.getLogger("index_refresher")

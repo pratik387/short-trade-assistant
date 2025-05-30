@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from email_alert import send_exit_email
+from backend.services.email_alert import send_exit_email
 import logging
 from dotenv import load_dotenv
 from services.kite_service import get_filtered_stock_suggestions
 from services.refresh_instrument_cache import refresh_index_cache
-from services.kite_auth import kite_router
+from backend.authentication.kite_auth import kite_router
 from services.portfolio_routes import router as portfolio_router
 from fastapi import Query
 

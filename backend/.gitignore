@@ -2,3 +2,4 @@ __pycache__
 .env
 /data
 /kite_token.txt
+/nse_equity_symbols.json
