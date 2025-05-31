@@ -1,22 +1,53 @@
 {
-    "adx_threshold": 30,
-    "bb_lower": 0.2,
-    "bb_upper": 0.8,
-    "rsi_min": 40,
-    "rsi_max": 80,
-    "min_price": 50,
-    "min_volume": 100000,
-    "score_weights": {
-      "adx": 3,
-      "macd": 3,
-      "bb": 1,
-      "dmp_dmn": 1,
-      "price_sma": 2,
-      "candle_pattern": 2,
-      "rsi_above_avg": 1,
-      "stochastic": 2,
-      "obv": 2,
-      "atr": 1
-    }
+  "adx_threshold": 30,
+  "bb_lower": 0.2,
+  "bb_upper": 0.8,
+  "rsi_min": 40,
+  "rsi_max": 80,
+  "min_price": 50,
+  "min_volume": 100000,
+  "score_weights": {
+    "adx": 3,
+    "macd": 3,
+    "bb": 1,
+    "dmp_dmn": 1,
+    "price_sma": 2,
+    "candle_pattern": 2,
+    "rsi_above_avg": 1,
+    "stochastic": 2,
+    "obv": 2,
+    "atr": 1,
+    "fibonacci_support": 2
+  },
+  "exit_criteria": {
+
+    "use_profit_target": true,
+    "profit_target_pct": 0.02,
+    "use_stop_loss": true,
+    "stop_loss_pct": 0.01,
+    "use_time_exit": false,
+    "max_holding_minutes": 240,
+    "use_pivot_break": false,
+
+
+    "use_ma_cross": true,
+    "ma_short": 20,
+    "ma_long": 50,
+    "weight_ma_cross": 3,
+
+    "use_rsi_drop": true,
+    "rsi_upper": 70,
+    "rsi_lower": 50,
+    "weight_rsi_drop": 2,
+
+    "use_trailing_atr": true,
+    "atr_multiplier": 3,
+    "weight_atr_nudge": 1,
+
+    "use_volume_exhaust": false,
+    "volume_exhaust_mult": 2,
+    "weight_volume_exhaust": 1,
+
+    "soft_exit_threshold": 4
   }
-  
+}
