@@ -8,6 +8,7 @@ from services.refresh_instrument_cache import refresh_index_cache
 from backend.authentication.kite_auth import kite_router
 from services.portfolio_routes import router as portfolio_router
 from fastapi import Query
+from tinydb import TinyDB
 
 app = FastAPI()
 
@@ -27,6 +28,7 @@ app.add_middleware(
 
 app.include_router(kite_router)
 app.include_router(portfolio_router)
+MOCK_PNL_PATH = "backend/mock_pnl.json"
 
 # Load other env variables if needed
 load_dotenv()
@@ -56,3 +58,8 @@ def get_suggestions(interval: str = Query("day"), index: str = Query("all")):
 @app.post("/api/refresh-index-cache")
 def refresh_index_cache_route():
     return refresh_index_cache()
+
+@app.get("/api/mock-pnl")
+def get_mock_pnl():
+    db = TinyDB(MOCK_PNL_PATH)
+    return db.all()

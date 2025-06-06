@@ -1,145 +1,191 @@
 import logging
-import pandas as pd
-import json
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
+import pandas as pd
+from tinydb import TinyDB, Query
+
 from backend.services.data_fetcher import fetch_kite_data
-from backend.services.technical_analysis import prepare_indicators, calculate_score
 from backend.services.config import load_filter_config, get_index_symbols
 from backend.services.email_alert import send_exit_email
 
 logger = logging.getLogger(__name__)
+
 BASE_DIR = Path(__file__).resolve().parents[1]
-PORTFOLIO_PATH = BASE_DIR / "data" / "portfolio.json"
+PORTFOLIO_PATH = BASE_DIR / "portfolio.json"
+BLOCKED_LOG_PATH = BASE_DIR / "blocked_exits.log"
+
+db = TinyDB(str(PORTFOLIO_PATH))
+StockQuery = Query()
+
 
 class ExitService:
-    def __init__(self, interval: str = 'day', index: str = 'all'):
+    def __init__(self, interval: str = "day", index: str = "all"):
         self.interval = interval
         self.index = index
-        cfg = load_filter_config()
-        # Exit criteria configuration with hard and soft rule toggles and weights
-        self.exit_cfg = cfg.get('exit_criteria', {
-            # HARD exit parameters
-            'use_profit_target': True,
-            'profit_target_pct': 0.02,
-            'use_stop_loss': True,
-            'stop_loss_pct': 0.01,
-            'use_time_exit': False,
-            'max_holding_minutes': 240,
-            'use_pivot_break': False,
-            # SOFT exit parameters (weights)
-            'use_ma_cross': True,
-            'ma_short': 20,
-            'ma_long': 50,
-            'weight_ma_cross': 3,
-            'use_rsi_drop': True,
-            'rsi_upper': 70,
-            'rsi_lower': 50,
-            'weight_rsi_drop': 2,
-            'use_trailing_atr': True,
-            'atr_multiplier': 3,
-            'weight_atr_nudge': 1,
-            'use_volume_exhaust': False,
-            'volume_exhaust_mult': 2,
-            'weight_volume_exhaust': 1,
-            'soft_exit_threshold': 4
-        })
+        self.config = load_filter_config()
+        self.atr_multiplier = self.config.get("atr_multiplier", 3)
+        self.exit_strategy = self.config.get("exit_strategy", {})
+        self.use_adx_macd = self.exit_strategy.get("use_adx_macd_confirmation", False)
+        self.fallback_exit = self.exit_strategy.get("fallback_exit_if_data_missing", True)
+        self.log_blocked = self.exit_strategy.get("log_blocked_exits", True)
 
-    def check_exits(self) -> None:
-        """
-        Load tracked positions from portfolio.json (symbol -> entry_info),
-        fetch latest data, evaluate exit criteria, and trigger email if met.
-        entry_info may include price and timestamp for time-based exits.
-        """
-        try:
-            with open(PORTFOLIO_PATH, 'r') as f:
-                entry_data = json.load(f)
-        except Exception as e:
-            logger.error(f"Failed to load portfolio: {e}")
+    def check_exits(self):
+        portfolio_records = db.all()
+        if not portfolio_records:
+            logger.info("Portfolio is empty; no exits to check.")
             return
 
-        for symbol, info in entry_data.items():
-            # info can be {"price": x, "timestamp": "ISO8601"}
-            entry_price = info.get('price') if isinstance(info, dict) else info
-            entry_time = None
-            if isinstance(info, dict) and 'timestamp' in info:
-                entry_time = datetime.fromisoformat(info['timestamp'])
+        for rec in portfolio_records:
+            symbol = rec.get("symbol")
+            buy_price = rec.get("close")
+            if symbol is None or buy_price is None:
+                logger.warning(f"Skipping invalid portfolio entry: {rec}")
+                continue
 
             token = self._get_token(symbol)
-            df = fetch_kite_data(symbol, token, self.interval)
-            if df.empty:
+            if token is None:
+                logger.warning(f"Instrument token not found for {symbol}; skipping.")
                 continue
-            df = prepare_indicators(df)
-            latest = df.iloc[-1]
-            exit_reason = self._should_exit(df, latest, entry_price, entry_time)
-            if exit_reason:
-                send_exit_email(symbol)
-                logger.info(f"Exit triggered for {symbol}, reason: {exit_reason}")
-                # Optionally update portfolio.json to remove exited symbol
 
-    def _should_exit(self, df: pd.DataFrame, latest: pd.Series, entry_price: float, entry_time: datetime):
-        price = latest['close']
-        cfg = self.exit_cfg
-        # 1) HARD EXITS
-        # 1.a) Profit target
-        if cfg.get('use_profit_target', False):
-            if price >= entry_price * (1 + cfg.get('profit_target_pct', 0.02)):
-                return 'profit_target'
-        # 1.b) Stop-loss
-        if cfg.get('use_stop_loss', False):
-            if price <= entry_price * (1 - cfg.get('stop_loss_pct', 0.01)):
-                return 'stop_loss'
-        # 1.c) Time-based exit
-        if cfg.get('use_time_exit', False) and entry_time:
-            hold_duration = datetime.now() - entry_time
-            if hold_duration >= timedelta(minutes=cfg.get('max_holding_minutes', 240)):
-                return 'time_exit'
-        # 1.d) Pivot break (hard)
-        if cfg.get('use_pivot_break', False) and 'pivot' in latest:
-            if price < latest['pivot']:
-                return 'pivot_break'
+            df = fetch_kite_data(symbol, token, self.interval, lookback=50)
+            if df is None or df.empty:
+                logger.error(f"No data for {symbol}; skipping.")
+                continue
 
-        # 2) SOFT EXIT SCORE
-        exit_score = 0
-        # 2.a) EMA crossover (short < long)
-        if cfg.get('use_ma_cross', False):
-            short = df['close'].ewm(span=cfg.get('ma_short', 20), adjust=False).mean().iloc[-1]
-            long = df['close'].ewm(span=cfg.get('ma_long', 50), adjust=False).mean().iloc[-1]
-            if short < long:
-                exit_score += cfg.get('weight_ma_cross', 3)
-        # 2.b) RSI drop from overbought
-        if cfg.get('use_rsi_drop', False):
-            rsi_prev = df['RSI'].iloc[-2]
-            rsi_now = latest.get('RSI', None)
-            if rsi_now is not None and rsi_prev > cfg.get('rsi_upper', 70) and rsi_now < cfg.get('rsi_lower', 50):
-                exit_score += cfg.get('weight_rsi_drop', 2)
-        # 2.c) ATR nudge
-        if cfg.get('use_trailing_atr', False):
-            atr_val = latest.get('atr', None)
-            if atr_val is not None:
-                # If price < entry_price + 1×ATR, treat as nudge
-                if price < (entry_price + atr_val * cfg.get('weight_atr_nudge', 1)):
-                    exit_score += cfg.get('weight_atr_nudge', 1)
-        # 2.d) Volume exhaustion
-        if cfg.get('use_volume_exhaust', False) and len(df) >= 6:
-            vol_ma = df['volume'].rolling(5).mean().iloc[-2]
-            if vol_ma and latest['volume'] > cfg.get('volume_exhaust_mult', 2) * vol_ma:
-                prev_close = df['close'].iloc[-2]
-                if abs(latest['close'] - prev_close) / prev_close < 0.002:
-                    exit_score += cfg.get('weight_volume_exhaust', 1)
+            # ATR Calculation
+            df["tr1"] = df["high"] - df["low"]
+            df["tr2"] = (df["high"] - df["close"].shift(1)).abs()
+            df["tr3"] = (df["low"] - df["close"].shift(1)).abs()
+            df["true_range"] = df[["tr1", "tr2", "tr3"]].max(axis=1)
+            df["atr"] = df["true_range"].rolling(window=14).mean()
+            latest_atr = df["atr"].iloc[-1]
 
-        if exit_score >= cfg.get('soft_exit_threshold', 4):
-            return 'soft_exit_score'
-        return None
+            if pd.isna(latest_atr):
+                logger.warning(f"Could not compute ATR for {symbol}; skipping.")
+                continue
+
+            current_price = df["close"].iloc[-1]
+            actions = self._check_hybrid_exit(rec, current_price, buy_price, df)
+
+            for action in actions:
+                qty, reason = action["qty"], action["reason"]
+                logger.info(f"{reason} for {symbol} at price {current_price:.2f}")
+                try:
+                    send_exit_email(symbol, current_price)
+                except Exception as e:
+                    logger.error(f"Error sending email for {symbol}: {e}")
+
+                db.remove(StockQuery.symbol == symbol)
+                logger.info(f"{symbol} removed from portfolio after exit.")
+
+    def _check_hybrid_exit(self, stock, current_price, buy_price, df):
+        actions = []
+        config = self.exit_strategy
+        criteria = self.config.get("exit_criteria", {})
+        targets = config.get("targets", [])
+        percentages = config.get("percentages", [])
+        trail_pct = config.get("trailing_stop_percent", 1.5)
+
+        sold = stock.get("sold_targets", [])
+        quantity = stock.get("quantity", 1)
+        highest = max(stock.get("highest_price", buy_price), current_price)
+        stock["highest_price"] = highest
+
+        # Default: allow exit unless ADX+MACD block it
+        allow_exit = True
+        reason_blocked = ""
+
+        # ADX + MACD Confirmation (if enabled)
+        if self.use_adx_macd:
+            adx = df["ADX_14"].iloc[-1] if "ADX_14" in df.columns else None
+            macd = df["MACD"].iloc[-1] if "MACD" in df.columns else None
+            macd_signal = df["MACD_Signal"].iloc[-1] if "MACD_Signal" in df.columns else None
+
+            if None in (adx, macd, macd_signal):
+                allow_exit = self.fallback_exit
+                if not allow_exit:
+                    reason_blocked = "Missing ADX or MACD values"
+            elif adx >= 25 and macd >= macd_signal:
+                allow_exit = False
+                reason_blocked = f"Strong trend (ADX={adx:.2f}, MACD={macd:.2f} > Signal={macd_signal:.2f})"
+
+        # 💡 Override exit block if MA cross or RSI drop triggered
+        if not allow_exit:
+            ma_short = criteria.get("ma_short", 20)
+            ma_long = criteria.get("ma_long", 50)
+            use_ma_cross = criteria.get("use_ma_cross", False)
+
+            use_rsi_drop = criteria.get("use_rsi_drop", False)
+            rsi_lower = criteria.get("rsi_lower", 50)
+
+            short_ma_val = df["close"].rolling(ma_short).mean().iloc[-1] if use_ma_cross else None
+            long_ma_val = df["close"].rolling(ma_long).mean().iloc[-1] if use_ma_cross else None
+            rsi_val = df["RSI"].iloc[-1] if use_rsi_drop and "RSI" in df.columns else None
+
+            ma_cross_trigger = (
+                use_ma_cross and short_ma_val is not None and long_ma_val is not None and short_ma_val < long_ma_val
+            )
+
+            rsi_drop_trigger = (
+                use_rsi_drop and rsi_val is not None and rsi_val < rsi_lower
+            )
+
+            if ma_cross_trigger:
+                allow_exit = True
+                reason_blocked += " — MA crossdown override triggered"
+            elif rsi_drop_trigger:
+                allow_exit = True
+                reason_blocked += f" — RSI dropped below {rsi_lower} (current: {rsi_val:.2f})"
+
+        # Log and return if still blocked
+        if not allow_exit:
+            message = f"[{datetime.now().isoformat()}] Exit blocked for {stock['symbol']}: {reason_blocked}"
+            logger.info(message)
+            if self.log_blocked:
+                with open(BASE_DIR / "blocked_exits.log", "a") as f:
+                    f.write(message + "\n")
+            return []
+
+        # Target-based exits
+        for i, multiplier in enumerate(targets):
+            if i in sold:
+                continue
+            if current_price >= buy_price * multiplier:
+                qty = int(quantity * percentages[i])
+                actions.append({"qty": qty, "reason": f"Target {multiplier}x hit"})
+                sold.append(i)
+
+        # Trailing stop-loss OR RSI spike reversal exit
+        total_sold = sum([int(quantity * percentages[i]) for i in sold])
+        remaining = quantity - total_sold
+        trailing_stop = highest * (1 - trail_pct / 100)
+
+        rsi_val = df["RSI"].iloc[-1] if "RSI" in df.columns else None
+        rsi_spike_reversal = (
+            rsi_val is not None and rsi_val > 70 and current_price < df["close"].iloc[-2]
+        )
+
+        if remaining > 0:
+            if current_price <= trailing_stop:
+                actions.append({"qty": remaining, "reason": "Trailing stop hit"})
+                sold = list(range(len(targets)))
+            elif rsi_spike_reversal:
+                actions.append({"qty": remaining, "reason": f"RSI spike reversal: RSI={rsi_val:.2f}"})
+                sold = list(range(len(targets)))
+
+        stock["sold_targets"] = sold
+        stock["last_checked"] = datetime.now().isoformat()
+        db.update(stock, StockQuery.symbol == stock["symbol"])
+        return actions
+
 
     def _get_token(self, symbol: str) -> int:
         instruments = get_index_symbols(self.index)
         for item in instruments:
-            if item['symbol'] == symbol:
-                return item.get('instrument_token')
+            if item.get("symbol") == symbol:
+                return item.get("instrument_token")
         return None
 
-# Helper for scheduler
 
 def run_exit_checks():
     service = ExitService()

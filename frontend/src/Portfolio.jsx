@@ -46,7 +46,9 @@ export default function Portfolio() {
             <tr className="bg-gray-200">
               <th className="p-2 border">Symbol</th>
               <th className="p-2 border">Entry Price</th>
-              <th className="p-2 border">Stop Loss</th>
+              <th className="p-2 border">Quantity</th>
+              <th className="p-2 border">Sold Targets</th>
+              <th className="p-2 border">Highest Price</th>
               <th className="p-2 border">Exit</th>
               <th className="p-2 border">Remove</th>
             </tr>
@@ -56,7 +58,13 @@ export default function Portfolio() {
               <tr key={stock.symbol} className="text-center">
                 <td className="p-2 border">{stock.symbol}</td>
                 <td className="p-2 border">{stock.close}</td>
-                <td className="p-2 border">{stock.stop_loss}</td>
+                <td className="p-2 border">{stock.quantity ?? "-"}</td>
+                <td className="p-2 border">
+                  {(stock.sold_targets && stock.sold_targets.length > 0)
+                    ? stock.sold_targets.join(", ")
+                    : "None"}
+                </td>
+                <td className="p-2 border">{stock.highest_price ?? "-"}</td>
                 <td className="p-2 border">
                   <button
                     onClick={() => handleExit(stock.symbol)}

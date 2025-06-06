@@ -6,6 +6,7 @@
   "rsi_max": 80,
   "min_price": 50,
   "min_volume": 100000,
+
   "score_weights": {
     "adx": 3,
     "macd": 3,
@@ -19,8 +20,18 @@
     "atr": 1,
     "fibonacci_support": 2
   },
-  "exit_criteria": {
 
+  "exit_strategy": {
+    "type": "hybrid",
+    "targets": [1.02, 1.04, 1.06],
+    "percentages": [0.4, 0.3, 0.3],
+    "trailing_stop_percent": 1.5,
+    "use_adx_macd_confirmation": true,
+    "fallback_exit_if_data_missing": true,
+    "log_blocked_exits": true
+  },
+
+  "exit_criteria": {
     "use_profit_target": true,
     "profit_target_pct": 0.02,
     "use_stop_loss": true,
@@ -28,7 +39,6 @@
     "use_time_exit": false,
     "max_holding_minutes": 240,
     "use_pivot_break": false,
-
 
     "use_ma_cross": true,
     "ma_short": 20,

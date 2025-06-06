@@ -1,30 +1,27 @@
 import { useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
-function KiteCallback() {
-  const [searchParams] = useSearchParams();
+export default function KiteCallback() {
+  const navigate = useNavigate();
+  const { search } = useLocation();
 
   useEffect(() => {
-    const token = searchParams.get("request_token");
-    if (token) {
-      fetch(`http://localhost:3000/kite-callback?request_token=${token}`)
-        .then((res) => res.json())
-        .then((data) => {
-          alert("Kite login successful!");
-          console.log("Backend response:", data);
-        })
-        .catch((err) => {
-          console.error("Kite callback error:", err);
-        });
+    const params = new URLSearchParams(search);
+    const loginStatus = params.get("kite_login"); // “success” or “failed”
+
+    if (loginStatus === "success") {
+      // Mark as logged in
+      localStorage.setItem("kiteLoggedIn", "true");
+    } else {
+      // Clear any previous flag
+      localStorage.removeItem("kiteLoggedIn");
     }
-  }, [searchParams]);
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h2>Login Complete</h2>
-      <p>You have been authenticated via Kite. You can now return to the dashboard.</p>
-    </div>
-  );
+    // Redirect to Dashboard after a brief pause
+    setTimeout(() => {
+      navigate("/");
+    }, 100);
+  }, [search, navigate]);
+
+  return null;
 }
-
-export default KiteCallback;
