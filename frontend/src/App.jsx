@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Dashboard from './Dashboard';
+import Dashboard from './dashboard/Dashboard';
 import KiteCallback from './KiteCallback';
-import Portfolio from "./Portfolio";
+import Portfolio from './Portfolio';
 
 function App() {
   return (

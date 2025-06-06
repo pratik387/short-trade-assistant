@@ -1,5 +1,7 @@
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query
 from backend.services.suggestion_logic import get_filtered_stock_suggestions
+from backend.services.suggestion_logic import SuggestionLogic
+
 
 router = APIRouter()
 
@@ -9,3 +11,11 @@ def get_suggestions(
     index: str = Query("all", description="Index: 'nifty_50', 'nifty_100', etc.")
 ):
     return get_filtered_stock_suggestions(interval=interval, index=index)
+
+@router.get("/api/stock-score/{symbol}")
+def score_single_stock(symbol: str, interval: str = Query("day")):
+    logic = SuggestionLogic(interval=interval)
+    try:
+        return logic.score_single_stock(symbol)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
