@@ -3,12 +3,12 @@ import pandas as pd
 import json
 from pathlib import Path
 from io import StringIO
-from backend.authentication.kite_auth import kite
+from backend.routes.kite_auth_router import kite
 import logging
 
 logger = logging.getLogger("index_refresher")
 
-DATA_DIR = Path(__file__).resolve().parents[1] / "data"
+DATA_DIR = Path(__file__).resolve().parents[1] / "assets/indexes"
 DATA_DIR.mkdir(exist_ok=True)
 
 INDEX_CSV_URLS = {

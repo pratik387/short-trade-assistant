@@ -1,0 +1,1954 @@
+[
+  {
+    "symbol": "ABB.NS",
+    "instrument_token": 3329
+  },
+  {
+    "symbol": "ACC.NS",
+    "instrument_token": 5633
+  },
+  {
+    "symbol": "ACMESOLAR.NS",
+    "instrument_token": 6927617
+  },
+  {
+    "symbol": "AIAENG.NS",
+    "instrument_token": 3350017
+  },
+  {
+    "symbol": "APLAPOLLO.NS",
+    "instrument_token": 6599681
+  },
+  {
+    "symbol": "AUBANK.NS",
+    "instrument_token": 5436929
+  },
+  {
+    "symbol": "AWL.NS",
+    "instrument_token": 2076161
+  },
+  {
+    "symbol": "AADHARHFC.NS",
+    "instrument_token": 6074625
+  },
+  {
+    "symbol": "AARTIIND.NS",
+    "instrument_token": 1793
+  },
+  {
+    "symbol": "AAVAS.NS",
+    "instrument_token": 1378561
+  },
+  {
+    "symbol": "ABBOTINDIA.NS",
+    "instrument_token": 4583169
+  },
+  {
+    "symbol": "ACE.NS",
+    "instrument_token": 3478273
+  },
+  {
+    "symbol": "ADANIENSOL.NS",
+    "instrument_token": 2615553
+  },
+  {
+    "symbol": "ADANIENT.NS",
+    "instrument_token": 6401
+  },
+  {
+    "symbol": "ADANIGREEN.NS",
+    "instrument_token": 912129
+  },
+  {
+    "symbol": "ADANIPORTS.NS",
+    "instrument_token": 3861249
+  },
+  {
+    "symbol": "ADANIPOWER.NS",
+    "instrument_token": 4451329
+  },
+  {
+    "symbol": "ATGL.NS",
+    "instrument_token": 1552897
+  },
+  {
+    "symbol": "ABCAPITAL.NS",
+    "instrument_token": 5533185
+  },
+  {
+    "symbol": "ABFRL.NS",
+    "instrument_token": 7707649
+  },
+  {
+    "symbol": "ABREL.NS",
+    "instrument_token": 160001
+  },
+  {
+    "symbol": "ABSLAMC.NS",
+    "instrument_token": 1540609
+  },
+  {
+    "symbol": "AEGISLOG.NS",
+    "instrument_token": 10241
+  },
+  {
+    "symbol": "AFCONS.NS",
+    "instrument_token": 6650113
+  },
+  {
+    "symbol": "AFFLE.NS",
+    "instrument_token": 2903809
+  },
+  {
+    "symbol": "AJANTPHARM.NS",
+    "instrument_token": 2079745
+  },
+  {
+    "symbol": "AKUMS.NS",
+    "instrument_token": 6327041
+  },
+  {
+    "symbol": "APLLTD.NS",
+    "instrument_token": 6483969
+  },
+  {
+    "symbol": "ALIVUS.NS",
+    "instrument_token": 1347841
+  },
+  {
+    "symbol": "ALKEM.NS",
+    "instrument_token": 2995969
+  },
+  {
+    "symbol": "ALKYLAMINE.NS",
+    "instrument_token": 1148673
+  },
+  {
+    "symbol": "ALOKINDS.NS",
+    "instrument_token": 4524801
+  },
+  {
+    "symbol": "AMBER.NS",
+    "instrument_token": 303361
+  },
+  {
+    "symbol": "AMBUJACEM.NS",
+    "instrument_token": 325121
+  },
+  {
+    "symbol": "ANANDRATHI.NS",
+    "instrument_token": 1829121
+  },
+  {
+    "symbol": "ANANTRAJ.NS",
+    "instrument_token": 3486721
+  },
+  {
+    "symbol": "ANGELONE.NS",
+    "instrument_token": 82945
+  },
+  {
+    "symbol": "APARINDS.NS",
+    "instrument_token": 2941697
+  },
+  {
+    "symbol": "APOLLOHOSP.NS",
+    "instrument_token": 40193
+  },
+  {
+    "symbol": "APOLLOTYRE.NS",
+    "instrument_token": 41729
+  },
+  {
+    "symbol": "APTUS.NS",
+    "instrument_token": 1391361
+  },
+  {
+    "symbol": "ASAHIINDIA.NS",
+    "instrument_token": 1376769
+  },
+  {
+    "symbol": "ASHOKLEY.NS",
+    "instrument_token": 54273
+  },
+  {
+    "symbol": "ASIANPAINT.NS",
+    "instrument_token": 60417
+  },
+  {
+    "symbol": "ASTERDM.NS",
+    "instrument_token": 386049
+  },
+  {
+    "symbol": "ASTRAZEN.NS",
+    "instrument_token": 1436161
+  },
+  {
+    "symbol": "ASTRAL.NS",
+    "instrument_token": 3691009
+  },
+  {
+    "symbol": "ATUL.NS",
+    "instrument_token": 67329
+  },
+  {
+    "symbol": "AUROPHARMA.NS",
+    "instrument_token": 70401
+  },
+  {
+    "symbol": "AIIL.NS",
+    "instrument_token": 6029569
+  },
+  {
+    "symbol": "DMART.NS",
+    "instrument_token": 5097729
+  },
+  {
+    "symbol": "AXISBANK.NS",
+    "instrument_token": 1510401
+  },
+  {
+    "symbol": "BASF.NS",
+    "instrument_token": 94209
+  },
+  {
+    "symbol": "BEML.NS",
+    "instrument_token": 101121
+  },
+  {
+    "symbol": "BLS.NS",
+    "instrument_token": 4423425
+  },
+  {
+    "symbol": "BSE.NS",
+    "instrument_token": 5013761
+  },
+  {
+    "symbol": "BAJFINANCE.NS",
+    "instrument_token": 81153
+  },
+  {
+    "symbol": "BAJAJFINSV.NS",
+    "instrument_token": 4268801
+  },
+  {
+    "symbol": "BAJAJHLDNG.NS",
+    "instrument_token": 78081
+  },
+  {
+    "symbol": "BAJAJHFL.NS",
+    "instrument_token": 6469121
+  },
+  {
+    "symbol": "BALKRISIND.NS",
+    "instrument_token": 85761
+  },
+  {
+    "symbol": "BALRAMCHIN.NS",
+    "instrument_token": 87297
+  },
+  {
+    "symbol": "BANDHANBNK.NS",
+    "instrument_token": 579329
+  },
+  {
+    "symbol": "BANKBARODA.NS",
+    "instrument_token": 1195009
+  },
+  {
+    "symbol": "BANKINDIA.NS",
+    "instrument_token": 1214721
+  },
+  {
+    "symbol": "MAHABANK.NS",
+    "instrument_token": 2912513
+  },
+  {
+    "symbol": "BATAINDIA.NS",
+    "instrument_token": 94977
+  },
+  {
+    "symbol": "BAYERCROP.NS",
+    "instrument_token": 4589313
+  },
+  {
+    "symbol": "BERGEPAINT.NS",
+    "instrument_token": 103425
+  },
+  {
+    "symbol": "BDL.NS",
+    "instrument_token": 548865
+  },
+  {
+    "symbol": "BEL.NS",
+    "instrument_token": 98049
+  },
+  {
+    "symbol": "BHARATFORG.NS",
+    "instrument_token": 108033
+  },
+  {
+    "symbol": "BHEL.NS",
+    "instrument_token": 112129
+  },
+  {
+    "symbol": "BPCL.NS",
+    "instrument_token": 134657
+  },
+  {
+    "symbol": "BHARTIARTL.NS",
+    "instrument_token": 2714625
+  },
+  {
+    "symbol": "BHARTIHEXA.NS",
+    "instrument_token": 6013185
+  },
+  {
+    "symbol": "BIKAJI.NS",
+    "instrument_token": 3063297
+  },
+  {
+    "symbol": "BIOCON.NS",
+    "instrument_token": 2911489
+  },
+  {
+    "symbol": "BSOFT.NS",
+    "instrument_token": 1790465
+  },
+  {
+    "symbol": "BLUEDART.NS",
+    "instrument_token": 126721
+  },
+  {
+    "symbol": "BLUESTARCO.NS",
+    "instrument_token": 2127617
+  },
+  {
+    "symbol": "BBTC.NS",
+    "instrument_token": 97281
+  },
+  {
+    "symbol": "BOSCHLTD.NS",
+    "instrument_token": 558337
+  },
+  {
+    "symbol": "FIRSTCRY.NS",
+    "instrument_token": 6352385
+  },
+  {
+    "symbol": "BRIGADE.NS",
+    "instrument_token": 3887105
+  },
+  {
+    "symbol": "BRITANNIA.NS",
+    "instrument_token": 140033
+  },
+  {
+    "symbol": "MAPMYINDIA.NS",
+    "instrument_token": 1850113
+  },
+  {
+    "symbol": "CCL.NS",
+    "instrument_token": 2931713
+  },
+  {
+    "symbol": "CESC.NS",
+    "instrument_token": 160769
+  },
+  {
+    "symbol": "CGPOWER.NS",
+    "instrument_token": 194561
+  },
+  {
+    "symbol": "CRISIL.NS",
+    "instrument_token": 193793
+  },
+  {
+    "symbol": "CAMPUS.NS",
+    "instrument_token": 2396673
+  },
+  {
+    "symbol": "CANFINHOME.NS",
+    "instrument_token": 149249
+  },
+  {
+    "symbol": "CANBK.NS",
+    "instrument_token": 2763265
+  },
+  {
+    "symbol": "CAPLIPOINT.NS",
+    "instrument_token": 999937
+  },
+  {
+    "symbol": "CGCL.NS",
+    "instrument_token": 5204225
+  },
+  {
+    "symbol": "CARBORUNIV.NS",
+    "instrument_token": 152321
+  },
+  {
+    "symbol": "CASTROLIND.NS",
+    "instrument_token": 320001
+  },
+  {
+    "symbol": "CEATLTD.NS",
+    "instrument_token": 3905025
+  },
+  {
+    "symbol": "CENTRALBK.NS",
+    "instrument_token": 3812865
+  },
+  {
+    "symbol": "CDSL.NS",
+    "instrument_token": 5420545
+  },
+  {
+    "symbol": "CENTURYPLY.NS",
+    "instrument_token": 3406081
+  },
+  {
+    "symbol": "CERA.NS",
+    "instrument_token": 3849985
+  },
+  {
+    "symbol": "CHALET.NS",
+    "instrument_token": 2187777
+  },
+  {
+    "symbol": "CHAMBLFERT.NS",
+    "instrument_token": 163073
+  },
+  {
+    "symbol": "CHENNPETRO.NS",
+    "instrument_token": 524545
+  },
+  {
+    "symbol": "CHOLAHLDNG.NS",
+    "instrument_token": 5565441
+  },
+  {
+    "symbol": "CHOLAFIN.NS",
+    "instrument_token": 175361
+  },
+  {
+    "symbol": "CIPLA.NS",
+    "instrument_token": 177665
+  },
+  {
+    "symbol": "CUB.NS",
+    "instrument_token": 1459457
+  },
+  {
+    "symbol": "CLEAN.NS",
+    "instrument_token": 1292545
+  },
+  {
+    "symbol": "COALINDIA.NS",
+    "instrument_token": 5215745
+  },
+  {
+    "symbol": "COCHINSHIP.NS",
+    "instrument_token": 5506049
+  },
+  {
+    "symbol": "COFORGE.NS",
+    "instrument_token": 2955009
+  },
+  {
+    "symbol": "COHANCE.NS",
+    "instrument_token": 4593921
+  },
+  {
+    "symbol": "COLPAL.NS",
+    "instrument_token": 3876097
+  },
+  {
+    "symbol": "CAMS.NS",
+    "instrument_token": 87553
+  },
+  {
+    "symbol": "CONCORDBIO.NS",
+    "instrument_token": 4623361
+  },
+  {
+    "symbol": "CONCOR.NS",
+    "instrument_token": 1215745
+  },
+  {
+    "symbol": "COROMANDEL.NS",
+    "instrument_token": 189185
+  },
+  {
+    "symbol": "CRAFTSMAN.NS",
+    "instrument_token": 730625
+  },
+  {
+    "symbol": "CREDITACC.NS",
+    "instrument_token": 1131777
+  },
+  {
+    "symbol": "CROMPTON.NS",
+    "instrument_token": 4376065
+  },
+  {
+    "symbol": "CUMMINSIND.NS",
+    "instrument_token": 486657
+  },
+  {
+    "symbol": "CYIENT.NS",
+    "instrument_token": 1471489
+  },
+  {
+    "symbol": "DCMSHRIRAM.NS",
+    "instrument_token": 207617
+  },
+  {
+    "symbol": "DLF.NS",
+    "instrument_token": 3771393
+  },
+  {
+    "symbol": "DOMS.NS",
+    "instrument_token": 5261057
+  },
+  {
+    "symbol": "DABUR.NS",
+    "instrument_token": 197633
+  },
+  {
+    "symbol": "DALBHARAT.NS",
+    "instrument_token": 2067201
+  },
+  {
+    "symbol": "DATAPATTNS.NS",
+    "instrument_token": 1883649
+  },
+  {
+    "symbol": "DEEPAKFERT.NS",
+    "instrument_token": 211713
+  },
+  {
+    "symbol": "DEEPAKNTR.NS",
+    "instrument_token": 5105409
+  },
+  {
+    "symbol": "DELHIVERY.NS",
+    "instrument_token": 2457345
+  },
+  {
+    "symbol": "DEVYANI.NS",
+    "instrument_token": 1375489
+  },
+  {
+    "symbol": "DIVISLAB.NS",
+    "instrument_token": 2800641
+  },
+  {
+    "symbol": "DIXON.NS",
+    "instrument_token": 5552641
+  },
+  {
+    "symbol": "LALPATHLAB.NS",
+    "instrument_token": 2983425
+  },
+  {
+    "symbol": "DRREDDY.NS",
+    "instrument_token": 225537
+  },
+  {
+    "symbol": "EIDPARRY.NS",
+    "instrument_token": 234497
+  },
+  {
+    "symbol": "EIHOTEL.NS",
+    "instrument_token": 235265
+  },
+  {
+    "symbol": "EICHERMOT.NS",
+    "instrument_token": 232961
+  },
+  {
+    "symbol": "ELECON.NS",
+    "instrument_token": 3492609
+  },
+  {
+    "symbol": "ELGIEQUIP.NS",
+    "instrument_token": 239873
+  },
+  {
+    "symbol": "EMAMILTD.NS",
+    "instrument_token": 3460353
+  },
+  {
+    "symbol": "EMCURE.NS",
+    "instrument_token": 6245889
+  },
+  {
+    "symbol": "ENDURANCE.NS",
+    "instrument_token": 4818433
+  },
+  {
+    "symbol": "ENGINERSIN.NS",
+    "instrument_token": 1256193
+  },
+  {
+    "symbol": "ERIS.NS",
+    "instrument_token": 5415425
+  },
+  {
+    "symbol": "ESCORTS.NS",
+    "instrument_token": 245249
+  },
+  {
+    "symbol": "ETERNAL.NS",
+    "instrument_token": 1304833
+  },
+  {
+    "symbol": "EXIDEIND.NS",
+    "instrument_token": 173057
+  },
+  {
+    "symbol": "NYKAA.NS",
+    "instrument_token": 1675521
+  },
+  {
+    "symbol": "FEDERALBNK.NS",
+    "instrument_token": 261889
+  },
+  {
+    "symbol": "FACT.NS",
+    "instrument_token": 258049
+  },
+  {
+    "symbol": "FINCABLES.NS",
+    "instrument_token": 265729
+  },
+  {
+    "symbol": "FINPIPE.NS",
+    "instrument_token": 266497
+  },
+  {
+    "symbol": "FSL.NS",
+    "instrument_token": 3661825
+  },
+  {
+    "symbol": "FIVESTAR.NS",
+    "instrument_token": 3080193
+  },
+  {
+    "symbol": "FORTIS.NS",
+    "instrument_token": 3735553
+  },
+  {
+    "symbol": "GAIL.NS",
+    "instrument_token": 1207553
+  },
+  {
+    "symbol": "GMRAIRPORT.NS",
+    "instrument_token": 3463169
+  },
+  {
+    "symbol": "GRSE.NS",
+    "instrument_token": 1401601
+  },
+  {
+    "symbol": "GICRE.NS",
+    "instrument_token": 70913
+  },
+  {
+    "symbol": "GILLETTE.NS",
+    "instrument_token": 403457
+  },
+  {
+    "symbol": "GLAND.NS",
+    "instrument_token": 303617
+  },
+  {
+    "symbol": "GLAXO.NS",
+    "instrument_token": 295169
+  },
+  {
+    "symbol": "GLENMARK.NS",
+    "instrument_token": 1895937
+  },
+  {
+    "symbol": "MEDANTA.NS",
+    "instrument_token": 3060737
+  },
+  {
+    "symbol": "GODIGIT.NS",
+    "instrument_token": 6092545
+  },
+  {
+    "symbol": "GPIL.NS",
+    "instrument_token": 3432705
+  },
+  {
+    "symbol": "GODFRYPHLP.NS",
+    "instrument_token": 302337
+  },
+  {
+    "symbol": "GODREJAGRO.NS",
+    "instrument_token": 36865
+  },
+  {
+    "symbol": "GODREJCP.NS",
+    "instrument_token": 2585345
+  },
+  {
+    "symbol": "GODREJIND.NS",
+    "instrument_token": 2796801
+  },
+  {
+    "symbol": "GODREJPROP.NS",
+    "instrument_token": 4576001
+  },
+  {
+    "symbol": "GRANULES.NS",
+    "instrument_token": 3039233
+  },
+  {
+    "symbol": "GRAPHITE.NS",
+    "instrument_token": 151553
+  },
+  {
+    "symbol": "GRASIM.NS",
+    "instrument_token": 315393
+  },
+  {
+    "symbol": "GRAVITA.NS",
+    "instrument_token": 5256705
+  },
+  {
+    "symbol": "GESHIP.NS",
+    "instrument_token": 3526657
+  },
+  {
+    "symbol": "FLUOROCHEM.NS",
+    "instrument_token": 3520001
+  },
+  {
+    "symbol": "GUJGASLTD.NS",
+    "instrument_token": 2713345
+  },
+  {
+    "symbol": "GMDCLTD.NS",
+    "instrument_token": 1332225
+  },
+  {
+    "symbol": "GNFC.NS",
+    "instrument_token": 300545
+  },
+  {
+    "symbol": "GPPL.NS",
+    "instrument_token": 5051137
+  },
+  {
+    "symbol": "GSPL.NS",
+    "instrument_token": 3378433
+  },
+  {
+    "symbol": "HEG.NS",
+    "instrument_token": 342017
+  },
+  {
+    "symbol": "HBLENGINE.NS",
+    "instrument_token": 3575297
+  },
+  {
+    "symbol": "HCLTECH.NS",
+    "instrument_token": 1850625
+  },
+  {
+    "symbol": "HDFCAMC.NS",
+    "instrument_token": 1086465
+  },
+  {
+    "symbol": "HDFCBANK.NS",
+    "instrument_token": 341249
+  },
+  {
+    "symbol": "HDFCLIFE.NS",
+    "instrument_token": 119553
+  },
+  {
+    "symbol": "HFCL.NS",
+    "instrument_token": 5619457
+  },
+  {
+    "symbol": "HAPPSTMNDS.NS",
+    "instrument_token": 12289
+  },
+  {
+    "symbol": "HAVELLS.NS",
+    "instrument_token": 2513665
+  },
+  {
+    "symbol": "HEROMOTOCO.NS",
+    "instrument_token": 345089
+  },
+  {
+    "symbol": "HSCL.NS",
+    "instrument_token": 3669505
+  },
+  {
+    "symbol": "HINDALCO.NS",
+    "instrument_token": 348929
+  },
+  {
+    "symbol": "HAL.NS",
+    "instrument_token": 589569
+  },
+  {
+    "symbol": "HINDCOPPER.NS",
+    "instrument_token": 4592385
+  },
+  {
+    "symbol": "HINDPETRO.NS",
+    "instrument_token": 359937
+  },
+  {
+    "symbol": "HINDUNILVR.NS",
+    "instrument_token": 356865
+  },
+  {
+    "symbol": "HINDZINC.NS",
+    "instrument_token": 364545
+  },
+  {
+    "symbol": "POWERINDIA.NS",
+    "instrument_token": 4724993
+  },
+  {
+    "symbol": "HOMEFIRST.NS",
+    "instrument_token": 526337
+  },
+  {
+    "symbol": "HONASA.NS",
+    "instrument_token": 5072129
+  },
+  {
+    "symbol": "HONAUT.NS",
+    "instrument_token": 874753
+  },
+  {
+    "symbol": "HUDCO.NS",
+    "instrument_token": 5331201
+  },
+  {
+    "symbol": "HYUNDAI.NS",
+    "instrument_token": 6616065
+  },
+  {
+    "symbol": "ICICIBANK.NS",
+    "instrument_token": 1270529
+  },
+  {
+    "symbol": "ICICIGI.NS",
+    "instrument_token": 5573121
+  },
+  {
+    "symbol": "ICICIPRULI.NS",
+    "instrument_token": 4774913
+  },
+  {
+    "symbol": "IDBI.NS",
+    "instrument_token": 377857
+  },
+  {
+    "symbol": "IDFCFIRSTB.NS",
+    "instrument_token": 2863105
+  },
+  {
+    "symbol": "IFCI.NS",
+    "instrument_token": 381697
+  },
+  {
+    "symbol": "IIFL.NS",
+    "instrument_token": 3023105
+  },
+  {
+    "symbol": "INOXINDIA.NS",
+    "instrument_token": 5275393
+  },
+  {
+    "symbol": "IRB.NS",
+    "instrument_token": 3920129
+  },
+  {
+    "symbol": "IRCON.NS",
+    "instrument_token": 1276417
+  },
+  {
+    "symbol": "ITC.NS",
+    "instrument_token": 424961
+  },
+  {
+    "symbol": "ITI.NS",
+    "instrument_token": 428801
+  },
+  {
+    "symbol": "INDGN.NS",
+    "instrument_token": 6065409
+  },
+  {
+    "symbol": "INDIACEM.NS",
+    "instrument_token": 387841
+  },
+  {
+    "symbol": "INDIAMART.NS",
+    "instrument_token": 2745857
+  },
+  {
+    "symbol": "INDIANB.NS",
+    "instrument_token": 3663105
+  },
+  {
+    "symbol": "IEX.NS",
+    "instrument_token": 56321
+  },
+  {
+    "symbol": "INDHOTEL.NS",
+    "instrument_token": 387073
+  },
+  {
+    "symbol": "IOC.NS",
+    "instrument_token": 415745
+  },
+  {
+    "symbol": "IOB.NS",
+    "instrument_token": 2393089
+  },
+  {
+    "symbol": "IRCTC.NS",
+    "instrument_token": 3484417
+  },
+  {
+    "symbol": "IRFC.NS",
+    "instrument_token": 519425
+  },
+  {
+    "symbol": "IREDA.NS",
+    "instrument_token": 5186817
+  },
+  {
+    "symbol": "IGL.NS",
+    "instrument_token": 2883073
+  },
+  {
+    "symbol": "INDUSTOWER.NS",
+    "instrument_token": 7458561
+  },
+  {
+    "symbol": "INDUSINDBK.NS",
+    "instrument_token": 1346049
+  },
+  {
+    "symbol": "NAUKRI.NS",
+    "instrument_token": 3520257
+  },
+  {
+    "symbol": "INFY.NS",
+    "instrument_token": 408065
+  },
+  {
+    "symbol": "INOXWIND.NS",
+    "instrument_token": 2010113
+  },
+  {
+    "symbol": "INTELLECT.NS",
+    "instrument_token": 1517057
+  },
+  {
+    "symbol": "INDIGO.NS",
+    "instrument_token": 2865921
+  },
+  {
+    "symbol": "IGIL.NS",
+    "instrument_token": 7264769
+  },
+  {
+    "symbol": "IKS.NS",
+    "instrument_token": 7200001
+  },
+  {
+    "symbol": "IPCALAB.NS",
+    "instrument_token": 418049
+  },
+  {
+    "symbol": "JBCHEPHARM.NS",
+    "instrument_token": 441857
+  },
+  {
+    "symbol": "JKCEMENT.NS",
+    "instrument_token": 3397121
+  },
+  {
+    "symbol": "JBMA.NS",
+    "instrument_token": 2983681
+  },
+  {
+    "symbol": "JKTYRE.NS",
+    "instrument_token": 3695361
+  },
+  {
+    "symbol": "JMFINANCIL.NS",
+    "instrument_token": 3491073
+  },
+  {
+    "symbol": "JSWENERGY.NS",
+    "instrument_token": 4574465
+  },
+  {
+    "symbol": "JSWINFRA.NS",
+    "instrument_token": 4869121
+  },
+  {
+    "symbol": "JSWSTEEL.NS",
+    "instrument_token": 3001089
+  },
+  {
+    "symbol": "JPPOWER.NS",
+    "instrument_token": 3011329
+  },
+  {
+    "symbol": "JINDALSAW.NS",
+    "instrument_token": 774145
+  },
+  {
+    "symbol": "JSL.NS",
+    "instrument_token": 2876417
+  },
+  {
+    "symbol": "JINDALSTEL.NS",
+    "instrument_token": 1723649
+  },
+  {
+    "symbol": "JIOFIN.NS",
+    "instrument_token": 4644609
+  },
+  {
+    "symbol": "JUBLFOOD.NS",
+    "instrument_token": 4632577
+  },
+  {
+    "symbol": "JUBLINGREA.NS",
+    "instrument_token": 712449
+  },
+  {
+    "symbol": "JUBLPHARMA.NS",
+    "instrument_token": 931073
+  },
+  {
+    "symbol": "JWL.NS",
+    "instrument_token": 5177345
+  },
+  {
+    "symbol": "JUSTDIAL.NS",
+    "instrument_token": 7670273
+  },
+  {
+    "symbol": "JYOTHYLAB.NS",
+    "instrument_token": 3877377
+  },
+  {
+    "symbol": "JYOTICNC.NS",
+    "instrument_token": 5461505
+  },
+  {
+    "symbol": "KPRMILL.NS",
+    "instrument_token": 3817473
+  },
+  {
+    "symbol": "KEI.NS",
+    "instrument_token": 3407361
+  },
+  {
+    "symbol": "KNRCON.NS",
+    "instrument_token": 3912449
+  },
+  {
+    "symbol": "KPITTECH.NS",
+    "instrument_token": 2478849
+  },
+  {
+    "symbol": "KAJARIACER.NS",
+    "instrument_token": 462849
+  },
+  {
+    "symbol": "KPIL.NS",
+    "instrument_token": 464385
+  },
+  {
+    "symbol": "KALYANKJIL.NS",
+    "instrument_token": 756481
+  },
+  {
+    "symbol": "KANSAINER.NS",
+    "instrument_token": 306177
+  },
+  {
+    "symbol": "KARURVYSYA.NS",
+    "instrument_token": 470529
+  },
+  {
+    "symbol": "KAYNES.NS",
+    "instrument_token": 3095553
+  },
+  {
+    "symbol": "KEC.NS",
+    "instrument_token": 3394561
+  },
+  {
+    "symbol": "KFINTECH.NS",
+    "instrument_token": 3419905
+  },
+  {
+    "symbol": "KIRLOSBROS.NS",
+    "instrument_token": 4756737
+  },
+  {
+    "symbol": "KIRLOSENG.NS",
+    "instrument_token": 5359617
+  },
+  {
+    "symbol": "KOTAKBANK.NS",
+    "instrument_token": 492033
+  },
+  {
+    "symbol": "KIMS.NS",
+    "instrument_token": 1240833
+  },
+  {
+    "symbol": "LTF.NS",
+    "instrument_token": 6386689
+  },
+  {
+    "symbol": "LTTS.NS",
+    "instrument_token": 4752385
+  },
+  {
+    "symbol": "LICHSGFIN.NS",
+    "instrument_token": 511233
+  },
+  {
+    "symbol": "LTFOODS.NS",
+    "instrument_token": 3536897
+  },
+  {
+    "symbol": "LTIM.NS",
+    "instrument_token": 4561409
+  },
+  {
+    "symbol": "LT.NS",
+    "instrument_token": 2939649
+  },
+  {
+    "symbol": "LATENTVIEW.NS",
+    "instrument_token": 1745409
+  },
+  {
+    "symbol": "LAURUSLABS.NS",
+    "instrument_token": 4923905
+  },
+  {
+    "symbol": "LEMONTREE.NS",
+    "instrument_token": 667137
+  },
+  {
+    "symbol": "LICI.NS",
+    "instrument_token": 2426881
+  },
+  {
+    "symbol": "LINDEINDIA.NS",
+    "instrument_token": 416513
+  },
+  {
+    "symbol": "LLOYDSME.NS",
+    "instrument_token": 4432129
+  },
+  {
+    "symbol": "LUPIN.NS",
+    "instrument_token": 2672641
+  },
+  {
+    "symbol": "MRF.NS",
+    "instrument_token": 582913
+  },
+  {
+    "symbol": "LODHA.NS",
+    "instrument_token": 824321
+  },
+  {
+    "symbol": "MGL.NS",
+    "instrument_token": 4488705
+  },
+  {
+    "symbol": "MAHSEAMLES.NS",
+    "instrument_token": 534529
+  },
+  {
+    "symbol": "MANAPPURAM.NS",
+    "instrument_token": 4879617
+  },
+  {
+    "symbol": "MRPL.NS",
+    "instrument_token": 584449
+  },
+  {
+    "symbol": "MANKIND.NS",
+    "instrument_token": 3937281
+  },
+  {
+    "symbol": "MARICO.NS",
+    "instrument_token": 1041153
+  },
+  {
+    "symbol": "MARUTI.NS",
+    "instrument_token": 2815745
+  },
+  {
+    "symbol": "MASTEK.NS",
+    "instrument_token": 543745
+  },
+  {
+    "symbol": "MFSL.NS",
+    "instrument_token": 548353
+  },
+  {
+    "symbol": "MAXHEALTH.NS",
+    "instrument_token": 5728513
+  },
+  {
+    "symbol": "MAZDOCK.NS",
+    "instrument_token": 130305
+  },
+  {
+    "symbol": "METROPOLIS.NS",
+    "instrument_token": 2452737
+  },
+  {
+    "symbol": "MINDACORP.NS",
+    "instrument_token": 6629633
+  },
+  {
+    "symbol": "MSUMI.NS",
+    "instrument_token": 2200577
+  },
+  {
+    "symbol": "MOTILALOFS.NS",
+    "instrument_token": 3826433
+  },
+  {
+    "symbol": "MPHASIS.NS",
+    "instrument_token": 1152769
+  },
+  {
+    "symbol": "MCX.NS",
+    "instrument_token": 7982337
+  },
+  {
+    "symbol": "MUTHOOTFIN.NS",
+    "instrument_token": 6054401
+  },
+  {
+    "symbol": "NATCOPHARM.NS",
+    "instrument_token": 1003009
+  },
+  {
+    "symbol": "NBCC.NS",
+    "instrument_token": 8042241
+  },
+  {
+    "symbol": "NCC.NS",
+    "instrument_token": 593665
+  },
+  {
+    "symbol": "NHPC.NS",
+    "instrument_token": 4454401
+  },
+  {
+    "symbol": "NLCINDIA.NS",
+    "instrument_token": 2197761
+  },
+  {
+    "symbol": "NMDC.NS",
+    "instrument_token": 3924993
+  },
+  {
+    "symbol": "NSLNISP.NS",
+    "instrument_token": 3630081
+  },
+  {
+    "symbol": "NTPCGREEN.NS",
+    "instrument_token": 6957057
+  },
+  {
+    "symbol": "NTPC.NS",
+    "instrument_token": 2977281
+  },
+  {
+    "symbol": "NH.NS",
+    "instrument_token": 3031041
+  },
+  {
+    "symbol": "NATIONALUM.NS",
+    "instrument_token": 1629185
+  },
+  {
+    "symbol": "NAVA.NS",
+    "instrument_token": 1027585
+  },
+  {
+    "symbol": "NAVINFLUOR.NS",
+    "instrument_token": 3756033
+  },
+  {
+    "symbol": "NESTLEIND.NS",
+    "instrument_token": 4598529
+  },
+  {
+    "symbol": "NETWEB.NS",
+    "instrument_token": 4462849
+  },
+  {
+    "symbol": "NEULANDLAB.NS",
+    "instrument_token": 615937
+  },
+  {
+    "symbol": "NEWGEN.NS",
+    "instrument_token": 297985
+  },
+  {
+    "symbol": "NIVABUPA.NS",
+    "instrument_token": 6936833
+  },
+  {
+    "symbol": "NUVAMA.NS",
+    "instrument_token": 4792577
+  },
+  {
+    "symbol": "OBEROIRLTY.NS",
+    "instrument_token": 5181953
+  },
+  {
+    "symbol": "ONGC.NS",
+    "instrument_token": 633601
+  },
+  {
+    "symbol": "OIL.NS",
+    "instrument_token": 4464129
+  },
+  {
+    "symbol": "OLAELEC.NS",
+    "instrument_token": 6342913
+  },
+  {
+    "symbol": "OLECTRA.NS",
+    "instrument_token": 2723073
+  },
+  {
+    "symbol": "PAYTM.NS",
+    "instrument_token": 1716481
+  },
+  {
+    "symbol": "OFSS.NS",
+    "instrument_token": 2748929
+  },
+  {
+    "symbol": "POLICYBZR.NS",
+    "instrument_token": 1703937
+  },
+  {
+    "symbol": "PCBL.NS",
+    "instrument_token": 678145
+  },
+  {
+    "symbol": "PGEL.NS",
+    "instrument_token": 6491649
+  },
+  {
+    "symbol": "PIIND.NS",
+    "instrument_token": 6191105
+  },
+  {
+    "symbol": "PNBHOUSING.NS",
+    "instrument_token": 4840449
+  },
+  {
+    "symbol": "PNCINFRA.NS",
+    "instrument_token": 2402561
+  },
+  {
+    "symbol": "PTCIL.NS",
+    "instrument_token": 4270593
+  },
+  {
+    "symbol": "PVRINOX.NS",
+    "instrument_token": 3365633
+  },
+  {
+    "symbol": "PAGEIND.NS",
+    "instrument_token": 3689729
+  },
+  {
+    "symbol": "PATANJALI.NS",
+    "instrument_token": 4359425
+  },
+  {
+    "symbol": "PERSISTENT.NS",
+    "instrument_token": 4701441
+  },
+  {
+    "symbol": "PETRONET.NS",
+    "instrument_token": 2905857
+  },
+  {
+    "symbol": "PFIZER.NS",
+    "instrument_token": 676609
+  },
+  {
+    "symbol": "PHOENIXLTD.NS",
+    "instrument_token": 3725313
+  },
+  {
+    "symbol": "PIDILITIND.NS",
+    "instrument_token": 681985
+  },
+  {
+    "symbol": "PEL.NS",
+    "instrument_token": 617473
+  },
+  {
+    "symbol": "PPLPHARMA.NS",
+    "instrument_token": 2962177
+  },
+  {
+    "symbol": "POLYMED.NS",
+    "instrument_token": 6583809
+  },
+  {
+    "symbol": "POLYCAB.NS",
+    "instrument_token": 2455041
+  },
+  {
+    "symbol": "POONAWALLA.NS",
+    "instrument_token": 2919169
+  },
+  {
+    "symbol": "PFC.NS",
+    "instrument_token": 3660545
+  },
+  {
+    "symbol": "POWERGRID.NS",
+    "instrument_token": 3834113
+  },
+  {
+    "symbol": "PRAJIND.NS",
+    "instrument_token": 692481
+  },
+  {
+    "symbol": "PREMIERENE.NS",
+    "instrument_token": 6412545
+  },
+  {
+    "symbol": "PRESTIGE.NS",
+    "instrument_token": 5197313
+  },
+  {
+    "symbol": "PNB.NS",
+    "instrument_token": 2730497
+  },
+  {
+    "symbol": "RRKABEL.NS",
+    "instrument_token": 4752897
+  },
+  {
+    "symbol": "RBLBANK.NS",
+    "instrument_token": 4708097
+  },
+  {
+    "symbol": "RECLTD.NS",
+    "instrument_token": 3930881
+  },
+  {
+    "symbol": "RHIM.NS",
+    "instrument_token": 7977729
+  },
+  {
+    "symbol": "RITES.NS",
+    "instrument_token": 962817
+  },
+  {
+    "symbol": "RADICO.NS",
+    "instrument_token": 2813441
+  },
+  {
+    "symbol": "RVNL.NS",
+    "instrument_token": 2445313
+  },
+  {
+    "symbol": "RAILTEL.NS",
+    "instrument_token": 622337
+  },
+  {
+    "symbol": "RAINBOW.NS",
+    "instrument_token": 2408449
+  },
+  {
+    "symbol": "RKFORGE.NS",
+    "instrument_token": 2921217
+  },
+  {
+    "symbol": "RCF.NS",
+    "instrument_token": 733697
+  },
+  {
+    "symbol": "RTNINDIA.NS",
+    "instrument_token": 6988033
+  },
+  {
+    "symbol": "RAYMONDLSL.NS",
+    "instrument_token": 6418689
+  },
+  {
+    "symbol": "RAYMOND.NS",
+    "instrument_token": 731905
+  },
+  {
+    "symbol": "REDINGTON.NS",
+    "instrument_token": 3649281
+  },
+  {
+    "symbol": "RELIANCE.NS",
+    "instrument_token": 738561
+  },
+  {
+    "symbol": "RPOWER.NS",
+    "instrument_token": 3906305
+  },
+  {
+    "symbol": "ROUTE.NS",
+    "instrument_token": 32769
+  },
+  {
+    "symbol": "SBFC.NS",
+    "instrument_token": 4614657
+  },
+  {
+    "symbol": "SBICARD.NS",
+    "instrument_token": 4600577
+  },
+  {
+    "symbol": "SBILIFE.NS",
+    "instrument_token": 5582849
+  },
+  {
+    "symbol": "SJVN.NS",
+    "instrument_token": 4834049
+  },
+  {
+    "symbol": "SKFINDIA.NS",
+    "instrument_token": 815617
+  },
+  {
+    "symbol": "SRF.NS",
+    "instrument_token": 837889
+  },
+  {
+    "symbol": "SAGILITY.NS",
+    "instrument_token": 6925313
+  },
+  {
+    "symbol": "SAILIFE.NS",
+    "instrument_token": 7126785
+  },
+  {
+    "symbol": "SAMMAANCAP.NS",
+    "instrument_token": 7712001
+  },
+  {
+    "symbol": "MOTHERSON.NS",
+    "instrument_token": 1076225
+  },
+  {
+    "symbol": "SAPPHIRE.NS",
+    "instrument_token": 1719809
+  },
+  {
+    "symbol": "SARDAEN.NS",
+    "instrument_token": 4546049
+  },
+  {
+    "symbol": "SAREGAMA.NS",
+    "instrument_token": 1252353
+  },
+  {
+    "symbol": "SCHAEFFLER.NS",
+    "instrument_token": 258817
+  },
+  {
+    "symbol": "SCHNEIDER.NS",
+    "instrument_token": 7995905
+  },
+  {
+    "symbol": "SCI.NS",
+    "instrument_token": 780289
+  },
+  {
+    "symbol": "SHREECEM.NS",
+    "instrument_token": 794369
+  },
+  {
+    "symbol": "RENUKA.NS",
+    "instrument_token": 3078657
+  },
+  {
+    "symbol": "SHRIRAMFIN.NS",
+    "instrument_token": 1102337
+  },
+  {
+    "symbol": "SHYAMMETL.NS",
+    "instrument_token": 1201409
+  },
+  {
+    "symbol": "SIEMENS.NS",
+    "instrument_token": 806401
+  },
+  {
+    "symbol": "SIGNATURE.NS",
+    "instrument_token": 4798209
+  },
+  {
+    "symbol": "SOBHA.NS",
+    "instrument_token": 3539457
+  },
+  {
+    "symbol": "SOLARINDS.NS",
+    "instrument_token": 3412993
+  },
+  {
+    "symbol": "SONACOMS.NS",
+    "instrument_token": 1199105
+  },
+  {
+    "symbol": "SONATSOFTW.NS",
+    "instrument_token": 1688577
+  },
+  {
+    "symbol": "STARHEALTH.NS",
+    "instrument_token": 1813249
+  },
+  {
+    "symbol": "SBIN.NS",
+    "instrument_token": 779521
+  },
+  {
+    "symbol": "SAIL.NS",
+    "instrument_token": 758529
+  },
+  {
+    "symbol": "SWSOLAR.NS",
+    "instrument_token": 3197185
+  },
+  {
+    "symbol": "SUMICHEM.NS",
+    "instrument_token": 4378881
+  },
+  {
+    "symbol": "SUNPHARMA.NS",
+    "instrument_token": 857857
+  },
+  {
+    "symbol": "SUNTV.NS",
+    "instrument_token": 3431425
+  },
+  {
+    "symbol": "SUNDARMFIN.NS",
+    "instrument_token": 854785
+  },
+  {
+    "symbol": "SUNDRMFAST.NS",
+    "instrument_token": 856321
+  },
+  {
+    "symbol": "SUPREMEIND.NS",
+    "instrument_token": 860929
+  },
+  {
+    "symbol": "SUZLON.NS",
+    "instrument_token": 3076609
+  },
+  {
+    "symbol": "SWANENERGY.NS",
+    "instrument_token": 6936321
+  },
+  {
+    "symbol": "SWIGGY.NS",
+    "instrument_token": 6928897
+  },
+  {
+    "symbol": "SYNGENE.NS",
+    "instrument_token": 2622209
+  },
+  {
+    "symbol": "SYRMA.NS",
+    "instrument_token": 2763009
+  },
+  {
+    "symbol": "TBOTEK.NS",
+    "instrument_token": 6077441
+  },
+  {
+    "symbol": "TVSMOTOR.NS",
+    "instrument_token": 2170625
+  },
+  {
+    "symbol": "TANLA.NS",
+    "instrument_token": 3577857
+  },
+  {
+    "symbol": "TATACHEM.NS",
+    "instrument_token": 871681
+  },
+  {
+    "symbol": "TATACOMM.NS",
+    "instrument_token": 952577
+  },
+  {
+    "symbol": "TCS.NS",
+    "instrument_token": 2953217
+  },
+  {
+    "symbol": "TATACONSUM.NS",
+    "instrument_token": 878593
+  },
+  {
+    "symbol": "TATAELXSI.NS",
+    "instrument_token": 873217
+  },
+  {
+    "symbol": "TATAINVEST.NS",
+    "instrument_token": 414977
+  },
+  {
+    "symbol": "TATAMOTORS.NS",
+    "instrument_token": 884737
+  },
+  {
+    "symbol": "TATAPOWER.NS",
+    "instrument_token": 877057
+  },
+  {
+    "symbol": "TATASTEEL.NS",
+    "instrument_token": 895745
+  },
+  {
+    "symbol": "TATATECH.NS",
+    "instrument_token": 5195009
+  },
+  {
+    "symbol": "TTML.NS",
+    "instrument_token": 2292225
+  },
+  {
+    "symbol": "TECHM.NS",
+    "instrument_token": 3465729
+  },
+  {
+    "symbol": "TECHNOE.NS",
+    "instrument_token": 1649921
+  },
+  {
+    "symbol": "TEJASNET.NS",
+    "instrument_token": 5409537
+  },
+  {
+    "symbol": "NIACL.NS",
+    "instrument_token": 102145
+  },
+  {
+    "symbol": "RAMCOCEM.NS",
+    "instrument_token": 523009
+  },
+  {
+    "symbol": "THERMAX.NS",
+    "instrument_token": 889601
+  },
+  {
+    "symbol": "TIMKEN.NS",
+    "instrument_token": 3634689
+  },
+  {
+    "symbol": "TITAGARH.NS",
+    "instrument_token": 3945985
+  },
+  {
+    "symbol": "TITAN.NS",
+    "instrument_token": 897537
+  },
+  {
+    "symbol": "TORNTPHARM.NS",
+    "instrument_token": 900609
+  },
+  {
+    "symbol": "TORNTPOWER.NS",
+    "instrument_token": 3529217
+  },
+  {
+    "symbol": "TARIL.NS",
+    "instrument_token": 3884545
+  },
+  {
+    "symbol": "TRENT.NS",
+    "instrument_token": 502785
+  },
+  {
+    "symbol": "TRIDENT.NS",
+    "instrument_token": 2479361
+  },
+  {
+    "symbol": "TRIVENI.NS",
+    "instrument_token": 3348737
+  },
+  {
+    "symbol": "TRITURBINE.NS",
+    "instrument_token": 6549505
+  },
+  {
+    "symbol": "TIINDIA.NS",
+    "instrument_token": 79873
+  },
+  {
+    "symbol": "UCOBANK.NS",
+    "instrument_token": 2873089
+  },
+  {
+    "symbol": "UNOMINDA.NS",
+    "instrument_token": 3623425
+  },
+  {
+    "symbol": "UPL.NS",
+    "instrument_token": 2889473
+  },
+  {
+    "symbol": "UTIAMC.NS",
+    "instrument_token": 134913
+  },
+  {
+    "symbol": "ULTRACEMCO.NS",
+    "instrument_token": 2952193
+  },
+  {
+    "symbol": "UNIONBANK.NS",
+    "instrument_token": 2752769
+  },
+  {
+    "symbol": "UBL.NS",
+    "instrument_token": 4278529
+  },
+  {
+    "symbol": "UNITDSPR.NS",
+    "instrument_token": 2674433
+  },
+  {
+    "symbol": "USHAMART.NS",
+    "instrument_token": 2263041
+  },
+  {
+    "symbol": "VGUARD.NS",
+    "instrument_token": 3932673
+  },
+  {
+    "symbol": "DBREALTY.NS",
+    "instrument_token": 4639745
+  },
+  {
+    "symbol": "VTL.NS",
+    "instrument_token": 530689
+  },
+  {
+    "symbol": "VBL.NS",
+    "instrument_token": 4843777
+  },
+  {
+    "symbol": "MANYAVAR.NS",
+    "instrument_token": 2090753
+  },
+  {
+    "symbol": "VEDL.NS",
+    "instrument_token": 784129
+  },
+  {
+    "symbol": "VIJAYA.NS",
+    "instrument_token": 1429761
+  },
+  {
+    "symbol": "VMM.NS",
+    "instrument_token": 7160065
+  },
+  {
+    "symbol": "IDEA.NS",
+    "instrument_token": 3677697
+  },
+  {
+    "symbol": "VOLTAS.NS",
+    "instrument_token": 951809
+  },
+  {
+    "symbol": "WAAREEENER.NS",
+    "instrument_token": 6632193
+  },
+  {
+    "symbol": "WELCORP.NS",
+    "instrument_token": 3026177
+  },
+  {
+    "symbol": "WELSPUNLIV.NS",
+    "instrument_token": 2880769
+  },
+  {
+    "symbol": "WESTLIFE.NS",
+    "instrument_token": 2964481
+  },
+  {
+    "symbol": "WHIRLPOOL.NS",
+    "instrument_token": 4610817
+  },
+  {
+    "symbol": "WIPRO.NS",
+    "instrument_token": 969473
+  },
+  {
+    "symbol": "WOCKPHARMA.NS",
+    "instrument_token": 1921537
+  },
+  {
+    "symbol": "YESBANK.NS",
+    "instrument_token": 3050241
+  },
+  {
+    "symbol": "ZFCVINDIA.NS",
+    "instrument_token": 4330241
+  },
+  {
+    "symbol": "ZEEL.NS",
+    "instrument_token": 975873
+  },
+  {
+    "symbol": "ZENTEC.NS",
+    "instrument_token": 1922049
+  },
+  {
+    "symbol": "ZENSARTECH.NS",
+    "instrument_token": 275457
+  },
+  {
+    "symbol": "ZYDUSLIFE.NS",
+    "instrument_token": 2029825
+  },
+  {
+    "symbol": "ECLERX.NS",
+    "instrument_token": 3885825
+  }
+]

@@ -6,7 +6,7 @@ import logging
 
 logger = logging.getLogger("nse_holiday_fetcher")
 
-HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "data" / "nse_holidays.csv"
+HOLIDAY_FILE = Path(__file__).resolve().parents[2] / "data" / "nse_holidays.csv"
 HOLIDAY_URL = "https://www.nseindia.com/products-services/equity-market-timings-holidays"
 
 def download_nse_holidays():
@@ -17,17 +17,13 @@ def download_nse_holidays():
             "User-Agent": "Mozilla/5.0",
             "Referer": "https://www.nseindia.com"
         })
-        session.get("https://www.nseindia.com", timeout=5)  # get cookies
+        session.get("https://www.nseindia.com", timeout=5)
         response = session.get(HOLIDAY_URL, timeout=10)
         response.raise_for_status()
 
         soup = BeautifulSoup(response.text, "html.parser")
         tables = pd.read_html(str(soup))
-        holiday_df = None
-        for df in tables:
-            if "Date" in df.columns and "Holiday" in df.columns:
-                holiday_df = df
-                break
+        holiday_df = next((df for df in tables if "Date" in df.columns and "Holiday" in df.columns), None)
 
         if holiday_df is not None:
             holiday_df["Date"] = pd.to_datetime(holiday_df["Date"], errors="coerce")

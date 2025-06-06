@@ -1,23 +1,17 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.services.email_alert import send_exit_email
-import logging
 from dotenv import load_dotenv
-from services.kite_service import get_filtered_stock_suggestions
-from services.refresh_instrument_cache import refresh_index_cache
-from backend.authentication.kite_auth import kite_router
-from services.portfolio_routes import router as portfolio_router
-from fastapi import Query
-from tinydb import TinyDB
+
+from backend.routes.kite_auth_router import kite_router
+from backend.routes.portfolio_router import router as portfolio_router
+from backend.routes.suggestion_router import router as suggestion_router
+from backend.routes.mock_pnl_router import router as pnl_router
+from backend.routes.cache_router import router as cache_router
+from backend.routes.notification_router import router as notify_router
 
 app = FastAPI()
 
-logging.basicConfig(
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-logger = logging.getLogger("main")
-
+# CORS settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -26,40 +20,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(kite_router)
-app.include_router(portfolio_router)
-MOCK_PNL_PATH = "backend/mock_pnl.json"
-
-# Load other env variables if needed
+# Load .env
 load_dotenv()
 
-@app.post("/api/send-exit-email")
-async def trigger_exit_email(request: Request):
-    data = await request.json()
-    symbol = data.get("symbol")
-    if symbol:
-        logger.info(f"Triggering exit email for {symbol}")
-        send_exit_email(symbol)
-        return {"status": "email sent"}
-    logger.warning("No symbol received for exit email")
-    return {"status": "symbol missing"}
-
-# Accepted values for `index`:
-# "all" - All NSE stocks
-# "nifty_50" - NIFTY 50 index
-# "nifty_100" - NIFTY 100 index
-# "nifty_200" - NIFTY 200 index
-# "nifty_500" - NIFTY 500 index
-
-@app.get("/api/short-term-suggestions")
-def get_suggestions(interval: str = Query("day"), index: str = Query("all")):
-    return get_filtered_stock_suggestions(interval=interval, index=index)
-
-@app.post("/api/refresh-index-cache")
-def refresh_index_cache_route():
-    return refresh_index_cache()
-
-@app.get("/api/mock-pnl")
-def get_mock_pnl():
-    db = TinyDB(MOCK_PNL_PATH)
-    return db.all()
+# Include all routers
+app.include_router(kite_router)
+app.include_router(portfolio_router)
+app.include_router(suggestion_router)
+app.include_router(pnl_router)
+app.include_router(cache_router)
+app.include_router(notify_router)

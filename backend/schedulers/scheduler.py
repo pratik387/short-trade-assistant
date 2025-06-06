@@ -1,8 +1,8 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from services.refresh_instrument_cache import refresh_index_cache
-from services.holiday_calender_downloader import download_nse_holidays
-from services.exit_service import run_exit_checks
+from backend.services.jobs.refresh_instrument_cache import refresh_index_cache
+from backend.services.jobs.refresh_holidays import download_nse_holidays
+from services.exit_job_runner import run_exit_checks
 import logging
 
 logger = logging.getLogger("scheduler")

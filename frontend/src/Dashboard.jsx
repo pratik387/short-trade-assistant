@@ -81,10 +81,22 @@ export default function Dashboard() {
     }
   };
 
+  const fetchPortfolio = async () => {
+    try {
+      const res = await axios.get("http://localhost:8000/api/portfolio");
+      const symbols = res.data.map((item) => item.symbol);
+      setPortfolio(symbols);
+      setTokenExpired(false);
+    } catch (err) {
+      console.error("Failed to fetch portfolio", err);
+    }
+  };
+
   useEffect(() => {
     if (stocks.length === 0) {
       fetchStocks();
     }
+    fetchPortfolio();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

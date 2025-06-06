@@ -2,10 +2,9 @@ import logging
 import time
 from datetime import datetime, timedelta
 import pandas as pd
-from backend.authentication.kite_auth import kite
+from backend.routes.kite_auth_router import kite
 
 logger = logging.getLogger(__name__)
-
 
 def fetch_kite_data(symbol: str, instrument_token: int, interval: str = "day", max_retries: int = 3, backoff: float = 1.0) -> pd.DataFrame:
     """
@@ -16,7 +15,7 @@ def fetch_kite_data(symbol: str, instrument_token: int, interval: str = "day", m
         return pd.DataFrame()
 
     to_date = datetime.today()
-    if to_date.weekday() >= 5:
+    if to_date.weekday() >= 5:  # Weekend adjustment
         to_date -= timedelta(days=to_date.weekday() - 4)
     days = 100 if interval == "day" else 10
     from_date = to_date - timedelta(days=days)
@@ -30,17 +29,14 @@ def fetch_kite_data(symbol: str, instrument_token: int, interval: str = "day", m
             err = str(e).lower()
             attempt += 1
             logger.warning(f"Attempt {attempt} for {symbol} failed: {e}")
-            # Rate limit or transient network errors
             if '429' in err or 'too many requests' in err or 'timeout' in err:
                 sleep_time = backoff * (2 ** (attempt - 1))
                 logger.info(f"Backing off {sleep_time}s before retrying {symbol}")
                 time.sleep(sleep_time)
                 continue
-            # On auth errors, bail immediately
             if any(t in err for t in ['token', 'invalid', 'unauthorized']):
                 logger.error(f"Auth error for {symbol}: {e}")
                 break
-            # Other errors, no retry
             break
     logger.error(f"All {max_retries} attempts failed for {symbol}")
     return pd.DataFrame()
