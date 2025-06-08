@@ -6,6 +6,7 @@ import DashboardControls from "./DashboardControls";
 import LoadingOverlay from "./LoadingOverlay";
 import SingleStockChecker from "./SingleStockChecker";
 import SuggestionTable from "./SuggestionTable";
+import SingleStockModal from "./components/SingleStockModal";
 
 const KITE_API_KEY = process.env.REACT_APP_KITE_API_KEY;
 const kiteLoginUrl = `https://kite.zerodha.com/connect/login?api_key=${KITE_API_KEY}&v=3`;
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [checkSymbol, setCheckSymbol] = useState("");
   const [checkResult, setCheckResult] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -105,11 +107,13 @@ export default function Dashboard() {
     try {
       const res = await axios.get(`http://localhost:8000/api/stock-score/${checkSymbol}`);
       setCheckResult(res.data);
+      setShowModal(true);
     } catch (err) {
-      setCheckResult({ error: "Could not fetch score for symbol." });
-      console.error(err);
+      setCheckResult({ error: "Could not fetch score." });
+      setShowModal(true);
     }
   };
+
 
   if (loading) return <LoadingOverlay />;
 
@@ -144,6 +148,15 @@ export default function Dashboard() {
         checkResult={checkResult}
         handleCheckScore={handleCheckScore}
       />
+
+      {showModal && (
+      <SingleStockModal
+        result={checkResult}
+        onClose={() => setShowModal(false)}
+        onTrack={handleTrack}
+      />
+    )}
+
 
       <SuggestionTable
         stocks={stocks}

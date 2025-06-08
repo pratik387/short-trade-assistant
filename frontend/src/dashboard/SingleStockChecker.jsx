@@ -1,4 +1,4 @@
-export default function SingleStockChecker({ checkSymbol, setCheckSymbol, checkResult, handleCheckScore }) {
+export default function SingleStockChecker({ checkSymbol, setCheckSymbol, handleCheckScore }) {
   return (
     <div className="bg-white border p-4 rounded shadow space-y-2">
       <h2 className="text-lg font-semibold">Check Single Stock Score</h2>
@@ -17,22 +17,6 @@ export default function SingleStockChecker({ checkSymbol, setCheckSymbol, checkR
           Check Score
         </button>
       </div>
-
-      {checkResult && (
-        <div className="text-sm mt-2">
-          {checkResult.error ? (
-            <span className="text-red-600">{checkResult.error}</span>
-          ) : (
-            <div className="text-gray-800">
-              <p><strong>Symbol:</strong> {checkResult.symbol}</p>
-              <p><strong>Score:</strong> {checkResult.score}</p>
-              <p><strong>Suggestion:</strong> {checkResult.suggestion}</p>
-              <p><strong>Close:</strong> ₹{checkResult.close}</p>
-              <p><strong>Volume:</strong> {checkResult.volume}</p>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
