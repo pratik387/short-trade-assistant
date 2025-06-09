@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: backend/Dockerfile
     container_name: trading-backend
-    env_file: .env
+    env_file: backend/.env
     ports:
       - "8000:8000"
 
