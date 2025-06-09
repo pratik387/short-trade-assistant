@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 
+// All API calls go to localhost:8000 for now
+axios.defaults.baseURL = "http://129.154.252.182:8000";
+
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState([]);
 
   useEffect(() => {
     const fetchPortfolio = async () => {
       try {
-        const res = await axios.get("http://localhost:8000/api/portfolio");
+        const res = await axios.get("/api/portfolio");
         setPortfolio(res.data);
       } catch (error) {
         console.error("Failed to load portfolio", error);
@@ -18,8 +21,8 @@ export default function Portfolio() {
 
   const handleRemove = async (symbol) => {
     try {
-      await axios.delete(`http://localhost:8000/api/portfolio/${symbol}`);
-      setPortfolio(prev => prev.filter(item => item.symbol !== symbol));
+      await axios.delete(`/api/portfolio/${symbol}`);
+      setPortfolio((prev) => prev.filter((item) => item.symbol !== symbol));
     } catch (error) {
       console.error("Failed to remove stock", error);
     }
@@ -27,7 +30,7 @@ export default function Portfolio() {
 
   const handleExit = async (symbol) => {
     try {
-      await axios.post("http://localhost:8000/api/exit", { symbol });
+      await axios.post("/api/exit", { symbol });
       alert(`Exit action triggered for ${symbol}`);
     } catch (error) {
       console.error("Failed to trigger exit", error);

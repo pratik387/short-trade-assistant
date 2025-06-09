@@ -9,7 +9,7 @@ import SuggestionTable from "./SuggestionTable";
 import SingleStockModal from "./components/SingleStockModal";
 
 // Set the base URL for all axios requests
-axios.defaults.baseURL = "http://localhost:8000";
+axios.defaults.baseURL = "http://129.154.252.182:8000";
 
 export default function Dashboard() {
   const [stocks, setStocks] = useState([]);
