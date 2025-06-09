@@ -9,3 +9,4 @@ setuptools==65.5.0
 kiteconnect
 tinydb
 twilio
+apscheduler>=3.10.1
