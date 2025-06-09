@@ -9,8 +9,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # map a host folder (./db) to /app/db in the container
-      - ./db:/app/db
+      - ./backend/db:/app/db
+
 
   frontend:
     build:
