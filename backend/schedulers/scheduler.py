@@ -1,9 +1,9 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from backend.jobs.refresh_instrument_cache import refresh_index_cache
-from backend.jobs.refresh_holidays import download_nse_holidays
+from jobs.refresh_instrument_cache import refresh_index_cache
+from jobs.refresh_holidays import download_nse_holidays
 from services.exit_job_runner import run_exit_checks
-from backend.services.notification.sms_service import send_kite_login_sms
+from services.notification.sms_service import send_kite_login_sms
 import logging
 
 

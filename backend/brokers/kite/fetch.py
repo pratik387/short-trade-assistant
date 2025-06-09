@@ -2,7 +2,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 import pandas as pd
-from backend.routes.kite_auth_router import kite
+from routes.kite_auth_router import kite
 
 logger = logging.getLogger(__name__)
 

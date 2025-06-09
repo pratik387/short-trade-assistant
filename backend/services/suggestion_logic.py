@@ -1,7 +1,7 @@
-from backend.brokers.kite.kite_data_provider import KiteDataProvider
-from backend.config.settings import load_filter_config
-from backend.services.entry_service import EntryService
-from backend.services.technical_analysis import prepare_indicators, calculate_score
+from brokers.kite.kite_data_provider import KiteDataProvider
+from config.settings import load_filter_config
+from services.entry_service import EntryService
+from services.technical_analysis import prepare_indicators, calculate_score
 
 
 class SuggestionLogic:

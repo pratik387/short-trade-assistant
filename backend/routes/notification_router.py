@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from backend.services.notification.email_alert import send_exit_email
+from services.notification.email_alert import send_exit_email
 import logging
 
 router = APIRouter()

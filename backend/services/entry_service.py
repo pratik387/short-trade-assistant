@@ -1,5 +1,5 @@
 import logging
-from backend.services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
+from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
 
 logger = logging.getLogger(__name__)
 

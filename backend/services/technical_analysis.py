@@ -1,12 +1,12 @@
 import pandas as pd
-from backend.services.filters.adx_filter import calculate_adx
-from backend.services.filters.rsi_filter import calculate_rsi
-from backend.services.filters.bollinger_band_filter import calculate_bollinger_bands
-from backend.services.filters.macd_filter import calculate_macd
-from backend.services.filters.stochastic_filter import calculate_stochastic
-from backend.services.filters.obv_filter import calculate_obv
-from backend.services.filters.atr_filter import calculate_atr
-from backend.services.filters.fibonacci_filter import calculate_fibonacci_levels, is_fibonacci_support_zone
+from services.filters.adx_filter import calculate_adx
+from services.filters.rsi_filter import calculate_rsi
+from services.filters.bollinger_band_filter import calculate_bollinger_bands
+from services.filters.macd_filter import calculate_macd
+from services.filters.stochastic_filter import calculate_stochastic
+from services.filters.obv_filter import calculate_obv
+from services.filters.atr_filter import calculate_atr
+from services.filters.fibonacci_filter import calculate_fibonacci_levels, is_fibonacci_support_zone
 
 
 def prepare_indicators(df: pd.DataFrame) -> pd.DataFrame:

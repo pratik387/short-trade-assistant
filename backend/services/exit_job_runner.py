@@ -1,8 +1,8 @@
-from backend.services.exit_service import ExitService
-from backend.brokers.kite.kite_exit_data_provider import KiteExitDataProvider
-from backend.db.tinydb.client import get_table
-from backend.config.settings import load_filter_config
-from backend.services.notification.email_alert import send_exit_email
+from services.exit_service import ExitService
+from brokers.kite.kite_exit_data_provider import KiteExitDataProvider
+from db.tinydb.client import get_table
+from config.settings import load_filter_config
+from services.notification.email_alert import send_exit_email
 import logging
 from pathlib import Path
 from datetime import datetime

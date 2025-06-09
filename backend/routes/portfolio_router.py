@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 from tinydb import Query
-from backend.db.tinydb.client import get_table
+from db.tinydb.client import get_table
 
 router = APIRouter()
 StockQuery = Query()

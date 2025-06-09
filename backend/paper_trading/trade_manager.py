@@ -3,9 +3,9 @@ from paper_trading.portfolio import add_mock_stock, get_open_positions, mark_sto
 from paper_trading.logger import log_event
 from services.suggestion_logic import get_filtered_stock_suggestions
 from services.exit_service import ExitService
-from backend.brokers.kite.kite_exit_data_provider import KiteExitDataProvider
-from backend.db.tinydb.client import get_table
-from backend.services.notification.email_alert import send_exit_email
+from brokers.kite.kite_exit_data_provider import KiteExitDataProvider
+from db.tinydb.client import get_table
+from services.notification.email_alert import send_exit_email
 from pathlib import Path
 import pandas as pd
 

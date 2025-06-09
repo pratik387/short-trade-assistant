@@ -1,6 +1,6 @@
 from fastapi import Request, APIRouter
 from fastapi.responses import RedirectResponse
-from backend.brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE
+from brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE
 import os
 import logging
 

@@ -2,15 +2,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from backend.routes.kite_auth_router import kite_router
-from backend.routes.portfolio_router import router as portfolio_router
-from backend.routes.suggestion_router import router as suggestion_router
-from backend.routes.mock_pnl_router import router as pnl_router
-from backend.routes.cache_router import router as cache_router
-from backend.routes.notification_router import router as notify_router
-from backend.schedulers.scheduler import start as start_scheduler, shutdown as shutdown_scheduler
+from routes.kite_auth_router import kite_router
+from routes.portfolio_router import router as portfolio_router
+from routes.suggestion_router import router as suggestion_router
+from routes.mock_pnl_router import router as pnl_router
+from routes.cache_router import router as cache_router
+from routes.notification_router import router as notify_router
+from schedulers.scheduler import start as start_scheduler, shutdown as shutdown_scheduler
 # TODO: remove after testing
-from backend.paper_trading.scheduler import start as start_paper_scheduler, shutdown as stop_paper_scheduler
+from paper_trading.scheduler import start as start_paper_scheduler, shutdown as stop_paper_scheduler
 
 
 app = FastAPI()

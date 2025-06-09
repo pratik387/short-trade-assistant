@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from backend.jobs.refresh_instrument_cache import refresh_index_cache
+from jobs.refresh_instrument_cache import refresh_index_cache
 
 router = APIRouter()
 

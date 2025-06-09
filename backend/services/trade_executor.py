@@ -3,8 +3,8 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
-from backend.jobs.mock_trade_analyzer import analyze_and_store_pnl
-from backend.brokers.base_broker import BaseBroker
+from jobs.mock_trade_analyzer import analyze_and_store_pnl
+from brokers.base_broker import BaseBroker
 
 logger = logging.getLogger("trade_executor")
 

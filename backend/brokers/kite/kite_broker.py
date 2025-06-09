@@ -1,5 +1,5 @@
-from backend.brokers.base_broker import BaseBroker
-from backend.brokers.kite.kite_client import get_kite
+from brokers.base_broker import BaseBroker
+from brokers.kite.kite_client import get_kite
 
 class KiteBroker(BaseBroker):
     def __init__(self):

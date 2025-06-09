@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
-from backend.services.suggestion_logic import get_filtered_stock_suggestions
-from backend.services.suggestion_logic import SuggestionLogic
+from services.suggestion_logic import get_filtered_stock_suggestions
+from services.suggestion_logic import SuggestionLogic
 
 
 router = APIRouter()

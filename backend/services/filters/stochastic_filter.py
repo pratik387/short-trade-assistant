@@ -1,5 +1,3 @@
-import pandas as pd
-
 def calculate_stochastic(df):
     df = df.copy()
     low_min = df['low'].rolling(window=14).min()

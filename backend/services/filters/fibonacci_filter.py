@@ -1,5 +1,3 @@
-# backend/services/filters/fibonacci_filter.py
-
 def calculate_fibonacci_levels(series):
     """
     Given a price series (usually 20-day close), calculate key Fibonacci retracement levels.

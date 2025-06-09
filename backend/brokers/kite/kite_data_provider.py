@@ -1,6 +1,6 @@
-from backend.brokers.kite.fetch import fetch_kite_data, InvalidAccessTokenError
-from backend.brokers.data.indexes import get_index_symbols
-from backend.services.notification.sms_service import send_kite_login_sms
+from brokers.kite.fetch import fetch_kite_data, InvalidAccessTokenError
+from brokers.data.indexes import get_index_symbols
+from services.notification.sms_service import send_kite_login_sms
 import logging
 
 logger = logging.getLogger(__name__)

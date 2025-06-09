@@ -8,6 +8,9 @@ services:
     env_file: backend/.env
     ports:
       - "8000:8000"
+    volumes:
+      # map a host folder (./db) to /app/db in the container
+      - ./db:/app/db
 
   frontend:
     build:
