@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: trading-backend
+    env_file: .env
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: trading-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

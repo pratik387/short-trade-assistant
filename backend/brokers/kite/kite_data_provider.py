@@ -1,5 +1,9 @@
-from backend.brokers.kite.fetch import fetch_kite_data
+from backend.brokers.kite.fetch import fetch_kite_data, InvalidAccessTokenError
 from backend.brokers.data.indexes import get_index_symbols
+from backend.services.notification.sms_service import send_kite_login_sms
+import logging
+
+logger = logging.getLogger(__name__)
 
 class KiteDataProvider:
     def __init__(self, interval: str = "day", index: str = "nifty_50"):
@@ -10,7 +14,15 @@ class KiteDataProvider:
         return get_index_symbols(self.index)
 
     def fetch_ohlc(self, item):
-        return fetch_kite_data(item["symbol"], item.get("instrument_token"), self.interval)
+        try:
+            return fetch_kite_data(item["symbol"], item.get("instrument_token"), self.interval)
+        except InvalidAccessTokenError as e:
+            logger.critical("⛔ Invalid access token detected during exit checks. Triggering SMS login.")
+            try:
+                send_kite_login_sms()
+                logger.info("📩 SMS sent for manual Kite login.")
+            except Exception as sms_err:
+                logger.error(f"❌ Failed to send SMS login reminder: {sms_err}")
     
     def get_token_for_symbol(self, symbol: str) -> int:
         """

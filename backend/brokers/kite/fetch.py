@@ -6,16 +6,16 @@ from backend.routes.kite_auth_router import kite
 
 logger = logging.getLogger(__name__)
 
+class InvalidAccessTokenError(Exception):
+    pass
+
 def fetch_kite_data(symbol: str, instrument_token: int, interval: str = "day", max_retries: int = 3, backoff: float = 1.0) -> pd.DataFrame:
-    """
-    Retrieve historical data with retry on transient failures (rate limits, network).
-    """
     if not instrument_token:
         logger.error(f"Missing instrument token for {symbol}")
         return pd.DataFrame()
 
     to_date = datetime.today()
-    if to_date.weekday() >= 5:  # Weekend adjustment
+    if to_date.weekday() >= 5:
         to_date -= timedelta(days=to_date.weekday() - 4)
     days = 100 if interval == "day" else 10
     from_date = to_date - timedelta(days=days)
@@ -28,15 +28,19 @@ def fetch_kite_data(symbol: str, instrument_token: int, interval: str = "day", m
         except Exception as e:
             err = str(e).lower()
             attempt += 1
-            logger.warning(f"Attempt {attempt} for {symbol} failed: {e}")
+
+            if any(t in err for t in ['token', 'invalid', 'unauthorized']):
+                logger.error(f"🛑 Invalid or expired token for {symbol}: {e}")
+                raise InvalidAccessTokenError(f"Access token expired or invalid for {symbol}") from e
+
+            logger.warning(f"⚠️ Attempt {attempt} for {symbol} failed: {e}")
+
             if '429' in err or 'too many requests' in err or 'timeout' in err:
                 sleep_time = backoff * (2 ** (attempt - 1))
-                logger.info(f"Backing off {sleep_time}s before retrying {symbol}")
+                logger.info(f"⏳ Backing off {sleep_time}s before retrying {symbol}")
                 time.sleep(sleep_time)
-                continue
-            if any(t in err for t in ['token', 'invalid', 'unauthorized']):
-                logger.error(f"Auth error for {symbol}: {e}")
+            else:
                 break
-            break
-    logger.error(f"All {max_retries} attempts failed for {symbol}")
+
+    logger.error(f"❌ All {max_retries} attempts failed for {symbol}")
     return pd.DataFrame()

@@ -4,7 +4,7 @@ from paper_trading.logger import log_event
 from services.suggestion_logic import get_filtered_stock_suggestions
 from services.exit_service import ExitService
 from backend.brokers.kite.kite_exit_data_provider import KiteExitDataProvider
-from backend.db.tinydb.client import portfolio_db
+from backend.db.tinydb.client import get_table
 from backend.services.notification.email_alert import send_exit_email
 from pathlib import Path
 import pandas as pd
@@ -49,6 +49,7 @@ def check_exit_conditions():
         return
 
     data_provider = KiteExitDataProvider(interval="day")
+    portfolio_db = get_table("portfolio")
     service = ExitService(
         config=data_provider.config,
         portfolio_db=portfolio_db,

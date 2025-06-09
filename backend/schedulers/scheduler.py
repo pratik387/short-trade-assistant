@@ -1,11 +1,14 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
-from backend.services.jobs.refresh_instrument_cache import refresh_index_cache
-from backend.services.jobs.refresh_holidays import download_nse_holidays
+from backend.jobs.refresh_instrument_cache import refresh_index_cache
+from backend.jobs.refresh_holidays import download_nse_holidays
 from services.exit_job_runner import run_exit_checks
+from backend.services.notification.sms_service import send_kite_login_sms
 import logging
 
+
 logger = logging.getLogger("scheduler")
+logging.basicConfig(level=logging.INFO)
 scheduler = BackgroundScheduler()
 
 scheduler.add_job(
@@ -33,5 +36,20 @@ scheduler.add_job(
     replace_existing=True
 )
 
-scheduler.start()
-logger.info("✅ APScheduler started")
+# Morning SMS reminder at 8:30 AM IST
+scheduler.add_job(
+    func=lambda: (logger.info("📲 Sending Kite login SMS..."), send_kite_login_sms()),
+    trigger=CronTrigger(hour=10, minute=41, timezone="Asia/Kolkata"),
+    id="kite_login_reminder",
+    name="Send Kite Login SMS Link",
+    replace_existing=True
+)
+
+def start():
+    scheduler.start()
+    logger.info("✅ APScheduler started")
+
+def shutdown():
+    if scheduler.running:
+        scheduler.shutdown()
+        logger.info("🛑 APScheduler shut down")

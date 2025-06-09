@@ -31,5 +31,12 @@ if is_market_active():
 else:
     logger.info("📅 Exit check job not scheduled — market inactive.")
 
-scheduler.start()
-logger.info("✅ Paper trade scheduler started")
+def start():
+    if not scheduler.running:
+        scheduler.start()
+        logger.info("✅ Paper trading scheduler started")
+
+def shutdown():
+    if scheduler.running:
+        scheduler.shutdown()
+        logger.info("🛑 Paper trading scheduler shut down")
