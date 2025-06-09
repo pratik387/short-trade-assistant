@@ -8,14 +8,21 @@ import SingleStockChecker from "./SingleStockChecker";
 import SuggestionTable from "./SuggestionTable";
 import SingleStockModal from "./components/SingleStockModal";
 
-const KITE_API_KEY = process.env.REACT_APP_KITE_API_KEY;
-const kiteLoginUrl = `https://kite.zerodha.com/connect/login?api_key=${KITE_API_KEY}&v=3`;
+// Set the base URL for all axios requests
+axios.defaults.baseURL = "http://localhost:8000";
 
 export default function Dashboard() {
   const [stocks, setStocks] = useState([]);
   const [portfolio, setPortfolio] = useState([]);
-  const [autoEmail, setAutoEmail] = useState(() => JSON.parse(localStorage.getItem("autoEmail") || "true"));
-  const [kiteLoggedIn, setKiteLoggedIn] = useState(() => localStorage.getItem("kiteLoggedIn") === "true");
+  const [autoEmail, setAutoEmail] = useState(() => {
+    const saved = localStorage.getItem("autoEmail");
+    return saved !== null ? JSON.parse(saved) : true;
+  });
+  const [kiteLoggedIn, setKiteLoggedIn] = useState(() => {
+    const saved = localStorage.getItem("kiteLoggedIn");
+    return saved === "true";
+  });
+  const [kiteLoginUrl, setKiteLoginUrl] = useState("");
   const [indexFilter, setIndexFilter] = useState("nifty_50");
   const [tokenExpired, setTokenExpired] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -41,10 +48,19 @@ export default function Dashboard() {
     localStorage.setItem("portfolio", JSON.stringify(portfolio));
   }, [portfolio]);
 
+  // Fetch the Kite login URL from the backend
+  useEffect(() => {
+    axios
+      .get("/api/kite/login-url")
+      .then((res) => setKiteLoginUrl(res.data.url))
+      .catch(console.error);
+  }, []);
+
+  // Check Kite session status
   useEffect(() => {
     async function checkSession() {
       try {
-        const res = await axios.get("http://localhost:8000/api/kite/session-status");
+        const res = await axios.get("/api/kite/session-status");
         setKiteLoggedIn(res.data.logged_in);
       } catch (err) {
         console.error("Error checking Kite session:", err);
@@ -58,13 +74,16 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const res = await axios.get(
-        `http://localhost:8000/api/short-term-suggestions?interval=day&index=${indexFilter}`
+        `/api/short-term-suggestions?interval=day&index=${indexFilter}`
       );
       setStocks(Array.isArray(res.data) ? res.data : []);
       setTokenExpired(false);
     } catch (err) {
       console.error("Failed to fetch stock suggestions", err);
-      if (err.response?.status === 401 || err.response?.data?.reason?.includes("token")) {
+      if (
+        err.response?.status === 401 ||
+        err.response?.data?.reason?.includes("token")
+      ) {
         setTokenExpired(true);
         setKiteLoggedIn(false);
       }
@@ -75,7 +94,7 @@ export default function Dashboard() {
 
   const fetchPortfolio = async () => {
     try {
-      const res = await axios.get("http://localhost:8000/api/portfolio");
+      const res = await axios.get("/api/portfolio");
       const symbols = res.data.map((item) => item.symbol);
       setPortfolio(symbols);
     } catch (err) {
@@ -84,7 +103,9 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (stocks.length === 0) fetchStocks();
+    if (stocks.length === 0) {
+      fetchStocks();
+    }
     fetchPortfolio();
   }, []);
 
@@ -95,7 +116,7 @@ export default function Dashboard() {
       quantity: 100,
     };
     try {
-      const res = await axios.post("http://localhost:8000/api/portfolio", payload);
+      await axios.post("/api/portfolio", payload);
       setPortfolio((prev) => [...prev, stock.symbol]);
     } catch (err) {
       console.error("Failed to add to portfolio", err);
@@ -105,7 +126,7 @@ export default function Dashboard() {
 
   const handleCheckScore = async () => {
     try {
-      const res = await axios.get(`http://localhost:8000/api/stock-score/${checkSymbol}`);
+      const res = await axios.get(`/api/stock-score/${checkSymbol}`);
       setCheckResult(res.data);
       setShowModal(true);
     } catch (err) {
@@ -113,7 +134,6 @@ export default function Dashboard() {
       setShowModal(true);
     }
   };
-
 
   if (loading) return <LoadingOverlay />;
 
@@ -127,7 +147,7 @@ export default function Dashboard() {
 
       {tokenExpired && (
         <div className="bg-red-100 text-red-800 border border-red-400 p-3 rounded shadow">
-          Your session has expired. Please <strong>login to Zerodha</strong> again.
+          Your session has expired. Please <strong>login to Kite</strong> again.
         </div>
       )}
 
@@ -150,13 +170,12 @@ export default function Dashboard() {
       />
 
       {showModal && (
-      <SingleStockModal
-        result={checkResult}
-        onClose={() => setShowModal(false)}
-        onTrack={handleTrack}
-      />
-    )}
-
+        <SingleStockModal
+          result={checkResult}
+          onClose={() => setShowModal(false)}
+          onTrack={handleTrack}
+        />
+      )}
 
       <SuggestionTable
         stocks={stocks}

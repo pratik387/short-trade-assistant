@@ -23,6 +23,8 @@ class KiteDataProvider:
                 logger.info("📩 SMS sent for manual Kite login.")
             except Exception as sms_err:
                 logger.error(f"❌ Failed to send SMS login reminder: {sms_err}")
+            raise
+            
     
     def get_token_for_symbol(self, symbol: str) -> int:
         """

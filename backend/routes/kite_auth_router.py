@@ -1,6 +1,6 @@
 from fastapi import Request, APIRouter
 from fastapi.responses import RedirectResponse
-from brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE
+from brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE, KITE_REDIRECT_URI , KITE_API_KEY
 import os
 import logging
 
@@ -42,3 +42,13 @@ def check_kite_session():
         return {"logged_in": True}
     except:
         return {"logged_in": False}
+    
+@kite_router.get("/api/kite/login-url")
+def get_login_url():
+    login_url = (
+        f"https://kite.zerodha.com/connect/login?"
+        f"api_key={KITE_API_KEY}"
+        f"&v=3"
+        f"&redirect_uri={KITE_REDIRECT_URI}"
+    )
+    return {"url": login_url}

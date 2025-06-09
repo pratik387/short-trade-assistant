@@ -13,6 +13,7 @@ logger = logging.getLogger("kite_client")
 # Credentials and token path
 KITE_API_KEY = os.getenv("KITE_API_KEY")
 KITE_API_SECRET = os.getenv("KITE_API_SECRET")
+KITE_REDIRECT_URI = os.getenv("KITE_REDIRECT_URI")
 TOKEN_FILE = Path(__file__).resolve().parents[2] / "kite_token.txt"
 
 
