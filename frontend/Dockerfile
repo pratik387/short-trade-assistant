@@ -9,4 +9,6 @@ RUN npm run build
 # 2) serve with nginx
 FROM nginx:alpine
 COPY --from=build /app/build /usr/share/nginx/html
-# (optional) copy a custom nginx.conf if you need API proxying
+
+# Override the default Nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
