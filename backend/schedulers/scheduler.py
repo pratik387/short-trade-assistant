@@ -39,7 +39,7 @@ scheduler.add_job(
 # Morning SMS reminder at 8:30 AM IST
 scheduler.add_job(
     func=lambda: (logger.info("📲 Sending Kite login SMS..."), send_kite_login_sms()),
-    trigger=CronTrigger(hour=10, minute=41, timezone="Asia/Kolkata"),
+    trigger=CronTrigger(hour=9, minute=0, timezone="Asia/Kolkata"),
     id="kite_login_reminder",
     name="Send Kite Login SMS Link",
     replace_existing=True
