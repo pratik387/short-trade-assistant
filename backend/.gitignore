@@ -1,5 +1,6 @@
 __pycache__
-.env
+.env.development
+.env.production
 /data
 /kite_token.txt
 /nse_equity_symbols.json

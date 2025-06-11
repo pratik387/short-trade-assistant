@@ -19,18 +19,25 @@ class ExitService:
         self.log_blocked = self.exit_strategy.get("log_blocked_exits", True)
 
     def check_exits(self):
+        logger.info("Running check_exits on portfolio")
         records = self.portfolio_db.all()
         for stock in records:
-            df = self.data_provider.fetch_exit_data(stock)
-            if df is None or df.empty:
-                continue
-            current_price = df["close"].iloc[-1]
-            actions = self._evaluate_exit(stock, current_price, df)
-            for action in actions:
-                logger.info(f"{action['reason']} for {stock['symbol']} at price {current_price:.2f}")
-                if self.notifier:
-                    self.notifier(stock["symbol"], current_price)
-                self.portfolio_db.remove(self.portfolio_db.query().symbol == stock["symbol"])
+            try:
+                df = self.data_provider.fetch_exit_data(stock)
+                if df is None or df.empty:
+                    logger.warning("No exit data for %s", stock['symbol'])
+                    continue
+
+                current_price = df["close"].iloc[-1]
+                actions = self._evaluate_exit(stock, current_price, df)
+                for action in actions:
+                    logger.info("%s for %s at price %.2f", action['reason'], stock['symbol'], current_price)
+                    if self.notifier:
+                        self.notifier(stock["symbol"], current_price)
+                    self.portfolio_db.remove(self.portfolio_db.query().symbol == stock["symbol"])
+
+            except Exception as e:
+                logger.exception("Error checking exit for %s: %s", stock.get("symbol", "<unknown>"), e)
 
     def _evaluate_exit(self, stock, current_price, df):
         actions = []

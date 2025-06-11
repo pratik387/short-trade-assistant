@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
 export default function KiteCallback() {
   const navigate = useNavigate();
@@ -7,21 +8,27 @@ export default function KiteCallback() {
 
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const loginStatus = params.get("kite_login"); // “success” or “failed”
+    const requestToken = params.get("request_token");
+    const status = params.get("status");
 
-    if (loginStatus === "success") {
-      // Mark as logged in
-      localStorage.setItem("kiteLoggedIn", "true");
-    } else {
-      // Clear any previous flag
+    if (!requestToken || status !== "success") {
       localStorage.removeItem("kiteLoggedIn");
+      navigate("/"); // 🔁 clean redirect
+      return;
     }
 
-    // Redirect to Dashboard after a brief pause
-    setTimeout(() => {
-      navigate("/");
-    }, 100);
+    axios
+      .get(`/kite-callback?request_token=${requestToken}&status=success`)
+      .then(() => {
+        localStorage.setItem("kiteLoggedIn", "true");
+        navigate("/"); // ✅ CLEAN REDIRECT
+      })
+      .catch((err) => {
+        console.error("Kite callback error", err);
+        localStorage.removeItem("kiteLoggedIn");
+        navigate("/"); // ❌ also goes to clean route
+      });
   }, [search, navigate]);
 
-  return null;
+  return <div>Logging in to Kite...</div>;
 }

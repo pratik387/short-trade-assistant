@@ -6,10 +6,10 @@ import logging
 logger = logging.getLogger("paper_scheduler")
 scheduler = BackgroundScheduler()
 
-# Helper to schedule only during market hours on weekdays
 MARKET_HOURS = dict(day_of_week="mon-fri")
+exit_job_id = "paper_trade_exit"
 
-# Run paper trades at 10:00 and 14:00 IST
+# Paper trading buy cycle at 10:00 and 14:00 IST
 for hour in [10, 14]:
     scheduler.add_job(
         func=run_paper_trading_cycle,
@@ -19,17 +19,31 @@ for hour in [10, 14]:
         replace_existing=True
     )
 
-# Conditionally schedule exit checks if market is active
-if is_market_active():
-    scheduler.add_job(
-        func=check_exit_conditions,
-        trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata", **MARKET_HOURS),
-        id="paper_trade_exit",
-        name="Evaluate exit conditions",
-        replace_existing=True
-    )
-else:
-    logger.info("📅 Exit check job not scheduled — market inactive.")
+# def manage_exit_job():
+#     """Check market status every 10 min and manage the exit job."""
+#     if is_market_active():
+#         if not scheduler.get_job(exit_job_id):
+#             logger.info("📈 Market active. Scheduling exit job.")
+#             scheduler.add_job(
+#                 func=check_exit_conditions,
+#                 trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata", **MARKET_HOURS),
+#                 id=exit_job_id,
+#                 name="Evaluate exit conditions",
+#                 replace_existing=True
+#             )
+#     else:
+#         if scheduler.get_job(exit_job_id):
+#             logger.info("📉 Market inactive. Removing exit job.")
+#             scheduler.remove_job(exit_job_id)
+
+# Check every 10 minutes to dynamically manage exit job
+# scheduler.add_job(
+#     func=manage_exit_job,
+#     trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata"),
+#     id="manage_exit_scheduler",
+#     name="Manage exit job based on market status",
+#     replace_existing=True
+# )
 
 def start():
     if not scheduler.running:

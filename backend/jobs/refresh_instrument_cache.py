@@ -3,8 +3,9 @@ import pandas as pd
 import json
 from pathlib import Path
 from io import StringIO
-from routes.kite_auth_router import kite
 import logging
+
+from routes.kite_auth_router import kite
 
 logger = logging.getLogger("index_refresher")
 
@@ -15,7 +16,7 @@ INDEX_CSV_URLS = {
     "nifty_50": "https://archives.nseindia.com/content/indices/ind_nifty50list.csv",
     "nifty_100": "https://archives.nseindia.com/content/indices/ind_nifty100list.csv",
     "nifty_200": "https://archives.nseindia.com/content/indices/ind_nifty200list.csv",
-    "nifty_500": "https://archives.nseindia.com/content/indices/ind_nifty500list.csv"
+    "nifty_500": "https://archives.nseindia.com/content/indices/ind_nifty500list.csv",
 }
 
 def refresh_index_cache():
@@ -36,18 +37,15 @@ def refresh_index_cache():
                 seen.add(tradingsymbol)
                 instrument_map[tradingsymbol] = {
                     "symbol": tradingsymbol + ".NS",
-                    "instrument_token": ins["instrument_token"]
+                    "instrument_token": ins["instrument_token"],
                 }
 
-        # Save full list
         all_path = DATA_DIR / "nse_all.json"
         with open(all_path, "w") as f:
             json.dump(list(instrument_map.values()), f, indent=2)
-
         logger.info(f"✅ Saved full NSE instrument list: {len(instrument_map)}")
         counts = {"all": len(instrument_map)}
 
-        # Loop through each index and save subset
         for index_name, csv_url in INDEX_CSV_URLS.items():
             try:
                 res = requests.get(csv_url, headers={"User-Agent": "Mozilla/5.0"})
@@ -63,7 +61,6 @@ def refresh_index_cache():
 
                 with open(DATA_DIR / f"{index_name}.json", "w") as f:
                     json.dump(filtered, f, indent=2)
-
                 logger.info(f"✅ Saved {index_name}.json with {len(filtered)} stocks")
                 counts[index_name] = len(filtered)
 
@@ -76,6 +73,5 @@ def refresh_index_cache():
         logger.error(f"❌ Failed to refresh index cache: {e}")
         return {"status": "failed", "error": str(e)}
 
-# Optional: make callable via CLI
 if __name__ == "__main__":
     print(refresh_index_cache())

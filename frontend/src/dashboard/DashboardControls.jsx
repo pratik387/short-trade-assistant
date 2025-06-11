@@ -22,14 +22,18 @@ export default function DashboardControls({
       >
         📁 Go to Portfolio
       </button>
-      {!kiteLoggedIn && (
-        <button
-          className="border border-gray-400 hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 rounded"
-          onClick={() => (window.location.href = kiteLoginUrl)}
-        >
-          🔑 Login to Kite
-        </button>
-      )}
+      {!kiteLoggedIn && kiteLoginUrl && (
+      <button
+        onClick={() => {
+          console.log("Redirecting to:", kiteLoginUrl);
+          window.location.href = kiteLoginUrl;
+        }}
+        className="border border-gray-400 hover:bg-gray-100 text-gray-800 font-medium py-2 px-4 rounded"
+      >
+        🔑 Login to Kite
+      </button>
+    )}
+
       <label className="flex items-center space-x-1">
         <input
           type="checkbox"

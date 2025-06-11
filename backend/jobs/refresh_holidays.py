@@ -5,6 +5,7 @@ from pathlib import Path
 import logging
 
 logger = logging.getLogger("nse_holiday_fetcher")
+logger.setLevel(logging.INFO)
 
 HOLIDAY_FILE = Path(__file__).resolve().parents[2] / "data" / "nse_holidays.csv"
 HOLIDAY_URL = "https://www.nseindia.com/products-services/equity-market-timings-holidays"
@@ -25,17 +26,19 @@ def download_nse_holidays():
         tables = pd.read_html(str(soup))
         holiday_df = next((df for df in tables if "Date" in df.columns and "Holiday" in df.columns), None)
 
-        if holiday_df is not None:
-            holiday_df["Date"] = pd.to_datetime(holiday_df["Date"], errors="coerce")
-            holiday_df = holiday_df.dropna(subset=["Date"])
-            holiday_df[["Date", "Holiday"]].to_csv(HOLIDAY_FILE, index=False)
-            logger.info(f"✅ NSE holidays saved to {HOLIDAY_FILE}")
-            return {"status": "success", "count": len(holiday_df)}
-        else:
+        if holiday_df is None:
+            logger.error("Holiday table not found in HTML response")
             raise ValueError("Holiday table not found.")
 
+        holiday_df["Date"] = pd.to_datetime(holiday_df["Date"], errors="coerce")
+        holiday_df = holiday_df.dropna(subset=["Date"])
+        holiday_df[["Date", "Holiday"]].to_csv(HOLIDAY_FILE, index=False)
+
+        logger.info(f"✅ NSE holidays saved to {HOLIDAY_FILE} ({len(holiday_df)} entries)")
+        return {"status": "success", "count": len(holiday_df)}
+
     except Exception as e:
-        logger.error(f"❌ Failed to download NSE holidays: {e}")
+        logger.exception("❌ Failed to download NSE holidays")
         return {"status": "failed", "error": str(e)}
 
 if __name__ == "__main__":

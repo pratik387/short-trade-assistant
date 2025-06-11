@@ -8,8 +8,7 @@ import SingleStockChecker from "./SingleStockChecker";
 import SuggestionTable from "./SuggestionTable";
 import SingleStockModal from "./components/SingleStockModal";
 
-// Set the base URL for all axios requests
-axios.defaults.baseURL = "http://129.154.252.182:8000";
+axios.defaults.baseURL = "http://localhost:8000";
 
 export default function Dashboard() {
   const [stocks, setStocks] = useState([]);
@@ -18,10 +17,8 @@ export default function Dashboard() {
     const saved = localStorage.getItem("autoEmail");
     return saved !== null ? JSON.parse(saved) : true;
   });
-  const [kiteLoggedIn, setKiteLoggedIn] = useState(() => {
-    const saved = localStorage.getItem("kiteLoggedIn");
-    return saved === "true";
-  });
+  const [kiteLoggedIn, setKiteLoggedIn] = useState(false);
+  const [sessionValid, setSessionValid] = useState(false);
   const [kiteLoginUrl, setKiteLoginUrl] = useState("");
   const [indexFilter, setIndexFilter] = useState("nifty_50");
   const [tokenExpired, setTokenExpired] = useState(false);
@@ -31,10 +28,6 @@ export default function Dashboard() {
   const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
-
-  useEffect(() => {
-    localStorage.setItem("kiteLoggedIn", kiteLoggedIn ? "true" : "false");
-  }, [kiteLoggedIn]);
 
   useEffect(() => {
     localStorage.setItem("autoEmail", JSON.stringify(autoEmail));
@@ -48,7 +41,6 @@ export default function Dashboard() {
     localStorage.setItem("portfolio", JSON.stringify(portfolio));
   }, [portfolio]);
 
-  // Fetch the Kite login URL from the backend
   useEffect(() => {
     axios
       .get("/api/kite/login-url")
@@ -56,15 +48,18 @@ export default function Dashboard() {
       .catch(console.error);
   }, []);
 
-  // Check Kite session status
   useEffect(() => {
     async function checkSession() {
       try {
         const res = await axios.get("/api/kite/session-status");
+        setSessionValid(res.data.logged_in);
         setKiteLoggedIn(res.data.logged_in);
+        localStorage.setItem("kiteLoggedIn", res.data.logged_in ? "true" : "false");
       } catch (err) {
         console.error("Error checking Kite session:", err);
+        setSessionValid(false);
         setKiteLoggedIn(false);
+        localStorage.removeItem("kiteLoggedIn");
       }
     }
     checkSession();
@@ -73,17 +68,12 @@ export default function Dashboard() {
   const fetchStocks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(
-        `/api/short-term-suggestions?interval=day&index=${indexFilter}`
-      );
+      const res = await axios.get(`/api/short-term-suggestions?interval=day&index=${indexFilter}`);
       setStocks(Array.isArray(res.data) ? res.data : []);
       setTokenExpired(false);
     } catch (err) {
       console.error("Failed to fetch stock suggestions", err);
-      if (
-        err.response?.status === 401 ||
-        err.response?.data?.reason?.includes("token")
-      ) {
+      if (err.response?.status === 401 || err.response?.data?.reason?.includes("token")) {
         setTokenExpired(true);
         setKiteLoggedIn(false);
       }
@@ -103,11 +93,13 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    if (stocks.length === 0) {
+    if (sessionValid && stocks.length === 0) {
       fetchStocks();
     }
-    fetchPortfolio();
-  }, []);
+    if (sessionValid) {
+      fetchPortfolio();
+    }
+  }, [sessionValid]);
 
   const handleTrack = async (stock) => {
     const payload = {
@@ -169,13 +161,14 @@ export default function Dashboard() {
         handleCheckScore={handleCheckScore}
       />
 
-      {showModal && (
+      {showModal && checkResult && (
         <SingleStockModal
           result={checkResult}
           onClose={() => setShowModal(false)}
           onTrack={handleTrack}
         />
       )}
+
 
       <SuggestionTable
         stocks={stocks}

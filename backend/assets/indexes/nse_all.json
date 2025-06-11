@@ -548,10 +548,6 @@
     "instrument_token": 288513
   },
   {
-    "symbol": "GTECJAINX.NS",
-    "instrument_token": 289025
-  },
-  {
     "symbol": "APOLLO.NS",
     "instrument_token": 290305
   },
@@ -606,10 +602,6 @@
   {
     "symbol": "ESG.NS",
     "instrument_token": 307201
-  },
-  {
-    "symbol": "DELTAMAGNT.NS",
-    "instrument_token": 310785
   },
   {
     "symbol": "GRASIM.NS",
@@ -1040,10 +1032,6 @@
     "instrument_token": 558849
   },
   {
-    "symbol": "GENCON.NS",
-    "instrument_token": 560129
-  },
-  {
     "symbol": "MODTHREAD.NS",
     "instrument_token": 573697
   },
@@ -1226,10 +1214,6 @@
   {
     "symbol": "PFIZER.NS",
     "instrument_token": 676609
-  },
-  {
-    "symbol": "DRCSYSTEMS.NS",
-    "instrument_token": 677121
   },
   {
     "symbol": "PCBL.NS",
@@ -1942,6 +1926,10 @@
   {
     "symbol": "INDIANCARD.NS",
     "instrument_token": 1132033
+  },
+  {
+    "symbol": "ELECTHERM.NS",
+    "instrument_token": 1144065
   },
   {
     "symbol": "AARTIDRUGS.NS",
@@ -2692,10 +2680,6 @@
     "instrument_token": 1899521
   },
   {
-    "symbol": "HECPROJECT.NS",
-    "instrument_token": 1900801
-  },
-  {
     "symbol": "HAVISHA.NS",
     "instrument_token": 1908993
   },
@@ -3180,6 +3164,10 @@
     "instrument_token": 2513665
   },
   {
+    "symbol": "WEWIN.NS",
+    "instrument_token": 2524673
+  },
+  {
     "symbol": "GOLDTECH.NS",
     "instrument_token": 2527745
   },
@@ -3576,6 +3564,10 @@
     "instrument_token": 2857473
   },
   {
+    "symbol": "COFFEEDAY.NS",
+    "instrument_token": 2858241
+  },
+  {
     "symbol": "IDFCFIRSTB.NS",
     "instrument_token": 2863105
   },
@@ -3634,10 +3626,6 @@
   {
     "symbol": "IGL.NS",
     "instrument_token": 2883073
-  },
-  {
-    "symbol": "TVSELECT.NS",
-    "instrument_token": 2883841
   },
   {
     "symbol": "DREDGECORP.NS",
@@ -3986,6 +3974,10 @@
   {
     "symbol": "NH.NS",
     "instrument_token": 3031041
+  },
+  {
+    "symbol": "CYBERMEDIA.NS",
+    "instrument_token": 3031553
   },
   {
     "symbol": "SURYALAXMI.NS",
@@ -4464,6 +4456,10 @@
     "instrument_token": 3486721
   },
   {
+    "symbol": "SKYGOLD.NS",
+    "instrument_token": 3489537
+  },
+  {
     "symbol": "JMFINANCIL.NS",
     "instrument_token": 3491073
   },
@@ -4498,10 +4494,6 @@
   {
     "symbol": "ACLGATI.NS",
     "instrument_token": 3504129
-  },
-  {
-    "symbol": "INFOMEDIA.NS",
-    "instrument_token": 3505409
   },
   {
     "symbol": "VISHWARAJ.NS",
@@ -5568,6 +5560,10 @@
     "instrument_token": 4441857
   },
   {
+    "symbol": "GKWLIMITED.NS",
+    "instrument_token": 4443393
+  },
+  {
     "symbol": "UTKARSHBNK.NS",
     "instrument_token": 4443649
   },
@@ -5614,10 +5610,6 @@
   {
     "symbol": "EXPLEOSOL.NS",
     "instrument_token": 4476417
-  },
-  {
-    "symbol": "INCREDIBLE.NS",
-    "instrument_token": 4481793
   },
   {
     "symbol": "RTNPOWER.NS",
@@ -5878,6 +5870,10 @@
   {
     "symbol": "YASHO.NS",
     "instrument_token": 4641537
+  },
+  {
+    "symbol": "DOLPHIN.NS",
+    "instrument_token": 4643585
   },
   {
     "symbol": "EMMBI.NS",
@@ -6214,10 +6210,6 @@
   {
     "symbol": "PLAZACABLE.NS",
     "instrument_token": 4981249
-  },
-  {
-    "symbol": "IITL.NS",
-    "instrument_token": 4998401
   },
   {
     "symbol": "BAJAJCON.NS",
@@ -6718,10 +6710,6 @@
   {
     "symbol": "MEDIASSIST.NS",
     "instrument_token": 5556481
-  },
-  {
-    "symbol": "LASA.NS",
-    "instrument_token": 5558529
   },
   {
     "symbol": "MATRIMONY.NS",
@@ -7284,6 +7272,10 @@
     "instrument_token": 6466049
   },
   {
+    "symbol": "TOLINS.NS",
+    "instrument_token": 6467073
+  },
+  {
     "symbol": "BAJAJHFL.NS",
     "instrument_token": 6469121
   },
@@ -7590,6 +7582,10 @@
   {
     "symbol": "VENTIVE.NS",
     "instrument_token": 7384833
+  },
+  {
+    "symbol": "PROZONER.NS",
+    "instrument_token": 7387905
   },
   {
     "symbol": "CARRARO.NS",
@@ -7934,5 +7930,9 @@
   {
     "symbol": "ATHERENERG.NS",
     "instrument_token": 193957121
+  },
+  {
+    "symbol": "BORANA.NS",
+    "instrument_token": 194027265
   }
 ]

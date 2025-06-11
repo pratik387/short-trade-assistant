@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 
 // All API calls go to localhost:8000 for now
-axios.defaults.baseURL = "http://129.154.252.182:8000";
+//axios.defaults.baseURL = "http://129.154.252.182:8000";
+axios.defaults.baseURL = "http://localhost:8000";
 
 export default function Portfolio() {
   const [portfolio, setPortfolio] = useState([]);
