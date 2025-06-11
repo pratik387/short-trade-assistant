@@ -1,6 +1,5 @@
 import logging
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 from exceptions.exceptions import InvalidTokenException
 
 from services.suggestion_logic import (

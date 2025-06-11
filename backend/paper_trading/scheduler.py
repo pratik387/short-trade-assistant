@@ -19,31 +19,31 @@ for hour in [10, 14]:
         replace_existing=True
     )
 
-# def manage_exit_job():
-#     """Check market status every 10 min and manage the exit job."""
-#     if is_market_active():
-#         if not scheduler.get_job(exit_job_id):
-#             logger.info("📈 Market active. Scheduling exit job.")
-#             scheduler.add_job(
-#                 func=check_exit_conditions,
-#                 trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata", **MARKET_HOURS),
-#                 id=exit_job_id,
-#                 name="Evaluate exit conditions",
-#                 replace_existing=True
-#             )
-#     else:
-#         if scheduler.get_job(exit_job_id):
-#             logger.info("📉 Market inactive. Removing exit job.")
-#             scheduler.remove_job(exit_job_id)
+def manage_exit_job():
+    """Check market status every 10 min and manage the exit job."""
+    if is_market_active():
+        if not scheduler.get_job(exit_job_id):
+            logger.info("📈 Market active. Scheduling exit job.")
+            scheduler.add_job(
+                func=check_exit_conditions,
+                trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata", **MARKET_HOURS),
+                id=exit_job_id,
+                name="Evaluate exit conditions",
+                replace_existing=True
+            )
+    else:
+        if scheduler.get_job(exit_job_id):
+            logger.info("📉 Market inactive. Removing exit job.")
+            scheduler.remove_job(exit_job_id)
 
 # Check every 10 minutes to dynamically manage exit job
-# scheduler.add_job(
-#     func=manage_exit_job,
-#     trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata"),
-#     id="manage_exit_scheduler",
-#     name="Manage exit job based on market status",
-#     replace_existing=True
-# )
+scheduler.add_job(
+    func=manage_exit_job,
+    trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata"),
+    id="manage_exit_scheduler",
+    name="Manage exit job based on market status",
+    replace_existing=True
+)
 
 def start():
     if not scheduler.running:
