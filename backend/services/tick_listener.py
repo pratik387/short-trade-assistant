@@ -1,5 +1,7 @@
 import threading
 import logging
+import json
+from pathlib import Path
 from kiteconnect import KiteTicker
 from config.env_setup import env
 from db.tinydb.client import get_table
@@ -23,12 +25,11 @@ def get_portfolio_tokens():
     Retrieve all instrument tokens from the TinyDB portfolio (i.e., currently bought stocks).
     """
     try:
-        entries = get_table.all()
+        entries = get_table("portfolio").all()
         return [e["instrument_token"] for e in entries if e.get("instrument_token")]
     except Exception as e:
         logger.exception(f"Failed to load tokens from portfolio_db: {e}")
         return []
-
 
 def update_subscriptions():
     """
@@ -48,7 +49,7 @@ def update_subscriptions():
 
     tokens_subscribed = current
 
-@ticker.on_connect
+# Define callback handlers
 def _on_connect(ws, response):
     """Subscribe when connected"""
     # If connecting during non-market hours, disconnect immediately
@@ -59,7 +60,6 @@ def _on_connect(ws, response):
     update_subscriptions()
     logger.info("Tick listener connected and subscriptions updated.")
 
-@ticker.on_ticks
 def _on_ticks(ws, ticks):
     """
     On each tick, run exit cycle for subscribed tokens.
@@ -72,10 +72,13 @@ def _on_ticks(ws, ticks):
             except Exception as e:
                 logger.exception(f"Error in exit cycle for tick {tick}: {e}")
 
-@ticker.on_close
 def _on_close(ws, code, reason):
     logger.info(f"Tick listener disconnected: {code} - {reason}")
 
+# Register handlers
+ticker.on_connect = _on_connect
+ticker.on_ticks   = _on_ticks
+ticker.on_close   = _on_close
 
 def start_tick_listener():
     """
@@ -92,7 +95,6 @@ def start_tick_listener():
     )
     _ticker_thread.start()
     logger.info("Tick listener started.")
-
 
 def stop_tick_listener():
     """

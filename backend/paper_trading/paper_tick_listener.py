@@ -28,11 +28,14 @@ def get_paper_portfolio_tokens():
     try:
         with open(MOCK_PORTFOLIO_FILE, "r", encoding="utf-8") as f:
             portfolio = json.load(f)
-        return [entry.get("instrument_token") for entry in portfolio if entry.get("instrument_token")]
+        return [
+            entry.get("instrument_token")
+            for entry in portfolio
+            if entry.get("instrument_token")
+        ]
     except Exception as e:
         logger.exception(f"Paper: error reading mock_portfolio.json: {e}")
         return []
-
 
 def update_subscriptions():
     """
@@ -52,10 +55,10 @@ def update_subscriptions():
 
     tokens_subscribed = current
 
-@ticker.on_connect
+# Define callback handlers
+
 def _on_connect(ws, response):
     """Subscribe when connected"""
-    # If it's a holiday/weekend, disconnect immediately
     if not is_market_active():
         logger.info("Market not active at connect; closing ticker.")
         ws.close()
@@ -63,7 +66,6 @@ def _on_connect(ws, response):
     update_subscriptions()
     logger.info("Paper tick listener connected and subscriptions updated.")
 
-@ticker.on_ticks
 def _on_ticks(ws, ticks):
     """
     On each tick, run the paper-trading cycle for subscribed tokens.
@@ -78,10 +80,13 @@ def _on_ticks(ws, ticks):
             except Exception as e:
                 logger.exception(f"Paper-trade error on tick {tick}: {e}")
 
-@ticker.on_close
 def _on_close(ws, code, reason):
     logger.info(f"Paper tick listener disconnected: {code} - {reason}")
 
+# Register handlers on the ticker
+ticker.on_connect = _on_connect
+ticker.on_ticks   = _on_ticks
+ticker.on_close   = _on_close
 
 def start_paper_tick_listener():
     """
@@ -98,7 +103,6 @@ def start_paper_tick_listener():
     )
     _ticker_thread.start()
     logger.info("Paper tick listener started.")
-
 
 def stop_paper_tick_listener():
     """
