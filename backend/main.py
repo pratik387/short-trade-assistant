@@ -25,7 +25,7 @@ from routes.notification_router import router as notify_router
 from schedulers.scheduler import start as start_scheduler, shutdown as shutdown_scheduler
 # Paper trading scheduler (testing)
 from paper_trading.scheduler import start as start_paper_scheduler, shutdown as stop_paper_scheduler
-from paper_trading.paper_tick_listener import start_tick_listener, stop_tick_listener
+from paper_trading.paper_tick_listener import start_paper_tick_listener, stop_paper_tick_listener
 
 app = FastAPI(
     title="Short Trade Assistant",
@@ -54,7 +54,7 @@ app.include_router(notify_router)
 async def start_background_scheduler():
     logger.info("Starting schedulers...")
     start_scheduler()
-    start_tick_listener()
+    start_paper_tick_listener()
     # TODO: remove after testing
     start_paper_scheduler()
     
@@ -64,6 +64,6 @@ async def start_background_scheduler():
 async def on_shutdown():
     logger.info("Shutting down schedulers...")
     shutdown_scheduler()
-    stop_tick_listener()
+    stop_paper_tick_listener()
     # TODO: remove after testing
     stop_paper_scheduler()
