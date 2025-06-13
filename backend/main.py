@@ -18,11 +18,14 @@ from routes.suggestion_router import router as suggestion_router
 from routes.mock_pnl_router import router as pnl_router
 from routes.cache_router import router as cache_router
 from routes.notification_router import router as notify_router
+#from routes.webhook_exit_router import router as webhook_router
+#from services.tick_listener import start_tick_listener, stop_tick_listener
 
 # Schedulers
 from schedulers.scheduler import start as start_scheduler, shutdown as shutdown_scheduler
 # Paper trading scheduler (testing)
 from paper_trading.scheduler import start as start_paper_scheduler, shutdown as stop_paper_scheduler
+from paper_trading.paper_tick_listener import start_tick_listener, stop_tick_listener
 
 app = FastAPI(
     title="Short Trade Assistant",
@@ -51,13 +54,16 @@ app.include_router(notify_router)
 async def start_background_scheduler():
     logger.info("Starting schedulers...")
     start_scheduler()
+    start_tick_listener()
     # TODO: remove after testing
     start_paper_scheduler()
+    
 
 # Shutdown event: stop schedulers
 @app.on_event("shutdown")
 async def on_shutdown():
     logger.info("Shutting down schedulers...")
     shutdown_scheduler()
+    stop_tick_listener()
     # TODO: remove after testing
     stop_paper_scheduler()

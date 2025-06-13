@@ -64,16 +64,6 @@ scheduler.add_job(
     coalesce=True,
 )
 
-# 3) Exit criteria evaluation every 5 min IST
-scheduler.add_job(
-    func=lambda: safe_job_runner(run_exit_checks, "exit_checks"),
-    trigger=CronTrigger(minute="*/5", timezone="Asia/Kolkata"),
-    id="exit_checks",
-    name="Periodic exit criteria evaluation",
-    replace_existing=True,
-    misfire_grace_time=60,
-    coalesce=False,           # run each missed occurrence
-)
 
 # 4) Morning SMS reminder at 08:30 AM IST
 scheduler.add_job(

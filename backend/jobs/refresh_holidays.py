@@ -7,7 +7,7 @@ logger = logging.getLogger("nse_holiday_fetcher")
 logger.setLevel(logging.INFO)
 
 # File path for storing downloaded holiday calendar as JSON
-HOLIDAY_FILE = Path(__file__).resolve().parents[2] / "data" / "nse_holidays.json"
+HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "assets" / "nse_holidays.json"
 # NSE API endpoint returning JSON holiday master
 NSE_HOLIDAY_API = "https://www.nseindia.com/api/holiday-master?type=trading"
 

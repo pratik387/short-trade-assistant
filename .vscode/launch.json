@@ -18,6 +18,16 @@
                 "PYTHONPATH": "${workspaceFolder}/backend"
             }
 
+        },
+        {
+            "name": "Run Frontend (npm start)",
+            "type": "node",
+            "request": "launch",
+            "runtimeExecutable": "npm.cmd",
+            "runtimeArgs": ["start"],
+            "cwd": "${workspaceFolder}/frontend",
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen"
         }
     ]
 }

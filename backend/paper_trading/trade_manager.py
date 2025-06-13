@@ -1,6 +1,3 @@
-import pandas as pd
-from pathlib import Path
-import json
 from paper_trading.capital_tracker import get_available_capital, update_capital
 from paper_trading.portfolio import add_mock_stock, get_open_positions, mark_stock_sold
 from paper_trading.logger import log_event
@@ -9,11 +6,10 @@ from services.exit_service import ExitService
 from brokers.kite.kite_exit_data_provider import KiteExitDataProvider
 from db.tinydb.client import get_table
 from services.notification.email_alert import send_exit_email
-from jobs.refresh_holidays import download_nse_holidays
+from util.util import is_market_active
 
 TARGET_PER_TRADE = 20000
 MAX_TRADES_PER_SESSION = 5
-HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "assets" / "nse_holidays.csv"
 
 
 def run_paper_trading_cycle():
@@ -99,64 +95,3 @@ def check_exit_conditions():
 
     except Exception as e:
         log_event(f"❌ Error in exit check routine: {e}")
-
-
-def is_market_active(date=None):
-    """
-    Check if the market is active for a given date/time.
-    Loads holiday dates from the JSON file and applies weekend and session checks.
-    Returns True if open, False if closed.
-    """
-    try:
-        now = pd.Timestamp.now(tz="Asia/Kolkata")
-        # Normalize date parameter or use today's date
-        if date is None:
-            check_date = now.normalize()
-        else:
-            check_date = pd.to_datetime(date).normalize()
-
-        # Weekend check (Saturday=5, Sunday=6)
-        if check_date.weekday() >= 5:
-            log_event(f"⛔ {check_date.date()} is weekend; market closed.")
-            return False
-
-        # Load holiday entries
-        try:
-            with open(HOLIDAY_FILE, "r", encoding="utf-8") as f:
-                items = json.load(f)
-        except FileNotFoundError:
-            log_event(f"⚠️ Holidays file not found at {HOLIDAY_FILE!s}. Downloading fresh copy…")
-            res = download_nse_holidays()
-            if res.get("status") == "success":
-                with open(HOLIDAY_FILE, "r", encoding="utf-8") as f:
-                    items = json.load(f)
-            else:
-                log_event("❌ Could not fetch holidays; assuming market is open.")
-                return True
-
-        # Parse holiday dates
-        dates = []
-        for item in items:
-            # support both keys
-            raw = item.get("tradingDate") or item.get("holidayDate")
-            try:
-                dt = pd.to_datetime(raw, format="%d-%b-%Y", errors="coerce").normalize()
-                if not pd.isna(dt):
-                    dates.append(dt)
-            except Exception:
-                continue
-
-        if check_date in dates:
-            log_event(f"⛔ {check_date.date()} is a market holiday.")
-            return False
-
-        # Market session hours: 9:15am – 3:30pm IST
-        open_time = now.replace(hour=9, minute=15, second=0)
-        close_time = now.replace(hour=15, minute=30, second=0)
-        is_open = open_time <= now <= close_time
-        log_event(f"Market status at {now.time()}: {'Open' if is_open else 'Closed'}")
-        return is_open
-
-    except Exception as e:
-        log_event(f"⚠️ Could not determine market status: {e}")
-        return False
