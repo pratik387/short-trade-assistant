@@ -1,6 +1,6 @@
 import logging
 from brokers.kite.kite_data_provider import KiteDataProvider
-from backend.config.filters_setup import load_filters
+from config.filters_setup import load_filters
 from services.entry_service import EntryService
 from services.technical_analysis import prepare_indicators, calculate_score
 from exceptions.exceptions import InvalidTokenException

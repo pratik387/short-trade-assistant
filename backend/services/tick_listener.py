@@ -2,7 +2,7 @@ import threading
 import logging
 from kiteconnect import KiteTicker
 from config.env_setup import env
-from backend.db.tinydb.client import get_table
+from db.tinydb.client import get_table
 from exit_job_runner import run_exit_checks
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
