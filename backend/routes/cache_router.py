@@ -3,6 +3,6 @@ from jobs.refresh_instrument_cache import refresh_index_cache
 
 router = APIRouter()
 
-@router.post("/api/refresh-index-cache")
+@router.post("/refresh-index-cache")
 def refresh_index_cache_route():
     return refresh_index_cache()

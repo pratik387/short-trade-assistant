@@ -29,5 +29,6 @@ class EnvConfig:
     TWILIO_PHONE       = os.getenv("TWILIO_PHONE")
     YOUR_PHONE         = os.getenv("YOUR_PHONE")
     FRONTEND_URL       = os.getenv("FRONTEND_URL")
+    TRADE_MODE         = os.getenv("TRADE_MODE", "mock").lower()
 
 env = EnvConfig()

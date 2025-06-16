@@ -1,40 +1,43 @@
 import logging
-from brokers.kite.kite_data_provider import KiteDataProvider
 from config.filters_setup import load_filters
 from services.entry_service import EntryService
-from services.technical_analysis import prepare_indicators, calculate_score
+from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
 from exceptions.exceptions import InvalidTokenException
+from brokers.kite.kite_broker import KiteBroker
 
 logger = logging.getLogger("suggestion_logic")
-logger.setLevel(logging.INFO)
+
+def get_filtered_stock_suggestions(interval="day", index="nifty_50"):
+    try:
+        config = load_filters()
+        data_provider = KiteBroker()
+        entry_service = EntryService(data_provider, config, index)
+        return entry_service.get_suggestions()
+    except InvalidTokenException:
+        raise
+    except Exception as e:
+        logger.exception("Failed to fetch filtered stock suggestions")
+        return []
+
 
 class SuggestionLogic:
-    def __init__(self, interval="day", index="all"):
+    def __init__(self, interval="day"):
         self.interval = interval
-        self.index = index
-        self.data_provider = KiteDataProvider(interval=interval, index=index)
         self.config = load_filters()
+        self.data_provider = KiteBroker()
         self.weights = self.config.get("score_weights", {})
         self.min_price = self.config.get("min_price", 50)
         self.min_volume = self.config.get("min_volume", 100000)
 
     def score_single_stock(self, symbol: str):
-        symbol = symbol.upper().strip()
-        if not symbol.endswith(".NS"):
-            symbol += ".NS"
-
-        logger.info("Scoring single stock: %s", symbol)
         try:
-            token = self.data_provider.get_token_for_symbol(symbol)
-            if not token:
-                raise ValueError(f"Instrument token not found for {symbol}")
-
-            df = self.data_provider.fetch_ohlc({"symbol": symbol, "instrument_token": token})
+            enriched_symbol = f"{symbol.upper()}.NS"
+            df = self.data_provider.fetch_candles(enriched_symbol, self.interval, 180)
             if df is None or df.empty:
-                raise ValueError(f"No data available for {symbol}")
+                return None
 
-            df = prepare_indicators(df)
-            latest = df.iloc[-1]
+            enriched = prepare_indicators(df)
+            latest = enriched.iloc[-1]
 
             if latest["close"] <= self.min_price or latest["volume"] < self.min_volume:
                 logger.info("%s skipped due to low price or volume", symbol)
@@ -45,7 +48,7 @@ class SuggestionLogic:
                     "reason": "Low price or volume"
                 }
 
-            avg_rsi = df["RSI"].rolling(14).mean().iloc[-1]
+            avg_rsi = enriched["RSI"].rolling(14).mean().iloc[-1]
             score = calculate_score(latest, self.weights, avg_rsi, candle_match=False)
 
             suggestion = "buy" if score >= 10 else "avoid"
@@ -58,26 +61,8 @@ class SuggestionLogic:
                 "close": round(latest["close"], 2),
                 "volume": int(latest["volume"])
             }
-
         except InvalidTokenException:
-            logger.error("Token expired while scoring %s", symbol)
             raise
         except Exception as e:
-            logger.exception("Error scoring stock %s: %s", symbol, e)
-            raise
-
-
-def get_filtered_stock_suggestions(interval: str = "day", index: str = "nifty_50") -> list:
-    logger.info("Fetching filtered stock suggestions for interval=%s, index=%s", interval, index)
-    try:
-        provider = KiteDataProvider(interval=interval, index=index)
-        config = load_filters()
-        service = EntryService(data_provider=provider, config=config)
-        return service.get_suggestions()
-
-    except InvalidTokenException:
-        logger.error("Token expired during filtered suggestion fetch")
-        raise
-    except Exception as e:
-        logger.exception("Unexpected error during get_filtered_stock_suggestions: %s", e)
-        raise
+            logger.exception(f"Failed to score stock {symbol}: {e}")
+            return None

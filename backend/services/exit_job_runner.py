@@ -3,15 +3,15 @@ from pathlib import Path
 from datetime import datetime
 
 from services.exit_service import ExitService
-from brokers.kite.kite_exit_data_provider import KiteExitDataProvider
 from db.tinydb.client import get_table
 from config.filters_setup import load_filters
 from services.notification.email_alert import send_exit_email
 from exceptions.exceptions import InvalidTokenException
+from trading.trade_executor import TradeExecutor
+from brokers.kite.kite_broker import KiteBroker
 
 logger = logging.getLogger("exit_job")
 logger.setLevel(logging.INFO)
-
 
 def run_exit_checks(ticks=None):
     """
@@ -27,8 +27,11 @@ def run_exit_checks(ticks=None):
         # Get portfolio table
         portfolio_db = get_table("portfolio")
 
-        # Data provider for exit-specific data
-        data_provider = KiteExitDataProvider(interval="day", index="nifty_50")
+        # Data provider (broker used for fetching exit data)
+        data_provider = KiteBroker()
+        # Setup TradeExecutor with real broker
+        broker = KiteBroker()
+        trade_executor = TradeExecutor(broker=broker)
 
         # Notifier: email alerts
         def notifier(symbol: str, price: float):
@@ -53,13 +56,13 @@ def run_exit_checks(ticks=None):
             config=config,
             portfolio_db=portfolio_db,
             data_provider=data_provider,
+            trade_executor=trade_executor,
             notifier=notifier,
             blocked_logger=blocked_logger
         )
 
         # Execute exit checks for ticks or full portfolio
         if ticks:
-            # Extract symbol names from ticks
             symbols = {tick.get("symbol") for tick in ticks if tick.get("symbol")}
             if symbols:
                 logger.debug(f"Checking exits for symbols from ticks: {symbols}")

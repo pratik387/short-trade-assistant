@@ -1,27 +1,27 @@
 import logging
-from tinydb import TinyDB
 from collections import defaultdict
+from db.tinydb.client import get_table
 
-MOCK_TRADES_PATH = "backend/mock_trades.json"
-MOCK_PNL_PATH = "backend/mock_pnl.json"
+logger = logging.getLogger("trade_analyzer")
+logger.setLevel(logging.INFO)
 
-# Logger setup
-logger = logging.getLogger(__name__)
-
-def analyze_and_store_pnl():
+def analyze_trades():
     try:
-        db_trades = TinyDB(MOCK_TRADES_PATH)
-        db_pnl = TinyDB(MOCK_PNL_PATH)
-        db_pnl.truncate()
+        trades_db = get_table("trades")
+        pnl_db = get_table("pnl")
+        pnl_db.truncate()
 
-        all_trades = db_trades.all()
+        all_trades = trades_db.all()
         summary = defaultdict(lambda: {"buy": [], "sell": []})
 
         for trade in all_trades:
-            summary[trade["symbol"]][trade["action"].lower()].append(trade)
+            action = trade.get("action", "").lower()
+            if action in ["buy", "sell"]:
+                summary[trade["symbol"]][action].append(trade)
 
-        for symbol, data in summary.items():
-            buys, sells = data["buy"], data["sell"]
+        for symbol, grouped in summary.items():
+            buys = grouped["buy"]
+            sells = grouped["sell"]
             if not buys or not sells:
                 continue
 
@@ -38,7 +38,7 @@ def analyze_and_store_pnl():
 
             pnl = (avg_sell - avg_buy) * matched_qty
 
-            db_pnl.insert({
+            pnl_db.insert({
                 "symbol": symbol,
                 "avg_buy_price": round(avg_buy, 2),
                 "avg_sell_price": round(avg_sell, 2),
@@ -49,8 +49,4 @@ def analyze_and_store_pnl():
         logger.info("✅ P&L analysis completed and stored.")
 
     except Exception as e:
-        logger.exception("❌ Failed to analyze and store P&L")
-        raise
-
-if __name__ == "__main__":
-    analyze_and_store_pnl()
+        logger.exception("❌ Failed to analyze trades")

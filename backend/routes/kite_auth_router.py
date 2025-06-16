@@ -1,13 +1,13 @@
 from fastapi import Request, APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 from brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE, KITE_REDIRECT_URI, KITE_API_KEY
+from schedulers.tick_listener import start_tick_listener
 from exceptions.exceptions import KiteException
 import os
 import logging
 from pathlib import Path
 
-# Configure logger once (e.g. in your main app)
-logger = logging.getLogger("kite_auth")
+logger = logging.getLogger("kite_auth_router")
 logger.setLevel(logging.INFO)
 
 # Fallback frontend URL
@@ -31,8 +31,8 @@ async def kite_callback_handler(request: Request):
     except KiteException as e:
         logger.exception("Failed to generate Kite session")
         return RedirectResponse(f"{FRONTEND_URL}/kite-callback?kite_login=failed")
-    except Exception:
-        logger.exception("Unexpected error generating Kite session")
+    except Exception as e:
+        logger.exception("Unexpected error generating Kite session" + {e})
         return RedirectResponse(f"{FRONTEND_URL}/kite-callback?kite_login=failed")
 
     # 2) Persist the token safely
@@ -48,6 +48,7 @@ async def kite_callback_handler(request: Request):
     # 3) Tell the Kite client to use it
     try:
         kite.set_access_token(access_token)
+        start_tick_listener()
     except KiteException:
         logger.exception("Failed to set access_token on Kite client")
         # token is already on disk, but client may be misconfigured
@@ -57,7 +58,7 @@ async def kite_callback_handler(request: Request):
     return RedirectResponse(f"{FRONTEND_URL}/kite-callback?kite_login=success")
 
 
-@kite_router.get("/api/kite/session-status")
+@kite_router.get("/kite/session-status")
 async def check_kite_session():
     try:
         kite.profile()  # this raises if not authenticated
@@ -70,7 +71,7 @@ async def check_kite_session():
         raise HTTPException(status_code=500, detail="Internal error checking session")
 
 
-@kite_router.get("/api/kite/login-url")
+@kite_router.get("/kite/login-url")
 async def get_login_url():
     url = (
         "https://kite.zerodha.com/connect/login?"

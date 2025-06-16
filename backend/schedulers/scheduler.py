@@ -5,7 +5,6 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, JobExecution
 
 from jobs.refresh_instrument_cache import refresh_index_cache
 from jobs.refresh_holidays import download_nse_holidays
-from services.exit_job_runner import run_exit_checks
 from services.notification.sms_service import send_kite_login_sms
 
 # --- Logger setup ---
@@ -42,10 +41,10 @@ scheduler.add_listener(job_listener, EVENT_JOB_EXECUTED | EVENT_JOB_ERROR)
 
 # --- Scheduled jobs ---
 
-# 1) Daily index refresh at 03:15 UTC (if market open)
+# 1) Daily index refresh at 09:00 IST (if market open)
 scheduler.add_job(
     func=lambda: safe_job_runner(refresh_index_cache, "daily_index_refresh"),
-    trigger=CronTrigger(hour=3, minute=15, timezone="UTC"),
+    trigger=CronTrigger(hour=9, minute=0, timezone="Asia/Kolkata"),
     id="daily_index_refresh",
     name="Refresh Index Cache if Market Open",
     replace_existing=True,
@@ -53,10 +52,10 @@ scheduler.add_job(
     coalesce=True,            # collapse overlapping runs
 )
 
-# 2) Annual NSE holiday download: Jan 1 at 03:00 UTC
+# 2) Annual NSE holiday download: Jan 1 at 00:00 IST
 scheduler.add_job(
     func=lambda: safe_job_runner(download_nse_holidays, "annual_holiday_download"),
-    trigger=CronTrigger(month=1, day=1, hour=3, minute=0, timezone="UTC"),
+    trigger=CronTrigger(month=1, day=1, hour=1, minute=0, timezone="Asia/Kolkata"),
     id="annual_holiday_download",
     name="Download NSE Holiday Calendar",
     replace_existing=True,

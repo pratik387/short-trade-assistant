@@ -13,7 +13,7 @@ logger.setLevel(logging.INFO)
 router = APIRouter()
 
 @router.get(
-    "/api/short-term-suggestions",
+    "/short-term-suggestions",
     summary="Get filtered short-term stock suggestions"
 )
 async def get_suggestions(
@@ -36,7 +36,7 @@ async def get_suggestions(
 
 
 @router.get(
-    "/api/stock-score/{symbol}",
+    "/stock-score/{symbol}",
     summary="Compute score for a single stock"
 )
 async def score_single_stock(
@@ -49,6 +49,8 @@ async def score_single_stock(
         result = logic.score_single_stock(symbol)
         logger.info("Score for %s@%s: %s", symbol, interval, result["score"])
         return result
+    except InvalidTokenException:
+        raise HTTPException(status_code=401, detail="Session expired—please log in again")
     except Exception:
         logger.exception("Unexpected error scoring stock %s", symbol)
         raise HTTPException(

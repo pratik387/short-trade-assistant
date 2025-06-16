@@ -1,13 +1,18 @@
 import logging
 from datetime import datetime
+from util.portfolio_schema import PortfolioStock
+from services.filters.exit_adx_macd_filter import adx_macd_gate
+from services.filters.exit_override_filter import check_overrides
+from exceptions.exceptions import OrderPlacementException
 
 logger = logging.getLogger(__name__)
 
 class ExitService:
-    def __init__(self, config, portfolio_db, data_provider, notifier=None, blocked_logger=None):
+    def __init__(self, config, portfolio_db, data_provider, trade_executor, notifier=None, blocked_logger=None):
         self.config = config
         self.portfolio_db = portfolio_db
         self.data_provider = data_provider
+        self.trade_executor = trade_executor
         self.notifier = notifier
         self.blocked_logger = blocked_logger
 
@@ -32,32 +37,48 @@ class ExitService:
                 actions = self._evaluate_exit(stock, current_price, df)
                 for action in actions:
                     logger.info("%s for %s at price %.2f", action['reason'], stock['symbol'], current_price)
-                    if self.notifier:
-                        self.notifier(stock["symbol"], current_price)
-                    self.portfolio_db.remove(self.portfolio_db.query().symbol == stock["symbol"])
+
+                    try:
+                        self.trade_executor.execute_trade(
+                            symbol=stock["symbol"],
+                            instrument_token=stock.get("instrument_token"),
+                            quantity=action["qty"],
+                            action="sell",
+                            price=current_price,
+                            order_type="MARKET"
+                        )
+                        if self.notifier:
+                            self.notifier(stock["symbol"], current_price)
+                    except OrderPlacementException as e:
+                        logger.warning("Order placement failed for %s: %s", stock["symbol"], str(e))
 
             except Exception as e:
                 logger.exception("Error checking exit for %s: %s", stock.get("symbol", "<unknown>"), e)
 
-    def _evaluate_exit(self, stock, current_price, df):
+    def _evaluate_exit(self, stock_data, current_price, df):
         actions = []
-        buy_price = stock["close"]
+        try:
+            stock = PortfolioStock(**stock_data)
+        except Exception as ve:
+            logger.warning(f"Skipping malformed stock record: {ve}")
+            return []
+
         targets = self.exit_strategy.get("targets", [])
         percentages = self.exit_strategy.get("percentages", [])
         trail_pct = self.exit_strategy.get("trailing_stop_percent", 1.5)
 
-        sold = stock.get("sold_targets", [])
-        quantity = stock.get("quantity", 1)
-        highest = max(stock.get("highest_price", buy_price), current_price)
-        stock["highest_price"] = highest
+        sold = stock_data.get("sold_targets", [])
+        quantity = stock.quantity
+        highest = max(stock_data.get("highest_price", stock.buy_price), current_price)
+        stock_data["highest_price"] = highest
 
-        allow_exit, reason_blocked = self._adx_macd_gate(df)
+        allow_exit, reason_blocked = adx_macd_gate(df, fallback=self.fallback_exit)
         if not allow_exit:
-            allow_exit, override_reason = self._check_overrides(df)
+            allow_exit, override_reason = check_overrides(df, **self.criteria)
             reason_blocked += f" {override_reason}" if override_reason else ""
 
         if not allow_exit:
-            message = f"[{datetime.now().isoformat()}] Exit blocked for {stock['symbol']}: {reason_blocked}"
+            message = f"[{datetime.now().isoformat()}] Exit blocked for {stock.symbol}: {reason_blocked}"
             logger.info(message)
             if self.log_blocked and self.blocked_logger:
                 self.blocked_logger(message)
@@ -66,7 +87,7 @@ class ExitService:
         for i, multiplier in enumerate(targets):
             if i in sold:
                 continue
-            if current_price >= buy_price * multiplier:
+            if current_price >= stock.buy_price * multiplier:
                 qty = int(quantity * percentages[i])
                 actions.append({"qty": qty, "reason": f"Target {multiplier}x hit"})
                 sold.append(i)
@@ -86,36 +107,7 @@ class ExitService:
                 actions.append({"qty": remaining, "reason": f"RSI spike reversal: RSI={rsi_val:.2f}"})
                 sold = list(range(len(targets)))
 
-        stock["sold_targets"] = sold
-        stock["last_checked"] = datetime.now().isoformat()
-        self.portfolio_db.update(stock, self.portfolio_db.query().symbol == stock["symbol"])
+        stock_data["sold_targets"] = sold
+        stock_data["last_checked"] = datetime.now().isoformat()
+        self.portfolio_db.update(stock_data, self.portfolio_db.query().symbol == stock.symbol)
         return actions
-
-    def _adx_macd_gate(self, df):
-        if not self.use_adx_macd:
-            return True, ""
-        adx = df["ADX_14"].iloc[-1] if "ADX_14" in df.columns else None
-        macd = df["MACD"].iloc[-1] if "MACD" in df.columns else None
-        macd_signal = df["MACD_Signal"].iloc[-1] if "MACD_Signal" in df.columns else None
-
-        if None in (adx, macd, macd_signal):
-            return self.fallback_exit, "Missing ADX or MACD values"
-        if adx >= 25 and macd >= macd_signal:
-            return False, f"Strong trend (ADX={adx:.2f}, MACD={macd:.2f} > Signal={macd_signal:.2f})"
-        return True, ""
-
-    def _check_overrides(self, df):
-        reason = ""
-        ma_short = self.criteria.get("ma_short", 20)
-        ma_long = self.criteria.get("ma_long", 50)
-        rsi_lower = self.criteria.get("rsi_lower", 50)
-
-        short_ma = df["close"].rolling(ma_short).mean().iloc[-1]
-        long_ma = df["close"].rolling(ma_long).mean().iloc[-1]
-        rsi = df["RSI"].iloc[-1] if "RSI" in df.columns else None
-
-        if short_ma < long_ma:
-            return True, "MA crossdown override triggered"
-        if rsi and rsi < rsi_lower:
-            return True, f"RSI dropped below {rsi_lower} (current: {rsi:.2f})"
-        return False, ""

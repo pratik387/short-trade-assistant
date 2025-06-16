@@ -7,12 +7,13 @@ logger = logging.getLogger("entry_service")
 logger.setLevel(logging.INFO)
 
 class EntryService:
-    def __init__(self, data_provider, config: dict):
+    def __init__(self, data_provider, config: dict, index: str = "nifty_50"):
         self.data_provider = data_provider
         self.config = config
         self.weights = config.get("score_weights", {})
         self.min_price = config.get("min_price", 50)
         self.min_volume = config.get("min_volume", 100_000)
+        self.index = index
 
     def get_suggestions(self) -> list:
         logger.info(
@@ -24,14 +25,18 @@ class EntryService:
         suggestions = []
         rsi_vals = []
 
-        symbols = self.data_provider.get_symbols() or []
+        symbols = self.data_provider.get_symbols(self.index) or []
         logger.debug("Fetched %d symbols to evaluate", len(symbols))
 
         for item in symbols:
             symbol = item.get("symbol")
             symbol_start = time.perf_counter()
             try:
-                df = self.data_provider.fetch_ohlc(item)
+                df = self.data_provider.fetch_candles(
+                    symbol=symbol,
+                    interval=self.config.get("interval", "day"),
+                    days=self.config.get("lookback_days", 180)
+                )
                 if df is None or df.empty:
                     logger.debug("No data for %s, skipping", symbol)
                     continue
@@ -60,6 +65,7 @@ class EntryService:
 
                 suggestions.append({
                     "symbol": symbol,
+                    "instrument_token": item.get("instrument_token"),
                     "adx": round(float(latest["ADX_14"]), 2),
                     "dmp": round(float(latest["DMP_14"]), 2),
                     "dmn": round(float(latest["DMN_14"]), 2),

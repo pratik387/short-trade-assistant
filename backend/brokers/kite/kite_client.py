@@ -1,20 +1,16 @@
-import os
 import logging
 from pathlib import Path
-from dotenv import load_dotenv
+from config.env_setup import env
 from kiteconnect import KiteConnect
 from exceptions.exceptions import InvalidTokenException
-
-# Load environment
-load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
 
 # Logger setup
 logger = logging.getLogger("kite_client")
 
 # Env credentials
-KITE_API_KEY = os.getenv("KITE_API_KEY")
-KITE_API_SECRET = os.getenv("KITE_API_SECRET")
-KITE_REDIRECT_URI = os.getenv("KITE_REDIRECT_URI")
+KITE_API_KEY = env.KITE_API_KEY
+KITE_API_SECRET = env.KITE_API_SECRET
+KITE_REDIRECT_URI = env.KITE_REDIRECT_URI
 
 # Token file
 TOKEN_FILE = Path(__file__).resolve().parents[2] / "kite_token.txt"

@@ -104,10 +104,13 @@ export default function Dashboard() {
   const handleTrack = async (stock) => {
     const payload = {
       symbol: stock.symbol,
-      close: Number(stock.close),
+      instrument_token: stock.instrument_token,  
+      buy_price: Number(stock.close),           
       quantity: 100,
+      buy_time: new Date().toISOString(),
     };
     try {
+      console.log(payload)
       await axios.post("/api/portfolio", payload);
       setPortfolio((prev) => [...prev, stock.symbol]);
     } catch (err) {
