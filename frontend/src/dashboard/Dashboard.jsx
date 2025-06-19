@@ -4,9 +4,8 @@ import axios from "axios";
 
 import DashboardControls from "./DashboardControls";
 import LoadingOverlay from "./LoadingOverlay";
-import SingleStockChecker from "./SingleStockChecker";
 import SuggestionTable from "./SuggestionTable";
-import SingleStockModal from "./components/SingleStockModal";
+import UnifiedStockChecker from "./StockAnalysisWrapper";
 
 axios.defaults.baseURL = "http://localhost:8000";
 
@@ -23,9 +22,6 @@ export default function Dashboard() {
   const [indexFilter, setIndexFilter] = useState("nifty_50");
   const [tokenExpired, setTokenExpired] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checkSymbol, setCheckSymbol] = useState("");
-  const [checkResult, setCheckResult] = useState(null);
-  const [showModal, setShowModal] = useState(false);
 
   const navigate = useNavigate();
 
@@ -104,29 +100,17 @@ export default function Dashboard() {
   const handleTrack = async (stock) => {
     const payload = {
       symbol: stock.symbol,
-      instrument_token: stock.instrument_token,  
-      buy_price: Number(stock.close),           
+      instrument_token: stock.instrument_token,
+      buy_price: Number(stock.close),
       quantity: 100,
       buy_time: new Date().toISOString(),
     };
     try {
-      console.log(payload)
       await axios.post("/api/portfolio", payload);
       setPortfolio((prev) => [...prev, stock.symbol]);
     } catch (err) {
       console.error("Failed to add to portfolio", err);
       alert("Unable to add to portfolio. Please check console for details.");
-    }
-  };
-
-  const handleCheckScore = async () => {
-    try {
-      const res = await axios.get(`/api/stock-score/${checkSymbol}`);
-      setCheckResult(res.data);
-      setShowModal(true);
-    } catch (err) {
-      setCheckResult({ error: "Could not fetch score." });
-      setShowModal(true);
     }
   };
 
@@ -157,21 +141,7 @@ export default function Dashboard() {
         handleIndexChange={(e) => setIndexFilter(e.target.value)}
       />
 
-      <SingleStockChecker
-        checkSymbol={checkSymbol}
-        setCheckSymbol={setCheckSymbol}
-        checkResult={checkResult}
-        handleCheckScore={handleCheckScore}
-      />
-
-      {showModal && checkResult && (
-        <SingleStockModal
-          result={checkResult}
-          onClose={() => setShowModal(false)}
-          onTrack={handleTrack}
-        />
-      )}
-
+      <UnifiedStockChecker />
 
       <SuggestionTable
         stocks={stocks}

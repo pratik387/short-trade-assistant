@@ -1,9 +1,8 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from util.portfolio_schema import PortfolioStock
-from services.filters.exit_adx_macd_filter import adx_macd_gate
-from services.filters.exit_override_filter import check_overrides
 from exceptions.exceptions import OrderPlacementException
+from services.technical_analysis_exit import prepare_exit_indicators, apply_exit_filters
 
 logger = logging.getLogger(__name__)
 
@@ -23,37 +22,54 @@ class ExitService:
         self.fallback_exit = self.exit_strategy.get("fallback_exit_if_data_missing", True)
         self.log_blocked = self.exit_strategy.get("log_blocked_exits", True)
 
-    def check_exits(self):
-        logger.info("Running check_exits on portfolio")
-        records = self.portfolio_db.all()
-        for stock in records:
-            try:
-                df = self.data_provider.fetch_exit_data(stock)
-                if df is None or df.empty:
-                    logger.warning("No exit data for %s", stock['symbol'])
-                    continue
 
-                current_price = df["close"].iloc[-1]
-                actions = self._evaluate_exit(stock, current_price, df)
-                for action in actions:
-                    logger.info("%s for %s at price %.2f", action['reason'], stock['symbol'], current_price)
+    def _apply_exit_filters(self, df, entry_price: float, entry_time: datetime) -> tuple[bool, list[str]]:
+        return apply_exit_filters(df, entry_price, entry_time, self.criteria, self.fallback_exit)
 
-                    try:
-                        self.trade_executor.execute_trade(
-                            symbol=stock["symbol"],
-                            instrument_token=stock.get("instrument_token"),
-                            quantity=action["qty"],
-                            action="sell",
-                            price=current_price,
-                            order_type="MARKET"
-                        )
-                        if self.notifier:
-                            self.notifier(stock["symbol"], current_price)
-                    except OrderPlacementException as e:
-                        logger.warning("Order placement failed for %s: %s", stock["symbol"], str(e))
+    def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime) -> dict:
+        df = self.data_provider.fetch_candles(symbol=symbol, interval="day", days=30)
+        df = prepare_exit_indicators(df)
 
-            except Exception as e:
-                logger.exception("Error checking exit for %s: %s", stock.get("symbol", "<unknown>"), e)
+        current_price = df["close"].iloc[-1]
+        pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
+        days_held = (datetime.now(timezone.utc) - entry_time).days
+
+        allow_exit, reasons = self._apply_exit_filters(df, entry_price, entry_time)
+
+        recommendation = "EXIT" if allow_exit else "HOLD"
+
+        return {
+            "symbol": symbol,
+            "entry_price": entry_price,
+            "current_price": current_price,
+            "pnl_percent": pnl_percent,
+            "days_held": days_held,
+            "recommendation": recommendation,
+            "exit_reasons": reasons
+        }
+
+    def check_exit_for_symbol(self, symbol: str, entry_price: float, entry_time: datetime):
+        enriched_symbol = f"{symbol.upper()}.NS"
+        df = self.data_provider.fetch_candles(symbol=enriched_symbol, interval="day", days=30)
+        if df is None or df.empty:
+            return {"status": "No data available", "symbol": symbol}
+
+        df = prepare_exit_indicators(df)
+        current_price = df["close"].iloc[-1]
+        pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
+        days_held = (datetime.now(timezone.utc) - entry_time).days
+
+        allow_exit, reasons = self._apply_exit_filters(df, entry_price, entry_time)
+
+        return {
+            "symbol": symbol,
+            "entry_price": entry_price,
+            "current_price": current_price,
+            "pnl_percent": pnl_percent,
+            "days_held": days_held,
+            "recommendation": "EXIT" if allow_exit else "HOLD",
+            "exit_reasons": reasons
+        }
 
     def _evaluate_exit(self, stock_data, current_price, df):
         actions = []
@@ -72,13 +88,10 @@ class ExitService:
         highest = max(stock_data.get("highest_price", stock.buy_price), current_price)
         stock_data["highest_price"] = highest
 
-        allow_exit, reason_blocked = adx_macd_gate(df, fallback=self.fallback_exit)
-        if not allow_exit:
-            allow_exit, override_reason = check_overrides(df, **self.criteria)
-            reason_blocked += f" {override_reason}" if override_reason else ""
+        allow_exit, reason_blocked = self._apply_exit_filters(df, stock.buy_price, stock.buy_time)
 
         if not allow_exit:
-            message = f"[{datetime.now().isoformat()}] Exit blocked for {stock.symbol}: {reason_blocked}"
+            message = f"[{datetime.now().isoformat()}] Exit blocked for {stock.symbol}: {'; '.join(reason_blocked)}"
             logger.info(message)
             if self.log_blocked and self.blocked_logger:
                 self.blocked_logger(message)
@@ -111,3 +124,36 @@ class ExitService:
         stock_data["last_checked"] = datetime.now().isoformat()
         self.portfolio_db.update(stock_data, self.portfolio_db.query().symbol == stock.symbol)
         return actions
+
+    def check_exits(self):
+        logger.info("Running check_exits on portfolio")
+        records = self.portfolio_db.all()
+        for stock in records:
+            try:
+                df = self.data_provider.fetch_candles(symbol=stock["symbol"], interval="day", days=30)
+                df = prepare_exit_indicators(df)
+                if df is None or df.empty:
+                    logger.warning("No exit data for %s", stock['symbol'])
+                    continue
+
+                current_price = df["close"].iloc[-1]
+                actions = self._evaluate_exit(stock, current_price, df)
+                for action in actions:
+                    logger.info("%s for %s at price %.2f", action['reason'], stock['symbol'], current_price)
+
+                    try:
+                        self.trade_executor.execute_trade(
+                            symbol=stock["symbol"],
+                            instrument_token=stock.get("instrument_token"),
+                            quantity=action["qty"],
+                            action="sell",
+                            price=current_price,
+                            order_type="MARKET"
+                        )
+                        if self.notifier:
+                            self.notifier(stock["symbol"], current_price)
+                    except OrderPlacementException as e:
+                        logger.warning("Order placement failed for %s: %s", stock["symbol"], str(e))
+
+            except Exception as e:
+                logger.exception("Error checking exit for %s: %s", stock.get("symbol", "<unknown>"), e)

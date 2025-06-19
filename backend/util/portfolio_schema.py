@@ -3,7 +3,7 @@ from typing import Optional
 
 class PortfolioStock(BaseModel):
     symbol: str
-    instrument_token: int
+    instrument_token: Optional[int] = None
     buy_price: float
     quantity: int
     status: str = Field(default="open")

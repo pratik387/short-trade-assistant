@@ -61,14 +61,7 @@ def run_exit_checks(ticks=None):
             blocked_logger=blocked_logger
         )
 
-        # Execute exit checks for ticks or full portfolio
-        if ticks:
-            symbols = {tick.get("symbol") for tick in ticks if tick.get("symbol")}
-            if symbols:
-                logger.debug(f"Checking exits for symbols from ticks: {symbols}")
-                service.check_exits(symbols=list(symbols))
-        else:
-            service.check_exits()
+        service.check_exits()
 
         logger.info("✅ Exit check completed")
 

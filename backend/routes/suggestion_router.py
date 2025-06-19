@@ -1,6 +1,14 @@
 import logging
 from fastapi import APIRouter, HTTPException, Query
 from exceptions.exceptions import InvalidTokenException
+from pydantic import BaseModel
+from datetime import datetime
+from services.exit_service import ExitService
+from trading.trade_executor import TradeExecutor
+from brokers.kite.kite_broker import KiteBroker
+from db.tinydb.client import get_table
+from config.filters_setup import load_filters
+from services.notification.email_alert import send_exit_email
 
 from services.suggestion_logic import (
     get_filtered_stock_suggestions,
@@ -58,3 +66,46 @@ async def score_single_stock(
             detail="Internal error while scoring stock"
         )
 
+
+class ExitCheckRequest(BaseModel):
+    symbol: str
+    entry_price: float
+    entry_time: datetime
+
+# Integrated into suggestion_router
+@router.post("/check-exit")
+def check_exit(request: ExitCheckRequest):
+    try:
+        config = load_filters()
+        portfolio_db = get_table("portfolio")
+        broker = KiteBroker()
+        data_provider = broker
+        trade_executor = TradeExecutor(broker=broker)
+
+        def notifier(symbol: str, price: float):
+            try:
+                send_exit_email(symbol, price)
+            except Exception as e:
+                print(f"❌ Failed to send email: {e}")
+
+        def blocked_logger(message: str):
+            print(f"[BLOCKED] {message}")
+
+        service = ExitService(
+            config=config,
+            portfolio_db=portfolio_db,
+            data_provider=data_provider,
+            trade_executor=trade_executor,
+            notifier=notifier,
+            blocked_logger=blocked_logger
+        )
+
+        result = service.check_exit_for_symbol(
+            symbol=request.symbol,
+            entry_price=request.entry_price,
+            entry_time=request.entry_time
+        )
+        return result
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
