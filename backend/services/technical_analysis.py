@@ -1,3 +1,7 @@
+# @role: Prepares and computes indicators for entry signals
+# @used_by: entry_service.py, exit_service.py, suggestion_logic.py
+# @filter_type: logic
+# @tags: technical, entry, indicators
 import pandas as pd
 from services.filters.adx_filter import calculate_adx
 from services.filters.rsi_filter import calculate_rsi

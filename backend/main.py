@@ -1,3 +1,7 @@
+# @role: FastAPI app entrypoint with route mounting and startup hooks
+# @used_by: NA
+# @filter_type: utility
+# @tags: main, entrypoint, fastapi
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

@@ -1,3 +1,7 @@
+# @role: Exit signal evaluation and notification orchestrator
+# @used_by: exit_job_runner.py, suggestion_router.py
+# @filter_type: logic
+# @tags: exit, decision, service
 import logging
 from datetime import datetime, timezone
 from util.portfolio_schema import PortfolioStock

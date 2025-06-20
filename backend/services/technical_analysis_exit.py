@@ -1,3 +1,7 @@
+# @role: Computes weighted exit score from various filters
+# @used_by: exit_service.py
+# @filter_type: logic
+# @tags: technical, exit, indicators
 import pandas as pd
 from datetime import datetime
 from services.filters.exit_adx_filter import adx_exit_filter

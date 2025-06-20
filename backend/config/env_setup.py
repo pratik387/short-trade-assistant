@@ -1,3 +1,8 @@
+# @role: Environment loader for backend settings
+# @used_by: kite_client.py, tick_listener.py
+
+# @filter_type: utility
+# @tags: env, config, bootstrap
 # config/env.py
 
 import os

@@ -1,3 +1,7 @@
+# @role: Registers and configures available filter modules
+# @used_by: exit_job_runner.py, suggestion_logic.py, suggestion_router.py
+# @filter_type: utility
+# @tags: filter, config, bootstrap
 # config/filters.py
 
 import json

@@ -1,3 +1,7 @@
+# @role: Base broker interface definition
+# @used_by: entry_service.py, exit_service.py, kite_broker.py, mock_broker.py, suggestion_logic.py, trade_executor.py
+# @filter_type: utility
+# @tags: broker, abstract, interface
 from abc import ABC, abstractmethod
 from typing import List, Optional
 

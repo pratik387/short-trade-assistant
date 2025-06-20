@@ -1,0 +1,76 @@
+📁 assets
+    📁 indexes
+        📄 nifty_100.json
+        📄 nifty_200.json
+        📄 nifty_50.json
+        📄 nifty_500.json
+        📄 nse_all.json
+    📄 nse_holidays.json
+📁 brokers
+    📁 data
+        📄 indexes.py
+    📁 kite
+        📄 kite_broker.py
+        📄 kite_client.py
+    📁 mock
+        📄 mock_broker.py
+    📄 base_broker.py
+📁 config
+    📄 env_setup.py
+    📄 filters_config.json
+    📄 filters_setup.py
+📁 db
+   📁 tinydb
+     📁 tables
+         📄 portfolio.json
+     📄 client.py
+📁 exceptions
+    📄 exceptions.py
+📁 jobs
+    📄 refresh_holidays.py
+    📄 refresh_instrument_cache.py
+📁 routes
+    📄 cache_router.py
+    📄 kite_auth_router.py
+    📄 notification_router.py
+    📄 pnl_router.py
+    📄 portfolio_router.py
+    📄 suggestion_router.py
+📁 schedulers
+    📄 scheduler.py
+    📄 tick_listener.py
+📁 services
+    📁 filters
+        📄 adx_filter.py
+        📄 atr_filter.py
+        📄 bollinger_band_filter.py
+        📄 candle_pattern_filter.py
+        📄 exit_adx_macd_filter.py
+        📄 exit_override_filter.py
+        📄 fibonacci_filter.py
+        📄 macd_filter.py
+        📄 obv_filter.py
+        📄 rsi_filter.py
+        📄 stochastic_filter.py
+    📁 notification
+        📄 email_alert.py
+        📄 sms_service.py
+    📄 entry_service.py
+    📄 exit_job_runner.py
+    📄 exit_service.py
+    📄 suggestion_logic.py
+    📄 technical_analysis.py
+📁 trading
+    📄 audit_logger.py
+    📄 trade_analyzer.py
+    📄 trade_executor.py
+📁 util
+    📄 portfolio_schema.py
+    📄 util.py
+📄 design_notes.md
+📄 Dockerfile
+📄 kite_token.txt
+📄 main.py
+📄 project_map.py
+📄 requirements.txt
+📄 warmup.py

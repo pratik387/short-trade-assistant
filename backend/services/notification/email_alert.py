@@ -1,3 +1,7 @@
+# @role: Sends email alerts for exit notifications
+# @used_by: exit_job_runner.py, suggestion_router.py
+# @filter_type: utility
+# @tags: notification, email, alert
 import smtplib
 from email.message import EmailMessage
 import os

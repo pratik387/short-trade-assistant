@@ -1,3 +1,7 @@
+# @role: Live market tick listener that routes updates to services
+# @used_by: kite_auth_router.py, main.py
+# @filter_type: logic
+# @tags: tick, stream, listener
 import threading
 import logging
 from kiteconnect import KiteTicker

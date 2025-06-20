@@ -1,3 +1,7 @@
+# @role: Initializes background scheduled tasks like exit check, refresh
+# @used_by: tick_listener.py
+# @filter_type: system
+# @tags: scheduler, cron, background
 import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger

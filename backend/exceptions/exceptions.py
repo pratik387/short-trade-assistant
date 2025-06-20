@@ -1,3 +1,7 @@
+# @role: Custom exception classes for backend services
+# @used_by: entry_service.py, exit_job_runner.py, exit_service.py, suggestion_logic.py, suggestion_router.py, tick_listener.py
+# @filter_type: utility
+# @tags: exceptions, error, base
 class InvalidTokenException(Exception):
     """Raised when Kite API access token is invalid or expired."""
     pass

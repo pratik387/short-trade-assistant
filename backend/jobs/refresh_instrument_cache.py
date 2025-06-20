@@ -1,3 +1,7 @@
+# @role: Background job to refresh instrument metadata (symbols, expiry)
+# @used_by: cache_router.py
+# @filter_type: system
+# @tags: job, cache, instrument
 import requests
 import pandas as pd
 import json

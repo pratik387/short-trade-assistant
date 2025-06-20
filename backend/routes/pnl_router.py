@@ -1,3 +1,7 @@
+# @role: API endpoint to fetch paper/live P&L summaries
+# @used_by: project_map.py
+# @filter_type: system
+# @tags: router, pnl, api
 from fastapi import APIRouter, HTTPException
 from db.tinydb.client import get_table
 import logging

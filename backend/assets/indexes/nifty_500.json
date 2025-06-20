@@ -1524,10 +1524,6 @@
     "instrument_token": 738561
   },
   {
-    "symbol": "RPOWER.NS",
-    "instrument_token": 3906305
-  },
-  {
     "symbol": "ROUTE.NS",
     "instrument_token": 32769
   },
@@ -1586,10 +1582,6 @@
   {
     "symbol": "SCHAEFFLER.NS",
     "instrument_token": 258817
-  },
-  {
-    "symbol": "SCHNEIDER.NS",
-    "instrument_token": 7995905
   },
   {
     "symbol": "SCI.NS",
@@ -1746,10 +1738,6 @@
   {
     "symbol": "TATATECH.NS",
     "instrument_token": 5195009
-  },
-  {
-    "symbol": "TTML.NS",
-    "instrument_token": 2292225
   },
   {
     "symbol": "TECHM.NS",

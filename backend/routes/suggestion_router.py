@@ -1,3 +1,7 @@
+# @role: Routes to serve filtered stock suggestions to frontend
+# @used_by: exit_job_runner.py, exit_service.py
+# @filter_type: system
+# @tags: router, suggestion, api
 import logging
 from fastapi import APIRouter, HTTPException, Query
 from exceptions.exceptions import InvalidTokenException

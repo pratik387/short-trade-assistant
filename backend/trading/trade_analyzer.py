@@ -1,3 +1,7 @@
+# @role: Analyzes trade performance and outcome post-exit
+# @used_by: project_map.py
+# @filter_type: utility
+# @tags: trading, analytics, post_trade
 import logging
 from collections import defaultdict
 from db.tinydb.client import get_table

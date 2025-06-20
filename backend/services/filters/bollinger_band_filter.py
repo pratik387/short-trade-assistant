@@ -1,3 +1,7 @@
+# @role: Bollinger Band %B calculation for price range positioning
+# @used_by: technical_analysis.py
+# @filter_type: logic
+# @tags: indicator, bollinger, bb
 import pandas as pd
 
 def calculate_bollinger_bands(df: pd.DataFrame, window: int = 20, num_std_dev: float = 2.0) -> pd.DataFrame:

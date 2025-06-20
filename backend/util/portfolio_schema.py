@@ -1,3 +1,7 @@
+# @role: Pydantic model for validating tracked portfolio objects
+# @used_by: exit_service.py, portfolio_router.py
+# @filter_type: utility
+# @tags: schema, pydantic, portfolio
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -16,4 +20,3 @@ class PortfolioStock(BaseModel):
     exit_reason: Optional[str] = None
     sell_price: Optional[float] = None
     pnl: Optional[float] = None
-

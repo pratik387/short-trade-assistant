@@ -1,3 +1,7 @@
+# @role: Fibonacci support/resistance zone detector
+# @used_by: technical_analysis.py, technical_analysis_exit.py
+# @filter_type: utility
+# @tags: indicator, fibonacci, levels
 def calculate_fibonacci_levels(series):
     """
     Given a price series (usually 20-day close), calculate key Fibonacci retracement levels.

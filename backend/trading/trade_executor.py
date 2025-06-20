@@ -1,3 +1,7 @@
+# @role: Executes buy/sell actions through broker interface
+# @used_by: exit_job_runner.py, suggestion_router.py
+# @filter_type: utility
+# @tags: trading, execution, broker
 import logging
 from datetime import datetime
 from brokers.base_broker import BaseBroker

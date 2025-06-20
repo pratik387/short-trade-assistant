@@ -1,3 +1,7 @@
+# @role: Manages entry strategy scoring, filtering, and stock selection
+# @used_by: suggestion_logic.py
+# @filter_type: logic
+# @tags: entry, strategy, service
 import logging
 import time
 from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score

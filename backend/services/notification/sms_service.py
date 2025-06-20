@@ -1,3 +1,7 @@
+# @role: Placeholder for SMS-based alerting service
+# @used_by: tick_listener.py
+# @filter_type: utility
+# @tags: notification, sms, future
 from datetime import datetime
 from twilio.rest import Client
 import os

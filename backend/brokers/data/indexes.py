@@ -1,3 +1,7 @@
+# @role: Index symbol utilities for watchlist
+# @used_by: kite_broker.py
+# @filter_type: utility
+# @tags: symbol, nifty, banknifty
 import json
 from pathlib import Path
 import logging

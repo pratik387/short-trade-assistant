@@ -1,3 +1,7 @@
+# @role: Calculates Average True Range (ATR) for volatility
+# @used_by: technical_analysis.py
+# @filter_type: logic
+# @tags: indicator, atr, volatility
 import pandas as pd
 
 def calculate_atr(df):

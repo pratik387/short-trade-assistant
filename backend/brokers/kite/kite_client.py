@@ -1,3 +1,7 @@
+# @role: Kite client initializer and session manager
+# @used_by: kite_broker.py, kite_auth_router.py, tick_listener.py, mock_broker.py
+# @filter_type: utility
+# @tags: kite, client, auth
 import logging
 from pathlib import Path
 from config.env_setup import env

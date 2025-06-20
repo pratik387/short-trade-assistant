@@ -1,3 +1,7 @@
+# @role: Handles Kite authentication routes including callback
+# @used_by: tick_listener.py
+# @filter_type: system
+# @tags: router, kite, auth
 from fastapi import Request, APIRouter, HTTPException
 from fastapi.responses import RedirectResponse
 from brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE, KITE_REDIRECT_URI, KITE_API_KEY

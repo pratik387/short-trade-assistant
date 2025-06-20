@@ -1,3 +1,7 @@
+# @role: Sends alerts and notifications (email, future SMS/WhatsApp)
+# @used_by: project_map.py
+# @filter_type: system
+# @tags: router, notification, email
 from fastapi import APIRouter, Request, HTTPException
 from services.notification.email_alert import send_exit_email
 import logging

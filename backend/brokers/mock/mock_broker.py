@@ -1,3 +1,7 @@
+# @role: Mock broker for paper/backtesting purposes
+# @used_by: base_broker.py, entry_service.py, exit_service.py, kite_broker.py, kite_client.py, suggestion_logic.py, trade_executor.py
+# @filter_type: utility
+# @tags: broker, mock, test
 import logging
 from datetime import datetime
 from typing import List, Optional

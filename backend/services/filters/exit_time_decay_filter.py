@@ -1,3 +1,7 @@
+# @role: Time-based filter to exit trades held beyond a duration threshold
+# @used_by: technical_analysis_exit.py
+# @filter_type: exit
+# @tags: exit, decay, timing
 from datetime import datetime, timezone
 
 def time_decay_filter(entry_price, entry_time, df) -> tuple[bool, str]:

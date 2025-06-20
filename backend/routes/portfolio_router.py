@@ -1,3 +1,7 @@
+# @role: API route for tracking and viewing user portfolio
+# @used_by: project_map.py
+# @filter_type: system
+# @tags: router, portfolio, track
 import logging
 from fastapi import APIRouter, HTTPException
 from typing import List

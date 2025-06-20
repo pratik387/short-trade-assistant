@@ -1,3 +1,7 @@
+# @role: Override mechanism to force exit decisions irrespective of filters
+# @used_by: technical_analysis_exit.py
+# @filter_type: exit
+# @tags: exit, override, manual
 def check_overrides(df, ma_short=20, ma_long=50, rsi_lower=50):
     short_ma = df["close"].rolling(ma_short).mean().iloc[-1]
     long_ma = df["close"].rolling(ma_long).mean().iloc[-1]

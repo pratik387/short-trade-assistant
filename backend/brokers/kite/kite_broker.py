@@ -1,3 +1,7 @@
+# @role: Broker interface implementation for Kite API
+# @used_by: exit_job_runner.py, suggestion_logic.py, suggestion_router.py, tick_listener.py
+# @filter_type: utility
+# @tags: broker, kite, data_provider
 import logging
 from datetime import datetime, timedelta
 import pandas as pd

@@ -1,3 +1,7 @@
+# @role: Detects bullish candlestick patterns like hammer, engulfing etc.
+# @used_by: project_map.py
+# @filter_type: utility
+# @tags: filter, candle, pattern
 def is_bullish_engulfing(df):
     if len(df) < 2:
         return False

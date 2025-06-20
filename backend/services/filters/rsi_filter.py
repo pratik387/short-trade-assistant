@@ -1,3 +1,7 @@
+# @role: Relative Strength Index (RSI) indicator
+# @used_by: technical_analysis.py, technical_analysis_exit.py
+# @filter_type: utility
+# @tags: indicator, rsi, momentum
 import pandas as pd
 
 def calculate_rsi(close_prices: pd.DataFrame, period: int = 14) -> pd.Series:

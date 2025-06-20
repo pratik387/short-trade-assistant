@@ -1,3 +1,7 @@
+# @role: TinyDB client accessor
+# @used_by: exit_job_runner.py, portfolio_router.py, suggestion_router.py, tick_listener.py
+# @filter_type: utility
+# @tags: tinydb, db, client
 import logging
 import os
 from tinydb import TinyDB

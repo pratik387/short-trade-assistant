@@ -1,3 +1,7 @@
+# @role: Scheduler utility for updating holiday data
+# @used_by: util.py
+# @filter_type: utility
+# @tags: schedule, holidays, nse
 import requests
 import json
 from pathlib import Path

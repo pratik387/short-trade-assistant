@@ -1,3 +1,7 @@
+# @role: MACD and signal line calculation
+# @used_by: technical_analysis.py, technical_analysis_exit.py
+# @filter_type: utility
+# @tags: indicator, macd, trend
 import pandas as pd
 
 def calculate_macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9) -> pd.DataFrame:

@@ -1,3 +1,7 @@
+# @role: Helper utilities like date handling, price rounding etc.
+# @used_by: exit_service.py, portfolio_router.py, technical_analysis_exit.py, tick_listener.py
+# @filter_type: utility
+# @tags: utility, helpers, tools
 import pandas as pd
 from pathlib import Path
 import json

@@ -1,3 +1,7 @@
+# @role: Job runner that periodically triggers exit checks
+# @used_by: tick_listener.py
+# @filter_type: logic
+# @tags: exit, job, scheduler
 import logging
 from pathlib import Path
 from datetime import datetime

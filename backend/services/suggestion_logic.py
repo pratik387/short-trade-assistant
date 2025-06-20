@@ -1,3 +1,7 @@
+# @role: Applies score-based filtering to suggest stocks
+# @used_by: suggestion_router.py
+# @filter_type: logic
+# @tags: suggestion, scoring, logic
 import logging
 from config.filters_setup import load_filters
 from services.entry_service import EntryService

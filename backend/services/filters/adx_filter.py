@@ -1,3 +1,7 @@
+# @role: Calculates ADX and directional movement index
+# @used_by: technical_analysis.py, technical_analysis_exit.py
+# @filter_type: logic
+# @tags: indicator, adx, trend
 import pandas as pd
 
 def calculate_adx(df: pd.DataFrame, period: int = 14, strict: bool = True) -> pd.DataFrame:
