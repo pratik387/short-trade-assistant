@@ -9,7 +9,8 @@ import logging
 import time
 import functools
 from jobs.refresh_holidays import download_nse_holidays
-from exceptions.exceptions import InvalidTokenException
+from exceptions.exceptions import InvalidTokenException, DataUnavailableException
+from brokers.kite.kite_client import set_access_token_from_file
 logger = logging.getLogger("tick_listener")
 logger.setLevel(logging.INFO)
 
@@ -21,12 +22,15 @@ def is_market_active(date=None):
     Returns True if open, False if closed.
     """
     try:
-        now = pd.Timestamp.now(tz="Asia/Kolkata")
         # Normalize date parameter or use today's date
         if date is None:
-            check_date = now.normalize()
+            check_date = pd.Timestamp.now(tz="Asia/Kolkata")
         else:
-            check_date = pd.to_datetime(date).normalize()
+            check_date = pd.Timestamp(date)
+            if check_date.tzinfo is None:
+                check_date = check_date.tz_localize("Asia/Kolkata")
+            else:
+                check_date = check_date.tz_convert("Asia/Kolkata")
 
         # Weekend check (Saturday=5, Sunday=6)
         if check_date.weekday() >= 5:
@@ -64,10 +68,10 @@ def is_market_active(date=None):
             return False
 
         # Market session hours: 9:15am – 3:30pm IST
-        open_time = now.replace(hour=9, minute=15, second=0)
-        close_time = now.replace(hour=15, minute=30, second=0)
-        is_open = open_time <= now <= close_time
-        logger.info(f"Market status at {now.time()}: {'Open' if is_open else 'Closed'}")
+        open_time = check_date.replace(hour=9, minute=15)
+        close_time = check_date.replace(hour=15, minute=30)
+        is_open = open_time <= check_date <= close_time
+        logger.info(f"Market status at {check_date.time()}: {'Open' if is_open else 'Closed'}")
         return is_open
 
     except Exception as e:
@@ -93,11 +97,19 @@ def retry(max_attempts=3, delay=2, exceptions=(Exception,), exclude=(InvalidToke
             for attempt in range(1, max_attempts + 1):
                 try:
                     return func(*args, **kwargs)
+                except InvalidTokenException as e:
+                    logger.warning(f"[Retry {attempt}/{max_attempts}] Token error: {e}")
+                    logger.info("🔄 Refreshing Kite token...")
+                    set_access_token_from_file()  # reapply valid token
+                    time.sleep(delay)
                 except exceptions as e:
                     logger.warning(f"[Retry {attempt}/{max_attempts}] Exception: {e}")
                     if attempt == max_attempts:
                         logger.error(f"Exceeded max retries for {func.__name__}")
                         raise
+                    if  'invalid token' in str(e).lower():
+                        logger.error(f"Symbol not available in NSE {func.__name__}")
+                        raise DataUnavailableException(f"Symbol not available in NSE : {e}")
                     time.sleep(delay)
         return wrapper
     return decorator

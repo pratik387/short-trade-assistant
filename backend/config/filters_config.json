@@ -63,6 +63,7 @@
   "weight_time_decay": 2,
   "weight_fibonacci": 2,
   "weight_adx_exit": 3,
-  "weight_macd_exit": 3
+  "weight_macd_exit": 3,
+  "adx_exit_threshold":30
 }
 }

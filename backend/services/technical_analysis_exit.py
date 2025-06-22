@@ -46,7 +46,7 @@ def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetim
     total_score = 0
     threshold = criteria.get("soft_exit_threshold", 4)
 
-    adx_exit, adx_reason = adx_exit_filter(df)
+    adx_exit, adx_reason = adx_exit_filter(df, criteria.get("adx_exit_threshold"))
     if adx_exit:
         total_score += criteria.get("'weight_adx_exit'", 0)
         reasons.append(adx_reason)

@@ -5,7 +5,7 @@
 import logging
 import time
 from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
-from exceptions.exceptions import InvalidTokenException
+from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 
 logger = logging.getLogger("entry_service")
 logger.setLevel(logging.INFO)
@@ -92,6 +92,9 @@ class EntryService:
             except InvalidTokenException:
                 logger.error("Token expired while processing %s — aborting suggestions", symbol)
                 raise
+            except DataUnavailableException:
+                logger.exception("Symbol not available: %s", symbol)
+                continue                
             except Exception:
                 logger.exception("Error processing symbol %s", symbol)
                 continue

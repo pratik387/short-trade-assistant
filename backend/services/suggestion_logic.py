@@ -5,7 +5,7 @@
 import logging
 from config.filters_setup import load_filters
 from services.entry_service import EntryService
-from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
+from services.technical_analysis import prepare_indicators, calculate_score
 from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
 

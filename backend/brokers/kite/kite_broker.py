@@ -23,14 +23,24 @@ class KiteBroker(BaseBroker):
         return get_index_symbols(index)
 
     @retry()
-    def fetch_candles(self, symbol: str, interval: str, days: int):
+    def fetch_candles(
+        self,
+        symbol: str,
+        interval: str,
+        days: int = None,
+        from_date: datetime = None,
+        to_date: datetime = None
+    ):
         try:
             instrument = self.symbol_map.get(symbol)
             if instrument is None:
                 raise ValueError(f"Instrument token not found for {symbol}")
 
-            to_date = datetime.now()
-            from_date = to_date - timedelta(days=days)
+            if from_date is None or to_date is None:
+                if days is None:
+                    raise ValueError("Must provide either days or both from_date and to_date")
+                to_date = datetime.now()
+                from_date = to_date - timedelta(days=days)
 
             raw = kite.historical_data(
                 instrument_token=instrument,
@@ -39,6 +49,7 @@ class KiteBroker(BaseBroker):
                 interval=interval
             )
             return self._format_ohlc_df(raw)
+
         except Exception as e:
             err_msg = str(e).lower()
             logger.warning(f"⚠️ Error fetching candles for {symbol}: {e}")
@@ -47,7 +58,7 @@ class KiteBroker(BaseBroker):
                 logger.info(f"🔁 Retry advised for {symbol} due to rate/timeout error")
                 raise
 
-            if any(t in err_msg for t in ['invalid', 'unauthorized']):
+            if any(t in err_msg for t in ['api_key', 'access_token']):
                 logger.error(f"🚫 Token issue for {symbol}. Raising InvalidTokenException.")
                 raise InvalidTokenException(f"Kite token invalid or expired: {e}")
 

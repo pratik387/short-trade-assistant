@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from io import StringIO
 import logging
+from exceptions.exceptions import InvalidTokenException
+from util.util import retry
 
 from routes.kite_auth_router import kite
 
@@ -23,6 +25,18 @@ INDEX_CSV_URLS = {
     "nifty_500": "https://archives.nseindia.com/content/indices/ind_nifty500list.csv",
 }
 
+@retry()
+def is_symbol_valid(symbol: str, token: int) -> bool:
+    try:
+        kite.historical_data(instrument_token=token, interval="day", from_date="2025-01-01", to_date="2025-01-02")
+        return True
+    except Exception as e:
+        err_msg = str(e).lower()
+        if any(t in err_msg for t in ['api_key', 'access_token']):
+            raise InvalidTokenException(err_msg)
+        else: 
+            raise
+    
 def refresh_index_cache():
     try:
         logger.info("Fetching all NSE instruments from Kite")
@@ -39,16 +53,24 @@ def refresh_index_cache():
                 and tradingsymbol not in seen
             ):
                 seen.add(tradingsymbol)
+                symbol = tradingsymbol + ".NS"
                 instrument_map[tradingsymbol] = {
-                    "symbol": tradingsymbol + ".NS",
+                    "symbol": symbol,
                     "instrument_token": ins["instrument_token"],
                 }
 
+        # Filter invalid symbols
+        validated = {
+            sym: meta
+            for sym, meta in instrument_map.items()
+            if is_symbol_valid(meta["symbol"], meta["instrument_token"])
+        }
+
         all_path = DATA_DIR / "nse_all.json"
         with open(all_path, "w") as f:
-            json.dump(list(instrument_map.values()), f, indent=2)
-        logger.info(f"✅ Saved full NSE instrument list: {len(instrument_map)}")
-        counts = {"all": len(instrument_map)}
+            json.dump(list(validated.values()), f, indent=2)
+        logger.info(f"✅ Saved full NSE instrument list: {len(validated)}")
+        counts = {"all": len(validated)}
 
         for index_name, csv_url in INDEX_CSV_URLS.items():
             try:
@@ -58,9 +80,9 @@ def refresh_index_cache():
                 symbols = df["Symbol"].dropna().tolist()
 
                 filtered = [
-                    instrument_map[sym]
+                    validated[sym]
                     for sym in symbols
-                    if sym in instrument_map
+                    if sym in validated
                 ]
 
                 with open(DATA_DIR / f"{index_name}.json", "w") as f:
