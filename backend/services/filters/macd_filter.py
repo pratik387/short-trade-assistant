@@ -2,9 +2,12 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, macd, trend
+import logging
 import pandas as pd
 
-def calculate_macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9) -> pd.DataFrame:
+logger = logging.getLogger(__name__)
+
+def calculate_macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9, symbol: str = "") -> pd.DataFrame:
     """
     Calculate MACD, Signal Line, and Histogram.
 
@@ -20,5 +23,5 @@ def calculate_macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 2
     df['MACD'] = df['EMA_Fast'] - df['EMA_Slow']
     df['MACD_Signal'] = df['MACD'].ewm(span=signal_period, adjust=False).mean()
     df['MACD_Hist'] = df['MACD'] - df['MACD_Signal']
-
+    logger.info(f"[MACD] {symbol} | MACD={df['MACD'].iloc[-1]:.2f}, Signal={df['MACD_Signal'].iloc[-1]:.2f}")
     return df

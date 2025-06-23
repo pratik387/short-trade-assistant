@@ -2,7 +2,13 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, obv, volume
-def obv_exit_filter(df) -> tuple[bool, str]:
-    if "obv" in df.columns and df["obv"].iloc[-1] < df["obv"].iloc[-2]:
-        return True, "Falling OBV"
+import logging
+logger = logging.getLogger(__name__)
+
+def obv_exit_filter(df, symbol: str = "") -> tuple[bool, str]:
+    if "obv" in df.columns:
+        current, previous = df["obv"].iloc[-1], df["obv"].iloc[-2]
+        logger.info(f"[EXIT-OBV] {symbol} | OBV current={current}, previous={previous}")
+        if current < previous:
+            return True, "Falling OBV"
     return False, ""

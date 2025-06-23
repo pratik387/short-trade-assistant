@@ -2,7 +2,12 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, fibonacci, levels
-def calculate_fibonacci_levels(series):
+import logging
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+def calculate_fibonacci_levels(series: pd.Series) -> dict:
     """
     Given a price series (usually 20-day close), calculate key Fibonacci retracement levels.
     Returns a dictionary with levels: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
@@ -25,7 +30,7 @@ def calculate_fibonacci_levels(series):
     }
 
 
-def is_fibonacci_support_zone(close_price, levels):
+def is_fibonacci_support_zone(close_price: float, levels: dict, symbol: str = "") -> bool:
     """
     Check if current close price is near any retracement support level (especially 0.618, 0.5, 0.382).
     A tolerance of 1.5% is considered.
@@ -38,5 +43,7 @@ def is_fibonacci_support_zone(close_price, levels):
     for key in ["0.618", "0.5", "0.382"]:
         level = levels.get(key)
         if level and abs(close_price - level) / close_price <= tolerance:
+            logger.info(f"[FIBONACCI] {symbol} | Close={close_price} near level={key}={level}")
             return True
+    logger.info(f"[FIBONACCI] {symbol} | Close={close_price} not near any key levels")
     return False

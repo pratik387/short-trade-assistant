@@ -6,3 +6,6 @@ __pycache__
 /nse_equity_symbols.json
 /db/
 /db/*
+**/*.log
+/backtesting/logs/*
+/backtesting/ohlcv_cache/

@@ -64,6 +64,12 @@
   "weight_fibonacci": 2,
   "weight_adx_exit": 3,
   "weight_macd_exit": 3,
-  "adx_exit_threshold":30
+  "adx_exit_threshold":30,
+  "atr_squeeze_threshold":0.01,
+  "bb_exit_threshold":0.9,
+  "fibonacci_exit_retracement_zone":0.99,
+  "rsi_exit_threshold":70,
+  "duration_threshold":5,
+  "pnl_threshold":0.01
 }
 }

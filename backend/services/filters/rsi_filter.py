@@ -2,9 +2,12 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, rsi, momentum
+import logging
 import pandas as pd
 
-def calculate_rsi(close_prices: pd.DataFrame, period: int = 14) -> pd.Series:
+logger = logging.getLogger(__name__)
+
+def calculate_rsi(close_prices: pd.DataFrame, period: int = 14,  symbol: str = "") -> pd.Series:
     # Ensure 1D Series
     if isinstance(close_prices, pd.DataFrame):
         close = close_prices.squeeze("columns")
@@ -17,4 +20,5 @@ def calculate_rsi(close_prices: pd.DataFrame, period: int = 14) -> pd.Series:
 
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
+    logger.info(f"[RSI] {symbol} | RSI={rsi.iloc[-1]:.2f}")
     return pd.Series(rsi, name="RSI", index=close.index)

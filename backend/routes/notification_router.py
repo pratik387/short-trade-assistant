@@ -7,7 +7,7 @@ from services.notification.email_alert import send_exit_email
 import logging
 
 router = APIRouter()
-logger = logging.getLogger("notification")
+logger = logging.getLogger(__name__)
 
 @router.post("/send-exit-email")
 async def trigger_exit_email(request: Request):

@@ -6,8 +6,7 @@ import logging
 from collections import defaultdict
 from db.tinydb.client import get_table
 
-logger = logging.getLogger("trade_analyzer")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 def analyze_trades():
     try:

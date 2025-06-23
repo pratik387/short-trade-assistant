@@ -2,9 +2,12 @@
 # @used_by: technical_analysis.py
 # @filter_type: logic
 # @tags: indicator, bollinger, bb
+import logging
 import pandas as pd
 
-def calculate_bollinger_bands(df: pd.DataFrame, window: int = 20, num_std_dev: float = 2.0) -> pd.DataFrame:
+logger = logging.getLogger(__name__)
+
+def calculate_bollinger_bands(df: pd.DataFrame, window: int = 20, num_std_dev: float = 2.0, symbol: str = "") -> pd.DataFrame:
     """
     Calculate Bollinger Bands and %B for a given DataFrame with 'close' prices.
 
@@ -23,5 +26,8 @@ def calculate_bollinger_bands(df: pd.DataFrame, window: int = 20, num_std_dev: f
     df['BB_Upper'] = sma + (num_std_dev * std)
     df['BB_Lower'] = sma - (num_std_dev * std)
     df['BB_%B'] = (df['close'] - df['BB_Lower']) / (df['BB_Upper'] - df['BB_Lower'])
+    logger.info(f"[BB] {symbol} | %B={df['BB_%B'].iloc[-1]:.2f}")
+    return df
 
     return df
+

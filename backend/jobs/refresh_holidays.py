@@ -7,8 +7,7 @@ import json
 from pathlib import Path
 import logging
 
-logger = logging.getLogger("nse_holiday_fetcher")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 # File path for storing downloaded holiday calendar as JSON
 HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "assets" / "nse_holidays.json"

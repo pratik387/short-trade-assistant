@@ -2,29 +2,28 @@
 # @used_by: project_map.py
 # @filter_type: utility
 # @tags: filter, candle, pattern
-def is_bullish_engulfing(df):
+import logging
+import pandas as pd
+
+logger = logging.getLogger(__name__)
+
+def is_bullish_engulfing(df: pd.DataFrame, symbol: str = "") -> bool:
     if len(df) < 2:
         return False
     prev = df.iloc[-2]
     curr = df.iloc[-1]
 
-    return (
-        prev['close'] < prev['open'] and  # previous was red
-        curr['close'] > curr['open'] and  # current is green
-        curr['close'] > prev['open'] and
-        curr['open'] < prev['close']
-    )
+    result = (prev['close'] < prev['open'] and curr['close'] > curr['open'] and curr['close'] > prev['open'] and curr['open'] < prev['close'])
+    logger.info(f"[ENGULFING] {symbol} | Result={'✅' if result else '❌'}")
+    return result
 
-def is_hammer(df):
+def is_hammer(df: pd.DataFrame, symbol: str = "") -> bool:
     if len(df) < 1:
         return False
     candle = df.iloc[-1]
     body = abs(candle['close'] - candle['open'])
     lower_wick = candle['open'] - candle['low'] if candle['open'] > candle['close'] else candle['close'] - candle['low']
     upper_wick = candle['high'] - max(candle['close'], candle['open'])
-
-    return (
-        lower_wick > 2 * body and  # long lower shadow
-        upper_wick < body and      # small upper shadow
-        body > 0                   # non-doji body
-    )
+    result = lower_wick > 2 * body and upper_wick < body and body > 0
+    logger.info(f"[HAMMER] {symbol} | Result={'✅' if result else '❌'}")
+    return result

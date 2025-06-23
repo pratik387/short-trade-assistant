@@ -7,7 +7,7 @@ from db.tinydb.client import get_table
 import logging
 
 router = APIRouter()
-logger = logging.getLogger("pnl_router")
+logger = logging.getLogger(__name__)
 
 @router.get("/pnl")
 def get_pnl_data():

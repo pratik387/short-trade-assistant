@@ -9,8 +9,7 @@ from tinydb import Query, TinyDB
 from db.tinydb.client import get_table
 from util.portfolio_schema import PortfolioStock
 
-logger = logging.getLogger("portfolio")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 StockQuery = Query()
 portfolio: TinyDB = get_table("portfolio")

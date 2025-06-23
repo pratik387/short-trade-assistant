@@ -2,9 +2,12 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, obv, volume
+import logging
 import pandas as pd
 
-def calculate_obv(df):
+logger = logging.getLogger(__name__)
+
+def calculate_obv(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     df = df.copy()
     obv = [0]
     for i in range(1, len(df)):
@@ -15,4 +18,5 @@ def calculate_obv(df):
         else:
             obv.append(obv[-1])
     df['obv'] = obv
+    logger.info(f"[OBV] {symbol} | OBV={df['obv'].iloc[-1]}")
     return df[['obv']]

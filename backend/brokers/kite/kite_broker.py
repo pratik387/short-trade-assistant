@@ -9,8 +9,9 @@ from brokers.base_broker import BaseBroker
 from brokers.kite.kite_client import kite
 from brokers.data.indexes import get_index_symbols
 from exceptions.exceptions import InvalidTokenException
-logger = logging.getLogger("kite_broker")
 from util.util import retry
+
+logger = logging.getLogger(__name__)
 
 class KiteBroker(BaseBroker):
     symbol_map = {

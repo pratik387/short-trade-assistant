@@ -19,8 +19,7 @@ from services.suggestion_logic import (
     SuggestionLogic
 )
 
-logger = logging.getLogger("suggestions")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 

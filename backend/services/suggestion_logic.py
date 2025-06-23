@@ -9,7 +9,7 @@ from services.technical_analysis import prepare_indicators, calculate_score
 from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
 
-logger = logging.getLogger("suggestion_logic")
+logger = logging.getLogger(__name__)
 
 def get_filtered_stock_suggestions(interval="day", index="nifty_50"):
     try:

@@ -5,25 +5,42 @@
 import logging
 from datetime import datetime
 from typing import List, Optional
-
+import pandas as pd
+from pathlib import Path
 from brokers.base_broker import BaseBroker
 from brokers.kite.kite_broker import KiteBroker
+from brokers.data.indexes import get_index_symbols
 
-logger = logging.getLogger("mock_broker")
+logger = logging.getLogger(__name__)
 
 class MockBroker(BaseBroker):
-    def __init__(self, interval: str = "day", index: str = "nifty_50"):
-        self.live_broker = KiteBroker(interval=interval, index=index)
+    def __init__(self, interval: str = "day", index: str = "nifty_50", use_cache: bool = True):
+        self.use_cache = use_cache
+        self.cache_dir = Path(__file__).resolve().parents[2] / "backtesting" / "ohlcv_cache"
+        self.live_broker = KiteBroker()
 
     def get_ltp(self, symbols: List[str]) -> dict:
         return self.live_broker.get_ltp(symbols)
 
-    def fetch_candles(self, symbol: str, interval: str, token: Optional[int]) -> list:
-        return self.live_broker.fetch_candles(symbol, interval, token)
-
-    def get_instrument_token(self, symbol: str) -> Optional[int]:
-        return self.live_broker.get_instrument_token(symbol)
-
+    def fetch_candles(
+        self,
+        symbol: str,
+        interval: str,
+        days: int = None,
+        from_date: datetime = None,
+        to_date: datetime = None
+    ):
+        try:
+            if self.use_cache:
+                file_path = self.cache_dir / f"{symbol}.csv"
+                if file_path.exists():
+                    df = pd.read_csv(file_path, index_col="date", parse_dates=True)
+                    return df
+            # fallback to API
+            return self.live_broker.fetch_candles(symbol, interval, 180)
+        except Exception as e:
+            logger.error(str(e))
+    
     def place_order(
         self,
         symbol: str,
@@ -45,3 +62,7 @@ class MockBroker(BaseBroker):
             "variety": "regular",
             "timestamp": datetime.now().isoformat()
         }
+    
+    def get_symbols(self, index):
+        """Return all symbol-token mappings for the current index."""
+        return get_index_symbols(index)

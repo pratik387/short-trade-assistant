@@ -7,8 +7,7 @@ import time
 from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 
-logger = logging.getLogger("entry_service")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 class EntryService:
     def __init__(self, data_provider, config: dict, index: str = "nifty_50"):
@@ -45,7 +44,7 @@ class EntryService:
                     logger.debug("No data for %s, skipping", symbol)
                     continue
 
-                df = prepare_indicators(df)
+                df = prepare_indicators(df, symbol=symbol)
                 latest = df.iloc[-1]
 
                 if latest["close"] <= self.min_price:
@@ -57,7 +56,7 @@ class EntryService:
                                  symbol, latest["volume"], self.min_volume)
                     continue
 
-                if not passes_hard_filters(latest, self.config):
+                if not passes_hard_filters(latest, self.config, symbol=symbol):
                     logger.debug("%s did not pass hard filters, skipping", symbol)
                     continue
 
@@ -65,7 +64,7 @@ class EntryService:
                 rsi_vals.append(rsi)
                 avg_rsi = sum(rsi_vals) / len(rsi_vals) if rsi_vals else rsi
 
-                score = calculate_score(latest, self.weights, avg_rsi, candle_match=False)
+                score = calculate_score(latest, self.weights, avg_rsi, candle_match=False, symbol=symbol)
 
                 suggestions.append({
                     "symbol": symbol,

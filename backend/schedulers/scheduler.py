@@ -11,14 +11,7 @@ from jobs.refresh_instrument_cache import refresh_index_cache
 from jobs.refresh_holidays import download_nse_holidays
 from services.notification.sms_service import send_kite_login_sms
 
-# --- Logger setup ---
-logger = logging.getLogger("scheduler")
-handler = logging.StreamHandler()
-handler.setFormatter(logging.Formatter(
-    "%(asctime)s [%(levelname)s] %(name)s - %(message)s"
-))
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 # --- Scheduler init ---
 scheduler = BackgroundScheduler()

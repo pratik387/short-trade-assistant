@@ -9,8 +9,7 @@ from util.portfolio_schema import PortfolioStock
 from db.tinydb.client import get_table
 from exceptions.exceptions import OrderPlacementException
 
-logger = logging.getLogger("trade_executor")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 class TradeExecutor:
     def __init__(self, broker: BaseBroker):

@@ -7,7 +7,7 @@ from twilio.rest import Client
 import os
 import logging
 
-logger = logging.getLogger("sms_service")
+logger = logging.getLogger(__name__)
 
 def send_kite_login_sms():
     kite_api_key = os.getenv("KITE_API_KEY")

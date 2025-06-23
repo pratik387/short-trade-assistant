@@ -4,11 +4,13 @@
 # @tags: exit, decision, service
 import logging
 from datetime import datetime, timezone
+from pytz import timezone as pytz_timezone
 from util.portfolio_schema import PortfolioStock
 from exceptions.exceptions import OrderPlacementException
 from services.technical_analysis_exit import prepare_exit_indicators, apply_exit_filters
 
 logger = logging.getLogger(__name__)
+india_tz = pytz_timezone("Asia/Kolkata")
 
 class ExitService:
     def __init__(self, config, portfolio_db, data_provider, trade_executor, notifier=None, blocked_logger=None):
@@ -27,8 +29,8 @@ class ExitService:
         self.log_blocked = self.exit_strategy.get("log_blocked_exits", True)
 
 
-    def _apply_exit_filters(self, df, entry_price: float, entry_time: datetime) -> tuple[bool, list[str]]:
-        return apply_exit_filters(df, entry_price, entry_time, self.criteria, self.fallback_exit)
+    def _apply_exit_filters(self, df, entry_price: float, entry_time: datetime, symbol: str) -> tuple[bool, list[str]]:
+        return apply_exit_filters(df, entry_price, entry_time, self.criteria, self.fallback_exit, symbol=symbol)
 
     def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime) -> dict:
         df = self.data_provider.fetch_candles(symbol=symbol, interval="day", days=30)
@@ -36,9 +38,10 @@ class ExitService:
 
         current_price = df["close"].iloc[-1]
         pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
-        days_held = (datetime.now(timezone.utc) - entry_time).days
 
-        allow_exit, reasons = self._apply_exit_filters(df, entry_price, entry_time)
+        days_held = (datetime.now(india_tz) - entry_time).days
+
+        allow_exit, reasons = self._apply_exit_filters(df, entry_price, entry_time, symbol=symbol)
 
         recommendation = "EXIT" if allow_exit else "HOLD"
 
@@ -61,9 +64,10 @@ class ExitService:
         df = prepare_exit_indicators(df)
         current_price = df["close"].iloc[-1]
         pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
-        days_held = (datetime.now(timezone.utc) - entry_time).days
 
-        allow_exit, reasons = self._apply_exit_filters(df, entry_price, entry_time)
+        days_held = (datetime.now(india_tz) - entry_time).days
+
+        allow_exit, reasons = self._apply_exit_filters(df, entry_price, entry_time, symbol=symbol)
 
         return {
             "symbol": symbol,

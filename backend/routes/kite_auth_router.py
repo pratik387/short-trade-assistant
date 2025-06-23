@@ -11,8 +11,7 @@ import os
 import logging
 from pathlib import Path
 
-logger = logging.getLogger("kite_auth_router")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Fallback frontend URL
 FRONTEND_URL = os.getenv("FRONTEND_URL")

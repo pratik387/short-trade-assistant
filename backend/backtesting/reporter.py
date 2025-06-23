@@ -3,7 +3,7 @@ Generates summary report from trade logs.
 """
 import pandas as pd
 
-def generate_report(csv_path="backtesting/test_results/trades.csv"):
+def generate_report(csv_path="backtesting/logs/trades.csv"):
     df = pd.read_csv(csv_path)
     df["pnl"] = df["pnl"].astype(float)
 

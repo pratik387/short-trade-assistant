@@ -9,7 +9,7 @@ from kiteconnect import KiteConnect
 from exceptions.exceptions import InvalidTokenException
 
 # Logger setup
-logger = logging.getLogger("kite_client")
+logger = logging.getLogger(__name__)
 
 # Env credentials
 KITE_API_KEY = env.KITE_API_KEY

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import logging
 
-logger = logging.getLogger("index_loader")
+logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "assets/indexes"
 

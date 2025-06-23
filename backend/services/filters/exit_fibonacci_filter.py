@@ -2,11 +2,15 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, fibonacci, support
-def fibonacci_exit_filter(df) -> tuple[bool, str]:
+import logging
+logger = logging.getLogger(__name__)
+
+def fibonacci_exit_filter(df, fibonacci_exit_retracement_zone: float=0.99, symbol: str = "") -> tuple[bool, str]:
     if "fibonacci_resistance" not in df.columns or "close" not in df.columns:
         return False, ""
     close = df["close"].iloc[-1]
     resistance = df["fibonacci_resistance"].iloc[-1]
-    if close >= resistance * 0.99:
+    logger.info(f"[EXIT-FIB] {symbol} | Close={close:.2f} vs Resistance={resistance:.2f} (Zone={fibonacci_exit_retracement_zone})")
+    if close >= resistance * fibonacci_exit_retracement_zone:
         return True, "Price near Fibonacci resistance"
     return False, ""

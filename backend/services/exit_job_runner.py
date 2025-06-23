@@ -14,8 +14,7 @@ from exceptions.exceptions import InvalidTokenException
 from trading.trade_executor import TradeExecutor
 from brokers.kite.kite_broker import KiteBroker
 
-logger = logging.getLogger("exit_job")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 def run_exit_checks(ticks=None):
     """

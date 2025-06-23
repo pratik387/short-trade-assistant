@@ -15,8 +15,7 @@ from exceptions.exceptions import InvalidTokenException
 from services.notification.sms_service import send_kite_login_sms
 from brokers.kite.kite_client import kite, set_access_token_from_file, TOKEN_FILE
 
-logger = logging.getLogger("tick_listener")
-logger.setLevel(logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Track current subscriptions
 tokens_subscribed = set()

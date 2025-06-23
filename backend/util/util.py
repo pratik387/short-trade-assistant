@@ -11,8 +11,8 @@ import functools
 from jobs.refresh_holidays import download_nse_holidays
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from brokers.kite.kite_client import set_access_token_from_file
-logger = logging.getLogger("tick_listener")
-logger.setLevel(logging.INFO)
+
+logger = logging.getLogger(__name__)
 
 HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "assets" / "nse_holidays.json"
 def is_market_active(date=None):

@@ -2,10 +2,9 @@
 # @used_by: NA
 # @filter_type: utility
 # @tags: main, entrypoint, fastapi
-import logging
 from fastapi import FastAPI
+import logging
 from fastapi.middleware.cors import CORSMiddleware
-
 from routes.suggestion_router import router as suggestion_router
 from routes.portfolio_router import router as portfolio_router
 from routes.notification_router import router as notification_router
@@ -13,10 +12,11 @@ from routes.kite_auth_router import kite_router
 from routes.cache_router import router as cache_router
 from schedulers.scheduler import start, shutdown
 from schedulers.tick_listener import start_tick_listener, stop_tick_listener
+from config.logging_config import setup_logging
 
-# Logger setup
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("main")
+# Set up logging first
+setup_logging()
+logger = logging.getLogger(__name__)
 
 # App setup
 app = FastAPI(title="Trading Assistant", version="1.0")

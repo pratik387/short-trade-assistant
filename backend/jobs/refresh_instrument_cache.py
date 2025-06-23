@@ -13,7 +13,7 @@ from util.util import retry
 
 from routes.kite_auth_router import kite
 
-logger = logging.getLogger("index_refresher")
+logger = logging.getLogger(__name__)
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "assets/indexes"
 DATA_DIR.mkdir(exist_ok=True)

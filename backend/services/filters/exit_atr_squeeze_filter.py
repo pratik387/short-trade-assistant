@@ -2,10 +2,14 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, atr, volatility
-def atr_squeeze_filter(df) -> tuple[bool, str]:
+import logging
+logger = logging.getLogger(__name__)
+
+def atr_squeeze_filter(df, atr_squeeze_threshold: float = 0.01, symbol: str = "") -> tuple[bool, str]:
     if "ATR" not in df.columns:
         return False, ""
     atr_range = df["ATR"].iloc[-1] / df["close"].iloc[-1]
-    if atr_range < 0.01:
+    logger.info(f"[EXIT-ATR] {symbol} | ATR Range={atr_range:.4f} vs threshold={atr_squeeze_threshold}")
+    if atr_range < atr_squeeze_threshold:
         return True, "ATR squeeze detected"
     return False, ""

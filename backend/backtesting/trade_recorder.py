@@ -2,12 +2,13 @@ import csv
 from pathlib import Path
 
 class TradeRecorder:
-    def __init__(self, output_path="backtesting/test_results/trades.csv"):
-            self.output_path = output_path
-            self.trades = []
+    def __init__(self):
+        root_dir = Path(__file__).resolve().parents[2]  # points to short-trade-assistant/
+        self.output_path = root_dir / "backend" / "backtesting" / "logs" / "trades.csv"
+        self.trades = []
 
-            # Ensure the directory exists
-            Path(self.output_path).parent.mkdir(parents=True, exist_ok=True)
+        # Ensure the directory exists
+        self.output_path.parent.mkdir(parents=True, exist_ok=True)
 
     def record_entry(self, symbol, date, price, investment):
         self.trades.append({
