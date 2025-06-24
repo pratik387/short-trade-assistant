@@ -2,14 +2,14 @@
 # @used_by: exit_job_runner.py, suggestion_router.py
 # @filter_type: utility
 # @tags: trading, execution, broker
-import logging
 from datetime import datetime
 from brokers.base_broker import BaseBroker
 from util.portfolio_schema import PortfolioStock
 from db.tinydb.client import get_table
 from exceptions.exceptions import OrderPlacementException
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 class TradeExecutor:
     def __init__(self, broker: BaseBroker):

@@ -2,10 +2,10 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, obv, volume
-import logging
 import pandas as pd
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 def calculate_obv(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     df = df.copy()

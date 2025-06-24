@@ -2,8 +2,9 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, atr, volatility
-import logging
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def atr_squeeze_filter(df, atr_squeeze_threshold: float = 0.01, symbol: str = "") -> tuple[bool, str]:
     if "ATR" not in df.columns:

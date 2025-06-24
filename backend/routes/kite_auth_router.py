@@ -8,10 +8,10 @@ from brokers.kite.kite_client import kite, KITE_API_SECRET, TOKEN_FILE, KITE_RED
 from schedulers.tick_listener import start_tick_listener
 from exceptions.exceptions import KiteException
 import os
-import logging
+from config.logging_config import get_loggers
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 # Fallback frontend URL
 FRONTEND_URL = os.getenv("FRONTEND_URL")

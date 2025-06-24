@@ -2,8 +2,9 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, obv, volume
-import logging
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def obv_exit_filter(df, symbol: str = "") -> tuple[bool, str]:
     if "obv" in df.columns:

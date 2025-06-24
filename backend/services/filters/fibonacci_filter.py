@@ -2,10 +2,10 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, fibonacci, levels
-import logging
 import pandas as pd
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 def calculate_fibonacci_levels(series: pd.Series) -> dict:
     """

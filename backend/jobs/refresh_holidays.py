@@ -5,10 +5,9 @@
 import requests
 import json
 from pathlib import Path
-import logging
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
-
+logger, trade_logger = get_loggers()
 # File path for storing downloaded holiday calendar as JSON
 HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "assets" / "nse_holidays.json"
 # NSE API endpoint returning JSON holiday master

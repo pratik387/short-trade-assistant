@@ -2,7 +2,6 @@
 # @used_by: tick_listener.py
 # @filter_type: logic
 # @tags: exit, job, scheduler
-import logging
 from pathlib import Path
 from datetime import datetime
 
@@ -14,7 +13,9 @@ from exceptions.exceptions import InvalidTokenException
 from trading.trade_executor import TradeExecutor
 from brokers.kite.kite_broker import KiteBroker
 
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def run_exit_checks(ticks=None):
     """

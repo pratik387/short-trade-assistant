@@ -2,8 +2,9 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, fibonacci, support
-import logging
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def fibonacci_exit_filter(df, fibonacci_exit_retracement_zone: float=0.99, symbol: str = "") -> tuple[bool, str]:
     if "fibonacci_resistance" not in df.columns or "close" not in df.columns:

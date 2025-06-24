@@ -2,10 +2,10 @@
 # @used_by: project_map.py
 # @filter_type: utility
 # @tags: filter, candle, pattern
-import logging
 import pandas as pd
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 def is_bullish_engulfing(df: pd.DataFrame, symbol: str = "") -> bool:
     if len(df) < 2:

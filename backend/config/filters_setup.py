@@ -5,10 +5,10 @@
 # config/filters.py
 
 import json
-import logging
+from config.logging_config import get_loggers
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 REQUIRED_KEYS = [
     "adx_threshold",
     "score_weights",

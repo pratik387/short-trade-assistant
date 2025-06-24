@@ -3,9 +3,10 @@
 # @filter_type: exit
 # @tags: exit, decay, timing
 from datetime import datetime
-import logging
 from pytz import timezone as pytz_timezone
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 india_tz = pytz_timezone("Asia/Kolkata")
 
 

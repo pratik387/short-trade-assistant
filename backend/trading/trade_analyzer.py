@@ -2,11 +2,11 @@
 # @used_by: project_map.py
 # @filter_type: utility
 # @tags: trading, analytics, post_trade
-import logging
 from collections import defaultdict
 from db.tinydb.client import get_table
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 def analyze_trades():
     try:

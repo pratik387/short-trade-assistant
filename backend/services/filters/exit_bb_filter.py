@@ -2,8 +2,9 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, bollinger, range
-import logging
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def bollinger_exit_filter(df, bb_exit_threshold: float=0.9, symbol: str = "") -> tuple[bool, str]:
     if "BB_%B" in df.columns and df["BB_%B"].iloc[-1] > bb_exit_threshold:

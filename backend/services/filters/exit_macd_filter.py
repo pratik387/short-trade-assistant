@@ -2,8 +2,9 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: utility
 # @tags: exit, macd, momentum
-import logging
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def macd_exit_filter(df, fallback=True, symbol: str = ""):
     macd = df["MACD"].iloc[-1] if "MACD" in df.columns else None

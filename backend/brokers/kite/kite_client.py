@@ -2,14 +2,14 @@
 # @used_by: kite_broker.py, kite_auth_router.py, tick_listener.py, mock_broker.py
 # @filter_type: utility
 # @tags: kite, client, auth
-import logging
 from pathlib import Path
 from config.env_setup import env
 from kiteconnect import KiteConnect
 from exceptions.exceptions import InvalidTokenException
+from config.logging_config import get_loggers
 
 # Logger setup
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 # Env credentials
 KITE_API_KEY = env.KITE_API_KEY

@@ -2,7 +2,13 @@
 Configuration for backtest parameters.
 """
 BACKTEST_CONFIG = {
-    "start_date": "2025-04-01",
-    "end_date": "2025-10-30",
-    "capital": 100000
+    "start_date": "2025-02-01",
+    "end_date": "2025-04-30",
+    "capital": 100000,
+    "capital_per_trade": 20000,
+    "minimum_entry_score": 13,
+    "max_trades_per_day": 5,
+    "max_hold_days": 10,
+    "stop_loss_threshold": -5.0,
+    "profit_target": 5.0
 }

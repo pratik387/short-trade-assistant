@@ -2,7 +2,6 @@
 # @used_by: base_broker.py, entry_service.py, exit_service.py, kite_broker.py, kite_client.py, suggestion_logic.py, trade_executor.py
 # @filter_type: utility
 # @tags: broker, mock, test
-import logging
 from datetime import datetime
 from typing import List, Optional
 import pandas as pd
@@ -10,8 +9,9 @@ from pathlib import Path
 from brokers.base_broker import BaseBroker
 from brokers.kite.kite_broker import KiteBroker
 from brokers.data.indexes import get_index_symbols
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 class MockBroker(BaseBroker):
     def __init__(self, interval: str = "day", index: str = "nifty_50", use_cache: bool = True):

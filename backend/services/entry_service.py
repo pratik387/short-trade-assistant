@@ -2,12 +2,12 @@
 # @used_by: suggestion_logic.py
 # @filter_type: logic
 # @tags: entry, strategy, service
-import logging
 import time
 from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 class EntryService:
     def __init__(self, data_provider, config: dict, index: str = "nifty_50"):
@@ -26,7 +26,6 @@ class EntryService:
         start_all = time.perf_counter()
 
         suggestions = []
-        rsi_vals = []
 
         symbols = self.data_provider.get_symbols(self.index) or []
         logger.debug("Fetched %d symbols to evaluate", len(symbols))
@@ -60,11 +59,9 @@ class EntryService:
                     logger.debug("%s did not pass hard filters, skipping", symbol)
                     continue
 
-                rsi = float(latest["RSI"])
-                rsi_vals.append(rsi)
-                avg_rsi = sum(rsi_vals) / len(rsi_vals) if rsi_vals else rsi
-
-                score = calculate_score(latest, self.weights, avg_rsi, candle_match=False, symbol=symbol)
+                avg_rsi = df["RSI"].rolling(14).mean().iloc[-1]
+                score, breakdown = calculate_score(latest, self.config, avg_rsi, candle_match=False, symbol=symbol)
+                logger.info(f"Scored {symbol}: {score:.2f} | Breakdown: {breakdown}")
 
                 suggestions.append({
                     "symbol": symbol,
@@ -72,7 +69,7 @@ class EntryService:
                     "adx": round(float(latest["ADX_14"]), 2),
                     "dmp": round(float(latest["DMP_14"]), 2),
                     "dmn": round(float(latest["DMN_14"]), 2),
-                    "rsi": round(rsi, 2),
+                    "rsi": round(float(latest["RSI"]), 2),
                     "macd": round(float(latest["MACD"]), 2),
                     "macd_signal": round(float(latest["MACD_Signal"]), 2),
                     "bb": round(float(latest.get("BB_%B", 0)), 2),
@@ -94,7 +91,7 @@ class EntryService:
             except DataUnavailableException:
                 logger.exception("Symbol not available: %s", symbol)
                 continue                
-            except Exception:
+            except Exception as e:
                 logger.exception("Error processing symbol %s", symbol)
                 continue
 

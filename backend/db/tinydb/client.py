@@ -2,13 +2,13 @@
 # @used_by: exit_job_runner.py, portfolio_router.py, suggestion_router.py, tick_listener.py
 # @filter_type: utility
 # @tags: tinydb, db, client
-import logging
 import os
 from tinydb import TinyDB
 from pathlib import Path
 
 # Logger setup
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+logger, trade_logger = get_loggers()
 
 # Directory to store TinyDB tables
 DB_DIR = Path(__file__).resolve().parents[1] / "db" / "tinydb" / "tables"

@@ -3,7 +3,6 @@
 # @filter_type: logic
 # @tags: tick, stream, listener
 import threading
-import logging
 from kiteconnect import KiteTicker
 from config.env_setup import env
 from db.tinydb.client import get_table
@@ -15,7 +14,10 @@ from exceptions.exceptions import InvalidTokenException
 from services.notification.sms_service import send_kite_login_sms
 from brokers.kite.kite_client import kite, set_access_token_from_file, TOKEN_FILE
 
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+# Set up logging first
+logger, trade_logger = get_loggers()
 
 # Track current subscriptions
 tokens_subscribed = set()

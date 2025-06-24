@@ -6,6 +6,9 @@
   "rsi_max": 80,
   "min_price": 50,
   "min_volume": 100000,
+  "obv_min": 1000000,
+  "atr_min": 5,
+  "stochastic_threshold": 80,
   "score_weights": {
     "adx": 3,
     "macd": 3,
@@ -17,6 +20,7 @@
     "stochastic": 2,
     "obv": 2,
     "atr": 1,
+    "rsi":1,
     "fibonacci_support": 2
   },
   "exit_strategy": {

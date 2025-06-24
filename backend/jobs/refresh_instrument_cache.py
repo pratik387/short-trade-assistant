@@ -7,13 +7,13 @@ import pandas as pd
 import json
 from pathlib import Path
 from io import StringIO
-import logging
+from config.logging_config import get_loggers
 from exceptions.exceptions import InvalidTokenException
 from util.util import retry
 
 from routes.kite_auth_router import kite
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "assets/indexes"
 DATA_DIR.mkdir(exist_ok=True)

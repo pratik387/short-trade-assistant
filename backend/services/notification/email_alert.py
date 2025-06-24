@@ -6,6 +6,9 @@ import smtplib
 from email.message import EmailMessage
 import os
 from dotenv import load_dotenv
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 load_dotenv()
 

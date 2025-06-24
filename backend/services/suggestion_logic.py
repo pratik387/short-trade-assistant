@@ -2,14 +2,15 @@
 # @used_by: suggestion_router.py
 # @filter_type: logic
 # @tags: suggestion, scoring, logic
-import logging
 from config.filters_setup import load_filters
 from services.entry_service import EntryService
 from services.technical_analysis import prepare_indicators, calculate_score
 from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+# Set up logging first
+logger, trade_logger = get_loggers()
 
 def get_filtered_stock_suggestions(interval="day", index="nifty_50"):
     try:
@@ -35,8 +36,7 @@ class SuggestionLogic:
 
     def score_single_stock(self, symbol: str):
         try:
-            enriched_symbol = f"{symbol.upper()}.NS"
-            df = self.data_provider.fetch_candles(enriched_symbol, self.interval, 180)
+            df = self.data_provider.fetch_candles(symbol, self.interval, 180)
             if df is None or df.empty:
                 return None
 
@@ -53,18 +53,20 @@ class SuggestionLogic:
                 }
 
             avg_rsi = enriched["RSI"].rolling(14).mean().iloc[-1]
-            score = calculate_score(latest, self.weights, avg_rsi, candle_match=False)
+            score, breakdown = calculate_score(latest, self.config, avg_rsi, candle_match=False, symbol=symbol)
 
             suggestion = "buy" if score >= 10 else "avoid"
-            logger.info("Scored %s: %.2f (%s)", symbol, score, suggestion)
+            logger.info(f"Scored {symbol}: {score:.2f} ({suggestion}) | Breakdown: {breakdown}")
 
             return {
                 "symbol": symbol,
                 "score": round(score, 2),
                 "suggestion": suggestion,
                 "close": round(latest["close"], 2),
-                "volume": int(latest["volume"])
+                "volume": int(latest["volume"]),
+                "score_breakdown": breakdown
             }
+        
         except InvalidTokenException:
             raise
         except Exception as e:

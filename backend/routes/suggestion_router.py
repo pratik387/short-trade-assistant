@@ -2,7 +2,6 @@
 # @used_by: exit_job_runner.py, exit_service.py
 # @filter_type: system
 # @tags: router, suggestion, api
-import logging
 from fastapi import APIRouter, HTTPException, Query
 from exceptions.exceptions import InvalidTokenException
 from pydantic import BaseModel
@@ -13,13 +12,14 @@ from brokers.kite.kite_broker import KiteBroker
 from db.tinydb.client import get_table
 from config.filters_setup import load_filters
 from services.notification.email_alert import send_exit_email
+from config.logging_config import get_loggers
 
 from services.suggestion_logic import (
     get_filtered_stock_suggestions,
     SuggestionLogic
 )
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 router = APIRouter()
 
@@ -82,7 +82,6 @@ def check_exit(request: ExitCheckRequest):
         config = load_filters()
         portfolio_db = get_table("portfolio")
         broker = KiteBroker()
-        data_provider = broker
         trade_executor = TradeExecutor(broker=broker)
 
         def notifier(symbol: str, price: float):
@@ -97,13 +96,12 @@ def check_exit(request: ExitCheckRequest):
         service = ExitService(
             config=config,
             portfolio_db=portfolio_db,
-            data_provider=data_provider,
+            data_provider=broker,
             trade_executor=trade_executor,
-            notifier=notifier,
-            blocked_logger=blocked_logger
+            notifier=notifier
         )
 
-        result = service.check_exit_for_symbol(
+        result = service.evaluate_exit_filters(
             symbol=request.symbol,
             entry_price=request.entry_price,
             entry_time=request.entry_time

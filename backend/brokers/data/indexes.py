@@ -4,9 +4,9 @@
 # @tags: symbol, nifty, banknifty
 import json
 from pathlib import Path
-import logging
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "assets/indexes"
 

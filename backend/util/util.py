@@ -5,14 +5,14 @@
 import pandas as pd
 from pathlib import Path
 import json
-import logging
 import time
 import functools
 from jobs.refresh_holidays import download_nse_holidays
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from brokers.kite.kite_client import set_access_token_from_file
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 HOLIDAY_FILE = Path(__file__).resolve().parents[1] / "assets" / "nse_holidays.json"
 def is_market_active(date=None):

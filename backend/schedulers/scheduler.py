@@ -2,7 +2,6 @@
 # @used_by: tick_listener.py
 # @filter_type: system
 # @tags: scheduler, cron, background
-import logging
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, JobExecutionEvent
@@ -10,8 +9,9 @@ from apscheduler.events import EVENT_JOB_EXECUTED, EVENT_JOB_ERROR, JobExecution
 from jobs.refresh_instrument_cache import refresh_index_cache
 from jobs.refresh_holidays import download_nse_holidays
 from services.notification.sms_service import send_kite_login_sms
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 # --- Scheduler init ---
 scheduler = BackgroundScheduler()

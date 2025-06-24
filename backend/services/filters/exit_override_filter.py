@@ -2,8 +2,9 @@
 # @used_by: technical_analysis_exit.py
 # @filter_type: exit
 # @tags: exit, override, manual
-import logging
-logger = logging.getLogger(__name__)
+from config.logging_config import get_loggers
+
+logger, trade_logger = get_loggers()
 
 def check_overrides(df, ma_short=20, ma_long=50, rsi_lower=50, symbol: str = ""):
     short_ma = df["close"].rolling(ma_short).mean().iloc[-1]

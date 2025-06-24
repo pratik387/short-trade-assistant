@@ -1,8 +1,6 @@
-import os
 import yfinance as yf
 import pandas as pd
 import json
-from datetime import datetime
 from pathlib import Path
 
 # Directory to save CSVs

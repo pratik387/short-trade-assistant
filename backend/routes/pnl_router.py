@@ -4,10 +4,10 @@
 # @tags: router, pnl, api
 from fastapi import APIRouter, HTTPException
 from db.tinydb.client import get_table
-import logging
+from config.logging_config import get_loggers
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 @router.get("/pnl")
 def get_pnl_data():

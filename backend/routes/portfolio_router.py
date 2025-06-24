@@ -2,14 +2,14 @@
 # @used_by: project_map.py
 # @filter_type: system
 # @tags: router, portfolio, track
-import logging
 from fastapi import APIRouter, HTTPException
 from typing import List
 from tinydb import Query, TinyDB
 from db.tinydb.client import get_table
 from util.portfolio_schema import PortfolioStock
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 StockQuery = Query()
 portfolio: TinyDB = get_table("portfolio")

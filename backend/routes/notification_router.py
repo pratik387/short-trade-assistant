@@ -4,10 +4,11 @@
 # @tags: router, notification, email
 from fastapi import APIRouter, Request, HTTPException
 from services.notification.email_alert import send_exit_email
-import logging
+from config.logging_config import get_loggers
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
+
 
 @router.post("/send-exit-email")
 async def trigger_exit_email(request: Request):

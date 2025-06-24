@@ -5,9 +5,9 @@
 from datetime import datetime
 from twilio.rest import Client
 import os
-import logging
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 def send_kite_login_sms():
     kite_api_key = os.getenv("KITE_API_KEY")

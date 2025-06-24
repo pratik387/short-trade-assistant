@@ -2,11 +2,10 @@
 # @used_by: technical_analysis.py, technical_analysis_exit.py
 # @filter_type: utility
 # @tags: indicator, macd, trend
-import logging
 import pandas as pd
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
-
+logger, trade_logger = get_loggers()
 def calculate_macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 26, signal_period: int = 9, symbol: str = "") -> pd.DataFrame:
     """
     Calculate MACD, Signal Line, and Histogram.

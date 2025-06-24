@@ -2,7 +2,6 @@
 # @used_by: exit_job_runner.py, suggestion_logic.py, suggestion_router.py, tick_listener.py
 # @filter_type: utility
 # @tags: broker, kite, data_provider
-import logging
 from datetime import datetime, timedelta
 import pandas as pd
 from brokers.base_broker import BaseBroker
@@ -10,8 +9,9 @@ from brokers.kite.kite_client import kite
 from brokers.data.indexes import get_index_symbols
 from exceptions.exceptions import InvalidTokenException
 from util.util import retry
+from config.logging_config import get_loggers
 
-logger = logging.getLogger(__name__)
+logger, trade_logger = get_loggers()
 
 class KiteBroker(BaseBroker):
     symbol_map = {
@@ -22,6 +22,9 @@ class KiteBroker(BaseBroker):
     def get_symbols(self, index):
         """Return all symbol-token mappings for the current index."""
         return get_index_symbols(index)
+    
+    def format_symbol(self, symbol):
+        return symbol if symbol.endswith(".NS") else f"{symbol.upper()}.NS"
 
     @retry()
     def fetch_candles(
@@ -33,7 +36,8 @@ class KiteBroker(BaseBroker):
         to_date: datetime = None
     ):
         try:
-            instrument = self.symbol_map.get(symbol)
+            enriched_symbol = self.format_symbol(symbol)
+            instrument = self.symbol_map.get(enriched_symbol)
             if instrument is None:
                 raise ValueError(f"Instrument token not found for {symbol}")
 
