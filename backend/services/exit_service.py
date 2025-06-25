@@ -17,14 +17,42 @@ class ExitService:
         self.trade_executor = trade_executor
         self.notifier = notifier
 
-    def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime) -> dict:
+    def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime, current_date: datetime) -> dict:
         df = self.data_provider.fetch_candles(symbol=symbol, interval="day", days=30)
         df = prepare_exit_indicators(df)
         current_price = df["close"].iloc[-1]
         pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
         days_held = (datetime.now(india_tz) - entry_time).days
 
-        allow_exit, reasons = apply_exit_filters(df, entry_price, entry_time, self.config.get("exit_criteria", {}), self.config.get("fallback_exit_if_data_missing", True), symbol=symbol)
+        allow_exit, reasons = apply_exit_filters(
+            df,
+            entry_price,
+            entry_time,
+            current_date,
+            self.config.get("exit_criteria", {}),
+            self.config.get("fallback_exit_if_data_missing", True),
+            symbol=symbol
+        )
+
+        # Adaptive Trailing Stop Loss Logic
+        atr = df["atr"].iloc[-1] if "atr" in df.columns else 0
+        factor = self.config.get("exit_strategy", {}).get("trailing_atr_factor", 1.5)
+        highest_price = max(df["close"][-10:])  # past 10 days
+        trailing_stop = highest_price - atr * factor
+        trailing_exit_triggered = current_price <= trailing_stop
+
+        if trailing_exit_triggered and not allow_exit:
+            reasons.append({
+                "filter": "atr_trailing_stop",
+                "weight": 10,
+                "reason": f"Trailing SL hit | Current: ₹{current_price}, SL: ₹{trailing_stop:.2f}, ATR={atr:.2f}, Factor={factor}"
+            })
+            allow_exit = True
+
+        # Aggregate scoring from breakdown
+        initial_score = sum(r["weight"] for r in reasons)
+        final_score = initial_score  # Future room for score changes
+        score_drop = 0  # Placeholder for future delta
 
         result = {
             "symbol": symbol,
@@ -33,9 +61,9 @@ class ExitService:
             "pnl_percent": pnl_percent,
             "days_held": days_held,
             "recommendation": "EXIT" if allow_exit else "HOLD",
-            "initial_score": sum(r["weight"] for r in reasons),
-            "final_score": sum(r["weight"] for r in reasons),
-            "score_drop": 0,
+            "initial_score": initial_score,
+            "final_score": final_score,
+            "score_drop": score_drop,
             "reasons": reasons
         }
         self.log_exit_decision(symbol, result)
@@ -66,7 +94,8 @@ class ExitService:
                 price=result["current_price"],
                 order_type="MARKET"
             )
-            trade_logger.info(f"✅ Exiting {stock['symbol']} at ₹{result['current_price']} | PnL: ₹{result['pnl_percent']}% | Reason: {result['reasons']}")
+            reason_summary = ", ".join([r['filter'] for r in result['reasons']])
+            trade_logger.info(f"✅ Exiting {stock['symbol']} at ₹{result['current_price']} | PnL: {result['pnl_percent']}% | Reasons: {reason_summary}")
             if self.notifier:
                 self.notifier(stock["symbol"], result["current_price"])
         except OrderPlacementException as e:

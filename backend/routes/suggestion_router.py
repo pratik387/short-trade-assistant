@@ -13,6 +13,8 @@ from db.tinydb.client import get_table
 from config.filters_setup import load_filters
 from services.notification.email_alert import send_exit_email
 from config.logging_config import get_loggers
+from pytz import timezone as pytz_timezone
+india_tz = pytz_timezone("Asia/Kolkata")
 
 from services.suggestion_logic import (
     get_filtered_stock_suggestions,
@@ -104,7 +106,8 @@ def check_exit(request: ExitCheckRequest):
         result = service.evaluate_exit_filters(
             symbol=request.symbol,
             entry_price=request.entry_price,
-            entry_time=request.entry_time
+            entry_time=request.entry_time,
+            current_date=datetime.now(india_tz)
         )
         return result
 

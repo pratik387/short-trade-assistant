@@ -49,12 +49,12 @@
   "max_holding_minutes": 240,
   "use_pivot_break": false,
   "use_ma_cross": true,
-  "ma_short": 20,
+  "ma_short": 30,
   "ma_long": 50,
   "weight_ma_cross": 4,
   "use_rsi_drop": true,
   "rsi_upper": 70,
-  "rsi_lower": 50,
+  "rsi_lower": 45,
   "weight_rsi_drop": 3,
   "use_trailing_atr": true,
   "atr_multiplier": 3,
@@ -66,14 +66,15 @@
   "weight_atr_squeeze": 3,
   "weight_time_decay": 2,
   "weight_fibonacci": 2,
-  "weight_adx_exit": 3,
+  "weight_adx_exit": 2,
   "weight_macd_exit": 3,
-  "adx_exit_threshold":30,
+  "adx_exit_threshold":35,
   "atr_squeeze_threshold":0.01,
   "bb_exit_threshold":0.9,
   "fibonacci_exit_retracement_zone":0.99,
   "rsi_exit_threshold":70,
   "duration_threshold":5,
-  "pnl_threshold":0.01
+  "pnl_threshold":0.01,
+  "trailing_atr_factor": 1.5
 }
 }

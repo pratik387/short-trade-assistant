@@ -27,6 +27,7 @@ MAX_HOLD_DAYS = BACKTEST_CONFIG["max_hold_days"]
 PROFIT_TARGET = BACKTEST_CONFIG["profit_target"]
 STOP_LOSS_THRESHOLD = BACKTEST_CONFIG["stop_loss_threshold"]
 MIN_ENTRY_SCORE = BACKTEST_CONFIG["minimum_entry_score"]
+MIN_HOLD_DAYS = BACKTEST_CONFIG["minimum_holding_days "]
 
 logger, trade_logger = get_loggers()
 
@@ -79,7 +80,7 @@ def run_backtest():
                 stop_loss_price = entry_price * (1 + STOP_LOSS_THRESHOLD / 100)
                 days_held = (current_date - buy_date).days
 
-                result = exit_service.evaluate_exit_filters(symbol, entry_price, buy_date)
+                result = exit_service.evaluate_exit_filters(symbol, entry_price, buy_date, current_date=current_date)
                 allow_exit = result["recommendation"] == "EXIT"
                 exit_score = result.get("final_score")
                 score_before = position.get("score", "?")
@@ -89,8 +90,12 @@ def run_backtest():
                 reason = "exit signal"
                 exit_price = current_close
 
-                if day_low <= stop_loss_price:
-                    reason = f"🛑 stop-loss hit intraday (low: ₹{day_low:.2f} <= SL ₹{stop_loss_price:.2f})"
+                if (day_low <= stop_loss_price and days_held == 0):
+                    reason = f"🔝 stop-loss hit intraday (low: ₹{day_low:.2f} <= SL ₹{stop_loss_price:.2f})"
+                    exit_price = stop_loss_price
+                    trigger_exit = True
+                elif (day_low <= stop_loss_price and days_held != 0):
+                    reason = f"🔝 stop-loss hit (low: ₹{day_low:.2f} <= SL ₹{stop_loss_price:.2f})"
                     exit_price = stop_loss_price
                     trigger_exit = True
                 elif ((current_close - entry_price) / entry_price) * 100 >= PROFIT_TARGET:
@@ -168,11 +173,53 @@ def run_backtest():
             current_date += timedelta(days=1)
             current_date = current_date.replace(hour=9, minute=30, second=0)
 
+        # Graceful exit for remaining open trades
+        grace_days = MAX_HOLD_DAYS + 10
+        extension_date = current_date
+        grace_counter = 0
+
+        while open_positions and grace_counter <= grace_days:
+            extension_date += timedelta(days=1)
+            extension_date = extension_date.replace(hour=9, minute=30, second=0)
+            grace_counter += 1
+
+            logger.info(f"🗕️ Grace Day {grace_counter}: Checking exits for open trades")
+
+            symbols_to_remove = []
+            for symbol, position in open_positions.items():
+                buy_date = position["entry_date"]
+                df = broker.fetch_candles(symbol, interval="day", from_date=start_date, to_date=extension_date)
+                if df is None or len(df) < 2 or extension_date not in df.index:
+                    exit_price = df.iloc[-1]["close"]
+                    qty = position["qty"]
+                    capital += qty * exit_price
+                    pnl = qty * (exit_price - position["entry_price"])
+                    logger.info(f"📄 Force Exit (No candle): {symbol} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f}")
+                    trade_logger.info(f"EXIT | {symbol} | Forced Exit | Qty: {qty} | Entry: ₹{position['entry_price']:.2f} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f}")
+                    recorder.record_exit(symbol, extension_date.strftime("%Y-%m-%d"), exit_price)
+                    symbols_to_remove.append(symbol)
+                    continue
+
+                result = exit_service.evaluate_exit_filters(symbol, position["entry_price"], buy_date, current_date=extension_date)
+                if result["recommendation"] == "EXIT":
+                    qty = position["qty"]
+                    exit_price = df.loc[extension_date]["close"]
+                    capital += qty * exit_price
+                    pnl = qty * (exit_price - position["entry_price"])
+                    reason = "Natural exit after extension period"
+                    logger.info(f"✅ Exiting {symbol} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | {reason}")
+                    trade_logger.info(f"EXIT | {symbol} | Qty: {qty} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | {reason}")
+                    recorder.record_exit(symbol, extension_date.strftime("%Y-%m-%d"), exit_price)
+                    symbols_to_remove.append(symbol)
+
+            for s in symbols_to_remove:
+                del open_positions[s]
+
         recorder.export_csv()
         logger.info("✅ Backtest finished. Final capital: ₹{:.2f}".format(capital))
-    
+
     except Exception as e:
-        logger.error("exception")
+        logger.exception(f"Failed: {e}")
 
 if __name__ == "__main__":
     run_backtest()

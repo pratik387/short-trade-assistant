@@ -44,7 +44,7 @@ def prepare_exit_indicators(df: pd.DataFrame) -> pd.DataFrame:
             agent_logger.warning(f"{func.__name__} failed — {e}")
     return df
 
-def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetime, criteria: dict, fallback_exit: bool, symbol: str = "") -> tuple[bool, list[dict]]:
+def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetime, current_date:datetime, criteria: dict, fallback_exit: bool, symbol: str = "") -> tuple[bool, list[dict]]:
     reasons = []
     total_score = 0
     threshold = criteria.get("soft_exit_threshold", 6)
@@ -75,7 +75,7 @@ def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetim
 
     if isinstance(entry_time, str):
         entry_time = parse(entry_time)
-    decay_exit, decay_reason = time_decay_filter(entry_price, entry_time, df, criteria.get("duration_threshold"), criteria.get("pnl_threshold"), symbol=symbol)
+    decay_exit, decay_reason = time_decay_filter(entry_price, entry_time, df, current_date, criteria.get("duration_threshold"), criteria.get("pnl_threshold"), symbol=symbol)
     process_filter("Time Decay", decay_exit, criteria.get("weight_time_decay", 0), decay_reason)
 
     fib_exit, fib_reason = fibonacci_exit_filter(df, criteria.get("fibonacci_exit_retracement_zone"), symbol=symbol)
