@@ -14,5 +14,5 @@ def calculate_stochastic(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     df['stochastic_k'] = 100 * (df['close'] - low_min) / (high_max - low_min)
     df['stochastic_k'] = df['stochastic_k'].fillna(0)
     df['stochastic_d'] = df['stochastic_k'].rolling(window=3).mean().fillna(0)
-    logger.info(f"[STOCHASTIC] {symbol} | %K={df['stochastic_k'].iloc[-1]:.2f} | %D={df['stochastic_d'].iloc[-1]:.2f}")
+    logger.debug(f"[STOCHASTIC] {symbol} | %K={df['stochastic_k'].iloc[-1]:.2f} | %D={df['stochastic_d'].iloc[-1]:.2f}")
     return df[['stochastic_k', 'stochastic_d']]

@@ -14,7 +14,7 @@ def is_bullish_engulfing(df: pd.DataFrame, symbol: str = "") -> bool:
     curr = df.iloc[-1]
 
     result = (prev['close'] < prev['open'] and curr['close'] > curr['open'] and curr['close'] > prev['open'] and curr['open'] < prev['close'])
-    logger.info(f"[ENGULFING] {symbol} | Result={'✅' if result else '❌'}")
+    logger.debug(f"[ENGULFING] {symbol} | Result={'✅' if result else '❌'}")
     return result
 
 def is_hammer(df: pd.DataFrame, symbol: str = "") -> bool:
@@ -25,5 +25,5 @@ def is_hammer(df: pd.DataFrame, symbol: str = "") -> bool:
     lower_wick = candle['open'] - candle['low'] if candle['open'] > candle['close'] else candle['close'] - candle['low']
     upper_wick = candle['high'] - max(candle['close'], candle['open'])
     result = lower_wick > 2 * body and upper_wick < body and body > 0
-    logger.info(f"[HAMMER] {symbol} | Result={'✅' if result else '❌'}")
+    logger.debug(f"[HAMMER] {symbol} | Result={'✅' if result else '❌'}")
     return result

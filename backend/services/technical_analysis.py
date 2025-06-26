@@ -18,7 +18,7 @@ logger, trade_logger = get_loggers()
 
 def prepare_indicators(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
     try:
-        logger.info(f"🔍 Preparing indicators for {symbol}")
+        logger.debug(f"🔍 Preparing indicators for {symbol}")
         df['EMA_20'] = df['close'].ewm(span=20, adjust=False).mean()
         df['EMA_50'] = df['close'].ewm(span=50, adjust=False).mean()
         df['SMA_50'] = df['close'].rolling(window=50).mean()
@@ -40,7 +40,7 @@ def prepare_indicators(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
             fib_levels.append(calculate_fibonacci_levels(window) if len(window) >= 2 else {})
         df['fibonacci_levels'] = fib_levels
 
-        logger.info(f"✅ Indicator preparation complete for {symbol}")
+        logger.debug(f"✅ Indicator preparation complete for {symbol}")
         return df
     except Exception as e:
         logger.exception(f"❌ Error preparing indicators for {symbol}: {e}")
@@ -48,13 +48,13 @@ def prepare_indicators(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
 
 def passes_hard_filters(latest: pd.Series, cfg: dict, symbol: str = "") -> bool:
     try:
-        logger.info(f"🔍 Evaluating hard filters for {symbol}")
+        logger.debug(f"🔍 Evaluating hard filters for {symbol}")
         if latest['ADX_14'] < cfg.get('adx_threshold', 30): return False
         if not (cfg.get('rsi_min', 40) <= latest['RSI'] <= cfg.get('rsi_max', 70)): return False
         if latest['MACD'] <= latest['MACD_Signal']: return False
         if latest['DMP_14'] <= latest['DMN_14']: return False
         if not is_fibonacci_support_zone(latest['close'], latest['fibonacci_levels'], symbol=symbol): return False
-        logger.info(f"✅ {symbol} passed all hard filters")
+        logger.debug(f"✅ {symbol} passed all hard filters")
         return True
     except Exception as e:
         logger.exception(f"❌ Error in hard filter evaluation for {symbol}: {e}")

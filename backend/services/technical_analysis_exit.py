@@ -16,10 +16,15 @@ from services.filters.exit_time_decay_filter import time_decay_filter
 from services.filters.exit_fibonacci_filter import fibonacci_exit_filter
 from services.filters.adx_filter import calculate_adx
 from services.filters.macd_filter import calculate_macd
+from services.filters.atr_filter import calculate_atr
+from services.filters.rsi_filter import calculate_rsi
+from services.filters.bollinger_band_filter import calculate_bollinger_bands
+from services.filters.obv_filter import calculate_obv
+from services.filters.fibonacci_filter import calculate_fibonacci_levels, is_fibonacci_support_zone
 
 agent_logger, _ = get_loggers()
 
-def prepare_exit_indicators(df: pd.DataFrame) -> pd.DataFrame:
+def prepare_exit_indicators(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
     if "close" not in df.columns:
         raise ValueError("Missing 'close' column for MACD/ADX calculation")
     if len(df) < 15:
@@ -28,6 +33,16 @@ def prepare_exit_indicators(df: pd.DataFrame) -> pd.DataFrame:
     try:
         df = calculate_macd(df)
         df = df.join(calculate_adx(df[['high', 'low', 'close']], 30, False))
+        df = df.join(calculate_atr(df, symbol))
+        df = df.join(calculate_obv(df, symbol=symbol))
+        r = calculate_rsi(df[['close']], symbol=symbol)
+        df['RSI'] = r['RSI'] if isinstance(r, pd.DataFrame) else r
+        df = calculate_bollinger_bands(df, symbol=symbol)
+        closes = df["close"].tail(20)
+        levels = calculate_fibonacci_levels(closes)
+        preferred_level = levels.get("0.5") or levels.get("0.382")  # fallback if 0.5 missing
+        if preferred_level:
+            df["fibonacci_resistance"] = preferred_level
     except Exception as e:
         agent_logger.warning(f"Indicator calculation failed: {e}")
 

@@ -18,5 +18,5 @@ def calculate_obv(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
         else:
             obv.append(obv[-1])
     df['obv'] = obv
-    logger.info(f"[OBV] {symbol} | OBV={df['obv'].iloc[-1]}")
+    logger.debug(f"[OBV] {symbol} | OBV={df['obv'].iloc[-1]}")
     return df[['obv']]

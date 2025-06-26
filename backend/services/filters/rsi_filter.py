@@ -20,5 +20,5 @@ def calculate_rsi(close_prices: pd.DataFrame, period: int = 14,  symbol: str = "
 
     rs = gain / loss
     rsi = 100 - (100 / (1 + rs))
-    logger.info(f"[RSI] {symbol} | RSI={rsi.iloc[-1]:.2f}")
+    logger.debug(f"[RSI] {symbol} | RSI={rsi.iloc[-1]:.2f}")
     return pd.Series(rsi, name="RSI", index=close.index)

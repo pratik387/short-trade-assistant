@@ -30,7 +30,7 @@ def calculate_adx(df: pd.DataFrame, period: int = 14, strict: bool = True, symbo
     adx = dx.ewm(span=period, min_periods=min_period, adjust=False).mean()
 
     last_adx, last_dmp, last_dmn = adx.iloc[-1], plus_di.iloc[-1], minus_di.iloc[-1]
-    logger.info(f"[ADX] {symbol} | ADX={last_adx:.2f}, DMP={last_dmp:.2f}, DMN={last_dmn:.2f}")
+    logger.debug(f"[ADX] {symbol} | ADX={last_adx:.2f}, DMP={last_dmp:.2f}, DMN={last_dmn:.2f}")
 
     return pd.DataFrame({
         'ADX_14': adx,

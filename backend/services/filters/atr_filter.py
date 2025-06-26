@@ -15,5 +15,5 @@ def calculate_atr(df: pd.DataFrame, symbol: str = "") -> pd.DataFrame:
         abs(df['low'] - df['close'].shift())
     ], axis=1).max(axis=1)
     df['atr'] = tr.rolling(window=14).mean().fillna(0)
-    logger.info(f"[ATR] {symbol} | ATR={df['atr'].iloc[-1]:.2f}")
+    logger.debug(f"[ATR] {symbol} | ATR={df['atr'].iloc[-1]:.2f}")
     return df[['atr']]

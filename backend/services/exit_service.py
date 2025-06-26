@@ -19,7 +19,7 @@ class ExitService:
 
     def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime, current_date: datetime) -> dict:
         df = self.data_provider.fetch_candles(symbol=symbol, interval="day", days=30)
-        df = prepare_exit_indicators(df)
+        df = prepare_exit_indicators(df, symbol)
         current_price = df["close"].iloc[-1]
         pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
         days_held = (datetime.now(india_tz) - entry_time).days

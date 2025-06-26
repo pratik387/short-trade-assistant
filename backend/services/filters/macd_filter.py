@@ -22,5 +22,5 @@ def calculate_macd(df: pd.DataFrame, fast_period: int = 12, slow_period: int = 2
     df['MACD'] = df['EMA_Fast'] - df['EMA_Slow']
     df['MACD_Signal'] = df['MACD'].ewm(span=signal_period, adjust=False).mean()
     df['MACD_Hist'] = df['MACD'] - df['MACD_Signal']
-    logger.info(f"[MACD] {symbol} | MACD={df['MACD'].iloc[-1]:.2f}, Signal={df['MACD_Signal'].iloc[-1]:.2f}")
+    logger.debug(f"[MACD] {symbol} | MACD={df['MACD'].iloc[-1]:.2f}, Signal={df['MACD_Signal'].iloc[-1]:.2f}")
     return df

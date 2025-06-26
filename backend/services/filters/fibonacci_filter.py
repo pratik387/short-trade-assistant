@@ -43,7 +43,7 @@ def is_fibonacci_support_zone(close_price: float, levels: dict, symbol: str = ""
     for key in ["0.618", "0.5", "0.382"]:
         level = levels.get(key)
         if level and abs(close_price - level) / close_price <= tolerance:
-            logger.info(f"[FIBONACCI] {symbol} | Close={close_price} near level={key}={level}")
+            logger.debug(f"[FIBONACCI] {symbol} | Close={close_price} near level={key}={level}")
             return True
-    logger.info(f"[FIBONACCI] {symbol} | Close={close_price} not near any key levels")
+    logger.debug(f"[FIBONACCI] {symbol} | Close={close_price} not near any key levels")
     return False
