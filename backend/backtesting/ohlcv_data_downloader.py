@@ -8,7 +8,7 @@ CACHE_DIR = Path(__file__).resolve().parent / "ohlcv_cache"
 CACHE_DIR.mkdir(exist_ok=True)
 
 # Define symbols to download
-INDEX_FILE = Path(__file__).resolve().parents[1] / "assets" / "indexes" / "nifty_500.json"
+INDEX_FILE = Path(__file__).resolve().parents[1] / "assets" / "indexes" / "nse_all.json"
 with open(INDEX_FILE) as f:
     data = json.load(f)
     NIFTY_500_SYMBOLS = [entry["symbol"] for entry in data]

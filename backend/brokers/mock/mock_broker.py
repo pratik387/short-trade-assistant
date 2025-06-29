@@ -19,8 +19,22 @@ class MockBroker(BaseBroker):
         self.cache_dir = Path(__file__).resolve().parents[2] / "backtesting" / "ohlcv_cache"
         self.live_broker = KiteBroker()
 
-    def get_ltp(self, symbols: List[str]) -> dict:
-        return self.live_broker.get_ltp(symbols)
+    def get_ltp(self, symbol: str) -> float:
+    
+        if self.use_cache:
+            file_path = self.cache_dir / f"{symbol}.csv"
+            if file_path.exists():
+                df = pd.read_csv(file_path, index_col="date", parse_dates=True)
+                if not df.empty:
+                    latest_close = df.iloc[-1]["close"]
+                    return latest_close
+                else:
+                    logger.warning(f"[MOCK][get_ltp] No data for {symbol}")
+            else:
+                logger.warning(f"[MOCK][get_ltp] File not found for {symbol}")
+
+        return self.live_broker.get_ltp(symbol=symbol)
+
 
     def fetch_candles(
         self,

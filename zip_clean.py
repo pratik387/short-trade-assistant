@@ -1,6 +1,6 @@
 import zipfile, os
 
-EXCLUDE_FOLDERS = {"__pycache__", ".venv", "node_modules", ".git", ".mypy_cache", ".vscode"}
+EXCLUDE_FOLDERS = {"__pycache__", ".venv", "node_modules", ".git", ".mypy_cache", ".vscode", ".ohlcv_cache"}
 EXCLUDE_FILES = {".env.production", ".env.development"}
 EXCLUDE_EXTENSIONS = {".log", ".pyc"}
 

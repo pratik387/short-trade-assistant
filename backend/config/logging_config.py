@@ -2,6 +2,8 @@
 
 import logging
 from pathlib import Path
+from datetime import datetime
+import os
 
 _agent_logger = None
 _trade_logger = None
@@ -13,8 +15,11 @@ def get_loggers():
     if _agent_logger and _trade_logger:
         return _agent_logger, _trade_logger
 
-    log_dir = Path(__file__).resolve().parents[1] / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
+    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_dir = Path(__file__).resolve().parents[1] / "logs" / run_id
+    os.makedirs(log_dir, exist_ok=True)
+    global dir_path
+    dir_path = log_dir
 
     formatter = logging.Formatter('%(asctime)s — %(levelname)s — %(name)s — %(message)s')
 
@@ -45,9 +50,7 @@ def switch_agent_log_file(month_str: str):
     if month_str == _current_log_month:
         return
 
-    log_dir = Path(__file__).resolve().parents[1] / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_file = log_dir / f"agent.{month_str}.log"
+    log_file = dir_path / f"agent.{month_str}.log"
 
     for h in _agent_logger.handlers[:]:
         _agent_logger.removeHandler(h)
@@ -57,3 +60,6 @@ def switch_agent_log_file(month_str: str):
     file_handler.setFormatter(formatter)
     _agent_logger.addHandler(file_handler)
     _current_log_month = month_str
+
+def get_log_directory():
+    return dir_path

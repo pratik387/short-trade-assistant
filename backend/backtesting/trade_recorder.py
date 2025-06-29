@@ -1,10 +1,12 @@
 import csv
 from pathlib import Path
+from config.logging_config import get_loggers, get_log_directory
+logger, trade_logger = get_loggers()
 
 class TradeRecorder:
     def __init__(self):
-        root_dir = Path(__file__).resolve().parents[2]  # points to short-trade-assistant/
-        self.output_path = root_dir / "backend" / "backtesting" / "logs" / "trades.csv"
+       
+        self.output_path = get_log_directory() / "trades.csv"
         self.trades = []
 
         # Ensure the directory exists

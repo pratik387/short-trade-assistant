@@ -95,7 +95,7 @@ class EntryService:
                 logger.exception("Error processing symbol %s", symbol)
                 continue
 
-        suggestions.sort(key=lambda x: x["score"], reverse=True)
+        suggestions.sort(key=self.tie_breaker)
         top_n = suggestions[:12]
         total_time = (time.perf_counter() - start_all)
         logger.info(
@@ -104,3 +104,12 @@ class EntryService:
         )
 
         return top_n
+    
+    # Smarter sorting with tie-breakers
+    def tie_breaker(x):
+        return (
+            -x.get("score", 0),                      # 1. Higher score
+            -x.get("ADX_14", 0),                     # 2. Stronger trend
+            abs(x.get("RSI", 50) - 50),              # 3. RSI closest to neutral
+            -x.get("volume", 0),                     # 4. Optional: Higher volume
+        )

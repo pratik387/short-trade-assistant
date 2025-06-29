@@ -9,3 +9,4 @@ __pycache__
 **/*.log
 /backtesting/logs/*
 /backtesting/ohlcv_cache/
+/logs/

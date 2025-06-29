@@ -53,7 +53,6 @@ def passes_hard_filters(latest: pd.Series, cfg: dict, symbol: str = "") -> bool:
         if not (cfg.get('rsi_min', 40) <= latest['RSI'] <= cfg.get('rsi_max', 70)): return False
         if latest['MACD'] <= latest['MACD_Signal']: return False
         if latest['DMP_14'] <= latest['DMN_14']: return False
-        if not is_fibonacci_support_zone(latest['close'], latest['fibonacci_levels'], symbol=symbol): return False
         logger.debug(f"✅ {symbol} passed all hard filters")
         return True
     except Exception as e:
