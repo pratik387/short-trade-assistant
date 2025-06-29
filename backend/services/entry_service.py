@@ -3,9 +3,11 @@
 # @filter_type: logic
 # @tags: entry, strategy, service
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers
+from brokers.mock.mock_broker import MockBroker
 
 logger, trade_logger = get_loggers()
 
@@ -18,6 +20,12 @@ class EntryService:
         self.min_volume = config.get("min_volume", 100_000)
         self.index = index
 
+        # Auto-adjust thread count for real brokers to avoid API throttling
+        if isinstance(data_provider, MockBroker):
+            self.max_workers = 30
+        else:
+            self.max_workers = 3
+
     def get_suggestions(self) -> list:
         logger.info(
             "Starting get_suggestions (min_price=%s, min_volume=%s)",
@@ -26,11 +34,10 @@ class EntryService:
         start_all = time.perf_counter()
 
         suggestions = []
-
         symbols = self.data_provider.get_symbols(self.index) or []
         logger.debug("Fetched %d symbols to evaluate", len(symbols))
 
-        for item in symbols:
+        def evaluate_symbol(item):
             symbol = item.get("symbol")
             symbol_start = time.perf_counter()
             try:
@@ -41,29 +48,30 @@ class EntryService:
                 )
                 if df is None or df.empty:
                     logger.debug("No data for %s, skipping", symbol)
-                    continue
+                    return None
 
                 df = prepare_indicators(df, symbol=symbol)
                 latest = df.iloc[-1]
 
                 if latest["close"] <= self.min_price:
-                    logger.debug("%s: close %s <= min_price %s, skipping",
-                                 symbol, latest["close"], self.min_price)
-                    continue
+                    logger.debug("%s: close %s <= min_price %s, skipping", symbol, latest["close"], self.min_price)
+                    return None
                 if latest["volume"] < self.min_volume:
-                    logger.debug("%s: volume %s < min_volume %s, skipping",
-                                 symbol, latest["volume"], self.min_volume)
-                    continue
+                    logger.debug("%s: volume %s < min_volume %s, skipping", symbol, latest["volume"], self.min_volume)
+                    return None
 
                 if not passes_hard_filters(latest, self.config, symbol=symbol):
                     logger.debug("%s did not pass hard filters, skipping", symbol)
-                    continue
+                    return None
 
                 avg_rsi = df["RSI"].rolling(14).mean().iloc[-1]
                 score, breakdown = calculate_score(latest, self.config, avg_rsi, candle_match=False, symbol=symbol)
                 logger.info(f"Scored {symbol}: {score:.2f} | Breakdown: {breakdown}")
 
-                suggestions.append({
+                elapsed_ms = (time.perf_counter() - symbol_start) * 1000
+                logger.debug("Processed %s in %.1fms, score=%.2f", symbol, elapsed_ms, score)
+
+                return {
                     "symbol": symbol,
                     "instrument_token": item.get("instrument_token"),
                     "adx": round(float(latest["ADX_14"]), 2),
@@ -80,20 +88,24 @@ class EntryService:
                     "score": score,
                     "close": round(float(latest["close"]), 2),
                     "volume": int(latest["volume"]),
-                })
-
-                elapsed_ms = (time.perf_counter() - symbol_start) * 1000
-                logger.debug("Processed %s in %.1fms, score=%.2f", symbol, elapsed_ms, score)
+                }
 
             except InvalidTokenException:
                 logger.error("Token expired while processing %s — aborting suggestions", symbol)
                 raise
             except DataUnavailableException:
                 logger.exception("Symbol not available: %s", symbol)
-                continue                
-            except Exception as e:
+                return None
+            except Exception:
                 logger.exception("Error processing symbol %s", symbol)
-                continue
+                return None
+
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            future_to_symbol = {executor.submit(evaluate_symbol, item): item for item in symbols}
+            for future in as_completed(future_to_symbol):
+                result = future.result()
+                if result:
+                    suggestions.append(result)
 
         suggestions.sort(key=self.tie_breaker)
         top_n = suggestions[:12]
@@ -104,12 +116,13 @@ class EntryService:
         )
 
         return top_n
-    
+
     # Smarter sorting with tie-breakers
-    def tie_breaker(x):
+    def tie_breaker(self, x):
         return (
             -x.get("score", 0),                      # 1. Higher score
             -x.get("ADX_14", 0),                     # 2. Stronger trend
             abs(x.get("RSI", 50) - 50),              # 3. RSI closest to neutral
             -x.get("volume", 0),                     # 4. Optional: Higher volume
         )
+

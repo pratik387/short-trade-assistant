@@ -35,7 +35,7 @@ def get_loggers():
     _trade_logger = logging.getLogger("trade")
     if not _trade_logger.hasHandlers():
         _trade_logger.setLevel(logging.INFO)
-        trade_file = logging.FileHandler(log_dir / "trades.log",  encoding="utf-8")
+        trade_file = logging.FileHandler(log_dir / "trade_logs.log",  encoding="utf-8")
         trade_file.setFormatter(formatter)
         _trade_logger.addHandler(trade_file)
 
