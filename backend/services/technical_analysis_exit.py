@@ -13,14 +13,14 @@ from services.filters.exit_bb_filter import bollinger_exit_filter
 from services.filters.exit_obv_filter import obv_exit_filter
 from services.filters.exit_atr_squeeze_filter import atr_squeeze_filter
 from services.filters.exit_time_decay_filter import time_decay_filter
-from services.filters.exit_fibonacci_filter import fibonacci_exit_filter
+from services.filters.exit_fibonacci_filter import fibonacci_exit_filter, fibonacci_support_exit_filter
 from services.filters.adx_filter import calculate_adx
 from services.filters.macd_filter import calculate_macd
 from services.filters.atr_filter import calculate_atr
 from services.filters.rsi_filter import calculate_rsi
 from services.filters.bollinger_band_filter import calculate_bollinger_bands
 from services.filters.obv_filter import calculate_obv
-from services.filters.fibonacci_filter import calculate_fibonacci_levels, is_fibonacci_support_zone
+from services.filters.fibonacci_filter import calculate_fibonacci_levels
 
 agent_logger, _ = get_loggers()
 
@@ -59,8 +59,9 @@ def prepare_exit_indicators(df: pd.DataFrame, symbol: str) -> pd.DataFrame:
             agent_logger.warning(f"{func.__name__} failed — {e}")
     return df
 
-def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetime, current_date:datetime, criteria: dict, fallback_exit: bool, symbol: str = "") -> tuple[bool, list[dict]]:
+def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetime, current_date: datetime, criteria: dict, fallback_exit: bool, symbol: str = "") -> tuple[bool, list[dict], list[tuple]]:
     reasons = []
+    breakdown = []
     total_score = 0
     threshold = criteria.get("soft_exit_threshold", 6)
 
@@ -69,6 +70,7 @@ def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetim
         if condition:
             total_score += weight
             reasons.append({"filter": label, "weight": weight, "reason": reason})
+        breakdown.append((label, weight, reason))
 
     adx_exit, adx_reason = adx_exit_filter(df, criteria.get("adx_exit_threshold"), symbol=symbol)
     process_filter("ADX", adx_exit, criteria.get("weight_adx_exit", 0), adx_reason)
@@ -96,10 +98,13 @@ def apply_exit_filters(df: pd.DataFrame, entry_price: float, entry_time: datetim
     fib_exit, fib_reason = fibonacci_exit_filter(df, criteria.get("fibonacci_exit_retracement_zone"), symbol=symbol)
     process_filter("Fibonacci", fib_exit, criteria.get("weight_fibonacci", 0), fib_reason)
 
+    fib_support_exit, fib_support_reason = fibonacci_support_exit_filter(df, symbol=symbol)
+    process_filter("Fibonacci Support Zone", fib_support_exit, criteria.get("weight_fibonacci_support_zone", 0), fib_support_reason)
+
     override_keys = {"use_override_exit", "override_exit_threshold"}
     override_args = {k: v for k, v in criteria.items() if k in override_keys}
     override_exit, override_reason = check_overrides(df, symbol=symbol, **override_args)
     process_filter("Override", override_exit, criteria.get("weight_override", 0), override_reason)
 
     allow_exit = total_score >= threshold
-    return allow_exit, reasons
+    return allow_exit, reasons, breakdown

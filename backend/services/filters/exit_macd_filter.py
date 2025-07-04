@@ -12,6 +12,8 @@ def macd_exit_filter(df, fallback=True, symbol: str = ""):
     if None in (macd, macd_signal):
         return fallback, "Missing MACD or Signal"
     logger.info(f"[EXIT-MACD] {symbol} | MACD={macd:.2f}, Signal={macd_signal:.2f}")
-    if macd < macd_signal:
-        return True, f"MACD crossover down (MACD={macd:.2f}, Signal={macd_signal:.2f})"
-    return False, ""
+    reason = f"MACD={macd:.2f}, Signal={macd_signal:.2f}"
+    condition = macd < macd_signal
+    if condition:
+        reason = f"MACD crossover down ({reason})"
+    return condition, reason

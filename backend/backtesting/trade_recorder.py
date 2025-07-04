@@ -1,12 +1,12 @@
 import csv
-from pathlib import Path
 from config.logging_config import get_loggers, get_log_directory
+from util.diagnostic_report_generator import diagnostics_tracker
 logger, trade_logger = get_loggers()
 
 class TradeRecorder:
     def __init__(self):
-       
-        self.output_path = get_log_directory() / "trades.csv"
+        self.log_folder_path = get_log_directory()
+        self.output_path = self.log_folder_path / "trades.csv"
         self.trades = []
 
         # Ensure the directory exists
@@ -38,3 +38,7 @@ class TradeRecorder:
             writer = csv.DictWriter(f, fieldnames=self.trades[0].keys())
             writer.writeheader()
             writer.writerows(self.trades)
+
+        output_csv_path = str(self.log_folder_path / "diagnostic_report.csv")
+        diagnostics_tracker.export(output_csv_path)
+        logger.info(f"📊 Diagnostics report saved to: {output_csv_path}")

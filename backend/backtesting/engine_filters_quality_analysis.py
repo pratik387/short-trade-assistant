@@ -16,7 +16,6 @@ from backtesting.trade_recorder import TradeRecorder
 from backtesting.config import BACKTEST_CONFIG
 from config.filters_setup import load_filters
 from db.tinydb.client import get_table
-from trading.trade_executor import TradeExecutor
 from util.util import is_market_active
 from config.logging_config import get_loggers, switch_agent_log_file
 
@@ -34,8 +33,7 @@ def run_quality_analysis():
 
     entry_service = EntryService(broker, config, "all")
     portfolio_db = get_table("portfolio")
-    trade_executor = TradeExecutor(broker=broker)
-    exit_service = ExitService(config=config, portfolio_db=portfolio_db, data_provider=broker, trade_executor=trade_executor)
+    exit_service = ExitService(config=config, portfolio_db=portfolio_db, data_provider=broker)
     recorder = TradeRecorder()
 
     capital = BACKTEST_CONFIG["capital"]
@@ -96,7 +94,24 @@ def run_quality_analysis():
                     reason = "🔁 exit filters triggered"
                     trigger_exit = True
 
+                if not allow_exit:
+                    result = {
+                        "symbol": symbol,
+                        "current_price": exit_price,
+                        "pnl_percent": round(((exit_price - entry_price) / entry_price) * 100, 2),
+                        "reasons": [{"filter": "non-filter-exit", "weight": 0, "reason": reason}],
+                        "initial_score": 0,
+                        "final_score": 0,
+                        "score_drop": 0,
+                        "recommendation": "EXIT",
+                        "breakdown": [],
+                        "days_held": days_held
+                    }
+
                 if trigger_exit:
+                    result["current_price"] = exit_price
+                    result["reason"] = reason
+                    exit_service.execute_exit(position, result, current_date)
                     qty = position["qty"]
                     capital += qty * exit_price
                     pnl = qty * (exit_price - entry_price)
@@ -129,11 +144,17 @@ def run_quality_analysis():
                 capital -= invested
 
                 open_positions[symbol] = {
-                    "entry_date": entry_date,
+                    "entry_date": current_date,
                     "entry_price": entry_price,
                     "qty": qty,
-                    "score": score
+                    "score": score,
+                    "symbol": symbol,
+                    "entry_filters": pick.get("reasons", []),       # optional
+                    "entry_indicators": pick.get("indicators", {})  # optional
                 }
+
+                
+                entry_service.execute_entry(pick, quantity=qty, timestamp = current_date)
                 logger.info(f"🛢 Buying {symbol} | Qty: {qty} | Entry Price: ₹{entry_price:.2f} | Invested: ₹{invested:.2f} | Entry Score: {score}")
                 trade_logger.info(f"ENTRY | {symbol} | Qty: {qty} | Entry Price: ₹{entry_price:.2f} | Invested: ₹{invested:.2f} | Score: {score}")
                 recorder.record_entry(symbol, entry_date.strftime("%Y-%m-%d"), entry_price, invested)
@@ -146,6 +167,20 @@ def run_quality_analysis():
             df = broker.fetch_candles(symbol, interval="day", from_date=start_date, to_date=end_date)
             df = df[df.index <= current_date]
             exit_price = df.iloc[-1]["close"]
+            pos["current_price"] = exit_price
+            pos["entry_price"] = pos["entry_price"]
+            pos["days_held"] = (current_date - pos["entry_date"]).days
+            result = {
+                "symbol": symbol,
+                "current_price": exit_price,
+                "pnl_percent": round(((exit_price - pos["entry_price"]) / pos["entry_price"]) * 100, 2),
+                "reasons": [{"filter": "forced_exit", "weight": 0, "reason": "Forced exit at end"}],
+                "initial_score": 0,
+                "final_score": 0,
+                "score_drop": 0,
+                "recommendation": "EXIT"
+            }
+            exit_service.execute_exit(pos, result, current_date)
             capital += pos["qty"] * exit_price
             pnl = pos["qty"] * (exit_price - pos["entry_price"])
             logger.info(f"📤 Force Exit {symbol} | Qty: {pos['qty']} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f}")

@@ -61,20 +61,22 @@ class MockBroker(BaseBroker):
         quantity: int,
         action: str,
         price: Optional[float] = None,
-        order_type: str = "MARKET"
+        order_type: str = "MARKET",
+        timestamp: Optional[datetime] = None
     ) -> dict:
+        order_time = timestamp or datetime.now()
         logger.info(f"[MOCK] Placing order: {action.upper()} {quantity} {symbol} @ {price or 'market'}")
         return {
             "status": "success",
-            "order_id": f"MOCK-{symbol[:3]}-{datetime.now().strftime('%H%M%S')}",
+            "order_id": f"MOCK-{symbol[:3]}-{order_time.strftime('%H%M%S')}",
             "symbol": symbol,
-            "quantity": quantity,
+            "qty": quantity,
             "action": action.upper(),
             "price": price or 100.0,
             "order_type": order_type.upper(),
             "product": "MIS",
             "variety": "regular",
-            "timestamp": datetime.now().isoformat()
+            "timestamp": order_time.isoformat()
         }
     
     def get_symbols(self, index):

@@ -28,6 +28,3 @@ def calculate_bollinger_bands(df: pd.DataFrame, window: int = 20, num_std_dev: f
     df['BB_%B'] = (df['close'] - df['BB_Lower']) / (df['BB_Upper'] - df['BB_Lower'])
     logger.debug(f"[BB] {symbol} | %B={df['BB_%B'].iloc[-1]:.2f}")
     return df
-
-    return df
-

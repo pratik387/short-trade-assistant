@@ -4,6 +4,7 @@
 # @tags: broker, abstract, interface
 from abc import ABC, abstractmethod
 from typing import List, Optional
+from datetime import datetime
 
 class BaseBroker(ABC):
     """
@@ -36,7 +37,8 @@ class BaseBroker(ABC):
         quantity: int,
         action: str,
         price: Optional[float] = None,
-        order_type: str = "MARKET"
+        order_type: str = "MARKET",
+        timestamp: Optional[datetime] = None
     ) -> dict:
         """Place a buy/sell order."""
         pass

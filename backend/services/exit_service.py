@@ -1,20 +1,21 @@
 # exit_service.py — Exit signal evaluation and trade handling
 
 from datetime import datetime
+from typing import Optional
 from pytz import timezone as pytz_timezone
 from config.logging_config import get_loggers
 from exceptions.exceptions import OrderPlacementException
 from services.technical_analysis_exit import prepare_exit_indicators, apply_exit_filters
+from util.diagnostic_report_generator import diagnostics_tracker
 
 agent_logger, trade_logger = get_loggers()
 india_tz = pytz_timezone("Asia/Kolkata")
 
 class ExitService:
-    def __init__(self, config, portfolio_db, data_provider, trade_executor, notifier=None):
+    def __init__(self, config, portfolio_db, data_provider, notifier=None):
         self.config = config
         self.portfolio_db = portfolio_db
         self.data_provider = data_provider
-        self.trade_executor = trade_executor
         self.notifier = notifier
 
     def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime, current_date: datetime) -> dict:
@@ -22,9 +23,9 @@ class ExitService:
         df = prepare_exit_indicators(df, symbol)
         current_price = df["close"].iloc[-1]
         pnl_percent = round(((current_price - entry_price) / entry_price) * 100, 2)
-        days_held = (datetime.now(india_tz) - entry_time).days
+        days_held = (current_date - entry_time).days
 
-        allow_exit, reasons = apply_exit_filters(
+        allow_exit, reasons, breakdown = apply_exit_filters(
             df,
             entry_price,
             entry_time,
@@ -42,11 +43,17 @@ class ExitService:
         trailing_exit_triggered = current_price <= trailing_stop
 
         if trailing_exit_triggered and not allow_exit:
-            reasons.append({
+            trailing_reason = {
                 "filter": "atr_trailing_stop",
                 "weight": 10,
                 "reason": f"Trailing SL hit | Current: ₹{current_price}, SL: ₹{trailing_stop:.2f}, ATR={atr:.2f}, Factor={factor}"
-            })
+            }
+            reasons.append(trailing_reason)
+            breakdown.append((
+                trailing_reason["filter"],
+                trailing_reason["weight"],
+                trailing_reason["reason"]
+            ))
             allow_exit = True
 
         # Aggregate scoring from breakdown
@@ -64,7 +71,9 @@ class ExitService:
             "initial_score": initial_score,
             "final_score": final_score,
             "score_drop": score_drop,
-            "reasons": reasons
+            "reasons": reasons,
+            "atr": atr,
+            "breakdown": breakdown
         }
         self.log_exit_decision(symbol, result)
         return result
@@ -78,25 +87,47 @@ class ExitService:
         agent_logger.info("Running check_exits on portfolio")
         for stock in self.portfolio_db.all():
             try:
-                result = self.evaluate_exit_filters(stock["symbol"], stock["buy_price"], stock["buy_time"])
+                result = self.evaluate_exit_filters(stock["symbol"], stock["entry_price"], stock["buy_time"], datetime.now(india_tz))
                 if result["recommendation"] == "EXIT":
-                    self.execute_exit(stock, result)
+                    self.execute_exit(stock, result, current_date=datetime.now(india_tz))
             except Exception as e:
                 agent_logger.warning(f"❌ Exit check failed for {stock['symbol']}: {e}")
 
-    def execute_exit(self, stock, result):
+    def execute_exit(self, stock, result, current_date: Optional[datetime] = None):
         try:
-            self.trade_executor.execute_trade(
-                symbol=stock["symbol"],
-                instrument_token=stock.get("instrument_token"),
-                quantity=stock["quantity"],
-                action="sell",
-                price=result["current_price"],
-                order_type="MARKET"
-            )
+            qty = stock["qty"]
+            symbol = stock["symbol"]
+            entry_price = stock["entry_price"]
+            exit_price = result["current_price"]
+            score_before = result["initial_score"]
+            score_after = result["final_score"]
             reason_summary = ", ".join([r['filter'] for r in result['reasons']])
-            trade_logger.info(f"✅ Exiting {stock['symbol']} at ₹{result['current_price']} | PnL: {result['pnl_percent']}% | Reasons: {reason_summary}")
-            if self.notifier:
-                self.notifier(stock["symbol"], result["current_price"])
+
+            exit_time = current_date or datetime.now(india_tz)
+
+            diagnostics_tracker.record_exit(
+                symbol=symbol,
+                exit_time=str(exit_time),
+                exit_price=exit_price,
+                pnl=result["pnl_percent"],
+                reason=reason_summary,
+                exit_filters=[(r["filter"], r["weight"], r["reason"]) for r in result.get("reasons", [])],
+                indicators=result.get("breakdown"),  # keep this strictly filter-wise data
+                days_held=result.get("days_held", 0),  # move to top-level
+                score_before=score_before,
+                score_after=score_after
+            )
+
+            self.data_provider.place_order(
+                symbol=symbol,
+                quantity=qty,
+                action="sell",
+                price=exit_price,
+                order_type="MARKET",
+                timestamp=exit_time
+            )
+
+            trade_logger.info(f"✅ Exiting {symbol} at ₹{exit_price} | PnL: {result['pnl_percent']}% | Reasons: {reason_summary}")
+
         except OrderPlacementException as e:
             agent_logger.warning(f"❌ Order placement failed for {stock['symbol']}: {e}")

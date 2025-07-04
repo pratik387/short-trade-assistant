@@ -4,6 +4,7 @@
 # @tags: broker, kite, data_provider
 from datetime import datetime, timedelta
 import pandas as pd
+from typing import Optional
 from brokers.base_broker import BaseBroker
 from brokers.kite.kite_client import kite
 from brokers.data.indexes import get_index_symbols
@@ -22,7 +23,7 @@ class KiteBroker(BaseBroker):
     def get_symbols(self, index):
         """Return all symbol-token mappings for the current index."""
         return get_index_symbols(index)
-    
+
     def format_symbol(self, symbol):
         return symbol if symbol.endswith(".NS") else f"{symbol.upper()}.NS"
 
@@ -71,7 +72,7 @@ class KiteBroker(BaseBroker):
             raise
 
     @retry()
-    def place_order(self, symbol: str, quantity: int, action: str):
+    def place_order(self, symbol: str, quantity: int, action: str,  timestamp: Optional[datetime] = None):
         try:
             exchange = "NSE"
             order_type = "MARKET"
@@ -92,7 +93,7 @@ class KiteBroker(BaseBroker):
                 "order_id": order_id,
                 "symbol": symbol,
                 "action": action,
-                "quantity": quantity
+                "qty": quantity
             }
         except Exception as e:
             err_msg = str(e).lower()

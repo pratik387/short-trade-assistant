@@ -28,13 +28,13 @@ def analyze_trades():
             if not buys or not sells:
                 continue
 
-            total_buy_qty = sum(t["quantity"] for t in buys)
-            total_sell_qty = sum(t["quantity"] for t in sells)
+            total_buy_qty = sum(t["qty"] for t in buys)
+            total_sell_qty = sum(t["qty"] for t in sells)
             matched_qty = min(total_buy_qty, total_sell_qty)
 
             try:
-                avg_buy = sum(t["price"] * t["quantity"] for t in buys) / total_buy_qty
-                avg_sell = sum(t["price"] * t["quantity"] for t in sells) / total_sell_qty
+                avg_buy = sum(t["price"] * t["qty"] for t in buys) / total_buy_qty
+                avg_sell = sum(t["price"] * t["qty"] for t in sells) / total_sell_qty
             except ZeroDivisionError:
                 logger.warning(f"Division by zero for {symbol} - skipping")
                 continue

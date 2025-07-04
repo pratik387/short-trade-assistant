@@ -4,10 +4,11 @@
 # @tags: entry, strategy, service
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from services.technical_analysis import prepare_indicators, passes_hard_filters, calculate_score
+from services.technical_analysis import passes_hard_filters, prepare_indicators, calculate_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers
 from brokers.mock.mock_broker import MockBroker
+from util.diagnostic_report_generator import diagnostics_tracker
 
 logger, trade_logger = get_loggers()
 
@@ -22,7 +23,7 @@ class EntryService:
 
         # Auto-adjust thread count for real brokers to avoid API throttling
         if isinstance(data_provider, MockBroker):
-            self.max_workers = 30
+            self.max_workers = 20
         else:
             self.max_workers = 3
 
@@ -86,6 +87,7 @@ class EntryService:
                     "atr": round(float(latest.get("atr", 0)), 2),
                     "stop_loss": round(latest["close"] * 0.97, 2),
                     "score": score,
+                    "breakdown": breakdown,
                     "close": round(float(latest["close"]), 2),
                     "volume": int(latest["volume"]),
                 }
@@ -126,3 +128,19 @@ class EntryService:
             -x.get("volume", 0),                     # 4. Optional: Higher volume
         )
 
+    def execute_entry(self, suggestion: dict, quantity: int, timestamp):
+        symbol = suggestion["symbol"]
+        entry_price = suggestion["close"]
+        score = suggestion["score"]
+        breakdown = suggestion["breakdown"]
+        indicators = {k: v for k, v in suggestion.items() if k in ["adx", "dmp", "dmn", "rsi", "macd", "macd_signal", "bb", "stochastic_k", "obv", "atr"]}
+
+        self.data_provider.place_order(symbol=symbol, quantity=quantity, action="buy", timestamp = timestamp)
+        diagnostics_tracker.record_entry(
+            symbol=symbol,
+            entry_time=timestamp,
+            entry_price=entry_price,
+            score=score,
+            filters=breakdown,
+            indicators=indicators
+        )
