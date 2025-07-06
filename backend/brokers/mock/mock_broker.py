@@ -3,7 +3,7 @@
 # @filter_type: utility
 # @tags: broker, mock, test
 from datetime import datetime
-from typing import List, Optional
+from typing import Optional
 import pandas as pd
 from pathlib import Path
 from brokers.base_broker import BaseBroker
@@ -22,12 +22,13 @@ class MockBroker(BaseBroker):
     def get_ltp(self, symbol: str) -> float:
     
         if self.use_cache:
-            file_path = self.cache_dir / f"{symbol}.csv"
+            file_path = self.cache_dir / f"{symbol}.feather"
             if file_path.exists():
-                df = pd.read_csv(file_path, index_col="date", parse_dates=True)
+                df = pd.read_feather(file_path)
+                df["date"] = pd.to_datetime(df["date"])
+                df = df.sort_values("date")
                 if not df.empty:
-                    latest_close = df.iloc[-1]["close"]
-                    return latest_close
+                    return df.iloc[-1]["close"]
                 else:
                     logger.warning(f"[MOCK][get_ltp] No data for {symbol}")
             else:
@@ -46,15 +47,20 @@ class MockBroker(BaseBroker):
     ):
         try:
             if self.use_cache:
-                file_path = self.cache_dir / f"{symbol}.csv"
+                file_path = self.cache_dir / f"{symbol}.feather"
                 if file_path.exists():
-                    df = pd.read_csv(file_path, index_col="date", parse_dates=True)
-                    return df
+                    df = pd.read_feather(file_path)
+                    df = df.set_index("date").sort_index()
+                    df = df.sort_values("date")
+                    if days and len(df) >= days:
+                        return df.iloc[-days:].copy()
+                    return df.copy()
             # fallback to API
             return self.live_broker.fetch_candles(symbol, interval, 180)
         except Exception as e:
             logger.error(str(e))
-    
+            return None
+
     def place_order(
         self,
         symbol: str,
@@ -78,7 +84,7 @@ class MockBroker(BaseBroker):
             "variety": "regular",
             "timestamp": order_time.isoformat()
         }
-    
+
     def get_symbols(self, index):
         """Return all symbol-token mappings for the current index."""
         return get_index_symbols(index)

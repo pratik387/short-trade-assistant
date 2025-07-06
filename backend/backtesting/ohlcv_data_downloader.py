@@ -19,7 +19,7 @@ END_DATE = "2025-06-19"
 
 def download_and_save(symbol):
     try:
-        file_path = CACHE_DIR / f"{symbol}.csv"
+        file_path = CACHE_DIR / f"{symbol}.feather"
         if file_path.exists():
             print(f"✅ {symbol} already cached.")
             return
@@ -54,7 +54,7 @@ def download_and_save(symbol):
             raise ValueError(f"Length mismatch: got {len(df.columns)} columns, expected {len(expected_columns)}")
         df.columns = expected_columns
 
-        df.to_csv(file_path, index=False)
+        df.to_feather(file_path)
         print(f"💾 Saved: {file_path.name}")
 
     except Exception as e:
