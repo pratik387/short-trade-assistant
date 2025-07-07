@@ -10,3 +10,4 @@ kiteconnect
 tinydb
 twilio
 apscheduler>=3.10.1
+pyarrow

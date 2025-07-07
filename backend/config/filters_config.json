@@ -1,14 +1,24 @@
 {
-  "adx_threshold": 30,
   "bb_lower": 0.2,
   "bb_upper": 0.8,
-  "rsi_min": 40,
-  "rsi_max": 80,
+  "rsi_min": 63,
+  "rsi_max": 69,
   "min_price": 50,
   "min_volume": 100000,
-  "obv_min": 1000000,
-  "atr_min": 5,
-  "stochastic_threshold": 80,
+  "obv_min": 500000,
+  "atr_min": 10,
+  "stochastic_threshold": 60,
+  "adx_min": 30,
+  "adx_max": 45,
+  "bb_width_min": 5,
+  "macd_min": 8,
+  "macd_cap": 30,
+  "max_dmp_dmn_gap": 15,
+  "late_entry_penalty": {
+    "rsi_above": 74,
+    "macd_above": 30,
+    "penalty_score": -3
+  },
   "score_weights": {
     "adx": 4,
     "macd": 4,
@@ -38,7 +48,9 @@
     "trailing_stop_percent": 1.5,
     "use_adx_macd_confirmation": true,
     "fallback_exit_if_data_missing": true,
-    "log_blocked_exits": true
+    "log_blocked_exits": true,
+    "profit_target_escalation_if_macd_gt": 20,
+    "pnl_target_raise_pct": 1.1
   },
   "exit_criteria": {
     "use_profit_target": true,
@@ -76,6 +88,9 @@
     "rsi_exit_threshold": 70,
     "duration_threshold": 10,
     "pnl_threshold": 0.01,
-    "trailing_atr_factor": 1.5
+    "trailing_atr_factor": 1.5,
+    "min_hold_days_for_exit": 3,
+    "score_drop_exit_enabled": true,
+    "score_drop_threshold_percent": 40
   }
 }

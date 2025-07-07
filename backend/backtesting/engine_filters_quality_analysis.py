@@ -23,6 +23,8 @@ from config.logging_config import get_loggers, switch_agent_log_file
 PROFIT_TARGET = BACKTEST_CONFIG["profit_target"]
 STOP_LOSS_THRESHOLD = BACKTEST_CONFIG["stop_loss_threshold"]
 MIN_ENTRY_SCORE = BACKTEST_CONFIG["minimum_entry_score"]
+MIN_HOLD_DAYS = BACKTEST_CONFIG["minimum_holding_days"]
+
 
 logger, trade_logger = get_loggers()
 
@@ -68,12 +70,17 @@ def run_quality_analysis():
                     continue
 
                 entry_price = position["entry_price"]
+                entry_score = position["score"]
                 current_close = df.iloc[-1]["close"]
                 day_low = df.iloc[-1]["low"]
                 stop_loss_price = entry_price * (1 + STOP_LOSS_THRESHOLD / 100)
                 days_held = (current_date - buy_date).days
 
-                result = exit_service.evaluate_exit_filters(symbol, entry_price, buy_date, current_date=current_date)
+                if days_held < MIN_HOLD_DAYS:
+                    logger.info(f"⏳ Skipping exit for {symbol}: held {days_held} days < min {MIN_HOLD_DAYS}")
+                    continue
+
+                result = exit_service.evaluate_exit_filters(symbol, entry_price, buy_date, current_date=current_date, entry_score=entry_score)
                 allow_exit = result["recommendation"] == "EXIT"
                 trigger_exit = False
                 reason = "exit signal"

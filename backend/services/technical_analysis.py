@@ -67,11 +67,13 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, candle_matc
 
         # ADX check
         adx_val = latest.get("ADX_14")
-        adx_threshold = config.get("adx_threshold")
+        adx_min = config.get("adx_min", 30)
+        adx_max = config.get("adx_max", 45)
         adx_weight = weights.get("adx")
-        if adx_val is not None and adx_val >= adx_threshold:
+        if adx_val is not None and adx_min <= adx_val <= adx_max:
             score += adx_weight
-            breakdown.append(("ADX", adx_weight, f"ADX={adx_val:.2f} ≥ {adx_threshold}"))
+            breakdown.append(("ADX", adx_weight, f"ADX={adx_val:.2f} in [{adx_min}-{adx_max}]")
+        )
 
         # RSI check
         rsi = latest.get("RSI")
@@ -93,25 +95,30 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, candle_matc
         macd_signal = latest.get("MACD_Signal")
         macd_weight = weights.get("macd")
         if macd_val is not None and macd_signal is not None and macd_val > macd_signal:
-            score += macd_weight
-            breakdown.append(("MACD", macd_weight, f"MACD={macd_val:.2f} > Signal={macd_signal:.2f}"))
+            macd_cap = config.get("macd_cap", 30)
+            effective_weight = macd_weight if macd_val <= macd_cap else int(macd_weight * 0.5)
+            score += effective_weight
+            breakdown.append(("MACD", effective_weight, f"MACD={macd_val:.2f} > Signal={macd_signal:.2f} (Cap={macd_cap})"))
 
         # Bollinger Band check
         bb_val = latest.get("BB_%B")
         bb_lower = config.get("bb_lower")
         bb_upper = config.get("bb_upper")
+        bb_width = ((latest.get("BB_Upper") - latest.get("BB_Lower")) / latest.get("BB_Middle")) * 100 if latest.get("BB_Middle") else 0
+        bb_width_min = config.get("bb_width_min", 5)
         bb_weight = weights.get("bb")
-        if bb_val is not None and bb_lower <= bb_val <= bb_upper:
+        if bb_val is not None and bb_lower <= bb_val <= bb_upper and bb_width >= bb_width_min:
             score += bb_weight
-            breakdown.append(("Bollinger Band", bb_weight, f"%B={bb_val:.2f} in [{bb_lower}-{bb_upper}]"))
+            breakdown.append(("Bollinger Band", bb_weight, f"%B={bb_val:.2f} in [{bb_lower}-{bb_upper}], Width={bb_width:.2f}%"))
 
         # DMP vs DMN confirmation
         dmp = latest.get("DMP_14")
         dmn = latest.get("DMN_14")
+        max_gap = config.get("max_dmp_dmn_gap", 15)
         dmp_weight = weights.get("dmp_dmn", 1)
-        if dmp is not None and dmn is not None and dmp > dmn:
+        if dmp is not None and dmn is not None and dmp > dmn and (dmp - dmn) <= max_gap:
             score += dmp_weight
-            breakdown.append(("DMP > DMN", dmp_weight, f"DMP={dmp:.2f} > DMN={dmn:.2f}"))
+            breakdown.append(("DMP > DMN", dmp_weight, f"DMP={dmp:.2f} > DMN={dmn:.2f}, Gap={dmp - dmn:.2f}"))
 
         # Price above SMA 50
         close = latest.get("close")
@@ -158,6 +165,16 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, candle_matc
         if fib_zone:
             score += fib_weight
             breakdown.append(("Fibonacci", fib_weight, f"In support zone"))
+
+        # Late entry penalty
+        lep_cfg = config.get("late_entry_penalty", {})
+        lep_penalty = lep_cfg.get("penalty_score", 0)
+        if rsi is not None and rsi > lep_cfg.get("rsi_above", 100):
+            score += lep_penalty
+            breakdown.append(("Late Entry Penalty", lep_penalty, f"RSI={rsi:.2f} > {lep_cfg.get('rsi_above')}"))
+        if macd_val is not None and macd_val > lep_cfg.get("macd_above", 100):
+            score += lep_penalty
+            breakdown.append(("Late Entry Penalty", lep_penalty, f"MACD={macd_val:.2f} > {lep_cfg.get('macd_above')}"))
 
         return score, breakdown
 

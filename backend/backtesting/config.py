@@ -11,6 +11,6 @@ BACKTEST_CONFIG = {
     "max_hold_days": 10,
     "stop_loss_threshold": -5.0,
     "profit_target": 5.0,
-    "minimum_holding_days ": 2,
+    "minimum_holding_days": 3,
     "min_score_gap_to_replace":5
 }

@@ -18,7 +18,7 @@ class ExitService:
         self.data_provider = data_provider
         self.notifier = notifier
 
-    def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime, current_date: datetime) -> dict:
+    def evaluate_exit_filters(self, symbol: str, entry_price: float, entry_time: datetime, current_date: datetime, entry_score: Optional[int] = 0) -> dict:
         df = self.data_provider.fetch_candles(symbol=symbol, interval="day", days=30)
         df = prepare_exit_indicators(df, symbol)
         current_price = df["close"].iloc[-1]
@@ -56,10 +56,20 @@ class ExitService:
             ))
             allow_exit = True
 
-        # Aggregate scoring from breakdown
+        score_drop_pct = self.config.get("exit_criteria", {}).get("score_drop_threshold_percent", 40)
         initial_score = sum(r["weight"] for r in reasons)
-        final_score = initial_score  # Future room for score changes
-        score_drop = 0  # Placeholder for future delta
+        score_drop = 0
+
+        if entry_score > 0 and initial_score < entry_score:
+            score_drop = ((entry_score - initial_score) / entry_score) * 100
+            if score_drop >= score_drop_pct:
+                reasons.append({
+                    "filter": "score_drop",
+                    "weight": 10,
+                    "reason": f"Score dropped by {score_drop:.1f}% (from {entry_score} to {initial_score})"
+                })
+                breakdown.append(("score_drop", 10, f"Score dropped {score_drop:.1f}%"))
+                allow_exit = True
 
         result = {
             "symbol": symbol,
@@ -69,7 +79,7 @@ class ExitService:
             "days_held": days_held,
             "recommendation": "EXIT" if allow_exit else "HOLD",
             "initial_score": initial_score,
-            "final_score": final_score,
+            "final_score": entry_score,
             "score_drop": score_drop,
             "reasons": reasons,
             "atr": atr,
@@ -87,7 +97,13 @@ class ExitService:
         agent_logger.info("Running check_exits on portfolio")
         for stock in self.portfolio_db.all():
             try:
-                result = self.evaluate_exit_filters(stock["symbol"], stock["entry_price"], stock["buy_time"], datetime.now(india_tz))
+                result = self.evaluate_exit_filters(
+                    stock["symbol"],
+                    stock["entry_price"],
+                    stock["buy_time"],
+                    datetime.now(india_tz),
+                    entry_score=stock.get("entry_score", 0)
+                )
                 if result["recommendation"] == "EXIT":
                     self.execute_exit(stock, result, current_date=datetime.now(india_tz))
             except Exception as e:
@@ -112,8 +128,8 @@ class ExitService:
                 pnl=result["pnl_percent"],
                 reason=reason_summary,
                 exit_filters=[(r["filter"], r["weight"], r["reason"]) for r in result.get("reasons", [])],
-                indicators=result.get("breakdown"),  # keep this strictly filter-wise data
-                days_held=result.get("days_held", 0),  # move to top-level
+                indicators=result.get("breakdown"),
+                days_held=result.get("days_held", 0),
                 score_before=score_before,
                 score_after=score_after
             )
