@@ -4,6 +4,8 @@ import logging
 from pathlib import Path
 from datetime import datetime
 import os
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 _agent_logger = None
 _trade_logger = None
@@ -15,7 +17,7 @@ def get_loggers():
     if _agent_logger and _trade_logger:
         return _agent_logger, _trade_logger
 
-    run_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_id = datetime.now(india_tz).strftime("%Y%m%d_%H%M%S")
     log_dir = Path(__file__).resolve().parents[1] / "logs" / run_id
     os.makedirs(log_dir, exist_ok=True)
     global dir_path

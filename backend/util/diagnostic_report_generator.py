@@ -29,7 +29,7 @@ class DiagnosticsTracker:
         }
         self.trades.append(trade)
 
-    def record_exit(self, symbol, exit_time, exit_price, pnl, pnl_percent, reason, exit_filters=None, indicators=None, days_held=0, score_before=None, score_after=None):
+    def record_exit(self, symbol, exit_time, exit_price, pnl, pnl_percent, reason, exit_filters=None, indicators=None, days_held=0, score_before=None, score_after=None, entry_score_drop=None, entry_score_drop_pct=None):
         for trade in reversed(self.trades):
             if trade["symbol"] == symbol and trade["exit_time"] is None:
                 trade.update({
@@ -40,8 +40,10 @@ class DiagnosticsTracker:
                     "exit_reason": reason,
                     "exit_filters": exit_filters or [],
                     "exit_indicators": indicators or {},
-                    "exit_score_before": score_before,
-                    "exit_score_after": score_after,
+                    "entry_score_before": score_before,
+                    "entry_score_at_exit": score_after,
+                    "entry_score_drop": entry_score_drop,
+                    "entry_score_drop_pct": entry_score_drop_pct,
                     "days_held": days_held,
                     "pnl_percent": ((exit_price - trade["entry_price"]) / trade["entry_price"]) * 100,
                     "result": "win" if pnl > 0 else ("loss" if pnl < 0 else "neutral")

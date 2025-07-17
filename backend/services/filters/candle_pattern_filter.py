@@ -18,7 +18,7 @@ def bullish_candle_pattern_filter(df, symbol: str = "") -> bool:
     try:
         pattern = df["CANDLE_PATTERN"].iloc[-1]
         result = pattern in BULLISH_PATTERNS
-        logger.info(f"[CANDLE-FILTER] {symbol} | Pattern={pattern} | Bullish Match={'✅' if result else '❌'}")
+        logger.debug(f"[CANDLE-FILTER] {symbol} | Pattern={pattern} | Bullish Match={'✅' if result else '❌'}")
         return result
     except Exception as e:
         logger.warning(f"[CANDLE-FILTER] {symbol} | Error: {e}")

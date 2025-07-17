@@ -41,7 +41,7 @@ class SuggestionLogic:
             if df is None or df.empty:
                 return None
 
-            enriched = enrich_with_indicators_and_score(df)
+            enriched = enrich_with_indicators_and_score(df, self.config)
             latest = enriched.iloc[-1]
 
             if latest["close"] <= self.min_price or latest["volume"] < self.min_volume:
@@ -53,21 +53,21 @@ class SuggestionLogic:
                     "reason": "Low price or volume"
                 }
 
-            avg_rsi = enriched["RSI"].rolling(14).mean().iloc[-1]
-            score, breakdown = calculate_score(latest, self.config, avg_rsi, symbol=symbol)
+            score = latest.get("ENTRY_SCORE")
+            breakdown = latest.get("ENTRY_BREAKDOWN", [])
+            suggestion = "buy" if score >= 15 else "avoid"
 
-            suggestion = "buy" if score >= 10 else "avoid"
             logger.info(f"Scored {symbol}: {score:.2f} ({suggestion}) | Breakdown: {breakdown}")
 
             return {
                 "symbol": symbol,
-                "score": round(score, 2),
                 "suggestion": suggestion,
                 "close": round(latest["close"], 2),
                 "volume": int(latest["volume"]),
-                "score_breakdown": breakdown
+                "score": float(score) if score is not None else 0.0,
+                "breakdown": list(breakdown) if isinstance(breakdown, (list, tuple)) else [],
             }
-        
+
         except InvalidTokenException:
             raise
         except Exception as e:

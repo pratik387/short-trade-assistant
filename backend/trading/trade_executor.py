@@ -8,6 +8,8 @@ from util.portfolio_schema import PortfolioStock
 from db.tinydb.client import get_table
 from exceptions.exceptions import OrderPlacementException
 from config.logging_config import get_loggers
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
 
@@ -38,7 +40,7 @@ class TradeExecutor:
                 instrument_token=instrument_token,
                 buy_price=price,
                 quantity=quantity,
-                buy_time=datetime.now().isoformat()
+                buy_time=datetime.now(india_tz).isoformat()
             )
             self.portfolio_db.insert(stock_entry.dict())
             return result

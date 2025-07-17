@@ -10,6 +10,8 @@ from brokers.base_broker import BaseBroker
 from brokers.kite.kite_broker import KiteBroker
 from brokers.data.indexes import get_index_symbols
 from config.logging_config import get_loggers
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
 
@@ -76,7 +78,7 @@ class MockBroker(BaseBroker):
         order_type: str = "MARKET",
         timestamp: Optional[datetime] = None
     ) -> dict:
-        order_time = timestamp or datetime.now()
+        order_time = timestamp or datetime.now(india_tz)
         logger.info(f"[MOCK] Placing order: {action.upper()} {quantity} {symbol} @ {price or 'market'}")
         return {
             "status": "success",

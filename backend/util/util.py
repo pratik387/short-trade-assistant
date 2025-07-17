@@ -4,6 +4,7 @@
 # @tags: utility, helpers, tools
 import pandas as pd
 from pathlib import Path
+import math
 import json
 import time
 import functools
@@ -113,3 +114,56 @@ def retry(max_attempts=3, delay=2, exceptions=(Exception,), exclude=(InvalidToke
                     time.sleep(delay)
         return wrapper
     return decorator
+
+import math
+
+def calculate_dynamic_exit_threshold(config, df, days_held):
+    """
+    Compute a dynamic score threshold for exit based on time decay and volatility.
+
+    Args:
+        config (dict): Full config object with 'exit_filters' and 'dynamic_threshold'
+        df (pd.DataFrame): Enriched price data with 'ATR' column
+        days_held (int): Days the stock has been held
+
+    Returns:
+        float: The computed dynamic threshold
+    """
+    dyn_config = config.get("dynamic_threshold", {})
+    exit_filters = config.get("exit_filters", {})
+
+    max_possible_score = 0
+    for name, f in exit_filters.items():
+        if not f.get("enabled", False):
+            continue
+        if name == "exit_time_decay_filter" and "weight_schedule" in f:
+            scheduled_weights = [w.get("weight", 0) for w in f["weight_schedule"]]
+            max_possible_score += max(scheduled_weights) if scheduled_weights else 0
+        else:
+            weight = f.get("weight", 0)
+            if weight > 0:
+                max_possible_score += weight
+
+    base_ratio = dyn_config.get("base_weight_ratio", 0.25)
+    min_threshold = dyn_config.get("min_threshold", 5)
+    time_decay_rate = dyn_config.get("time_decay_rate", 0.3)
+    time_weight_reduction = dyn_config.get("time_weight_reduction", 0.5)
+    vol_scaling_factor = dyn_config.get("volatility_scaling_factor", 0.2)
+
+    base_threshold = max(min_threshold, base_ratio * max_possible_score)
+    time_decay = 1 - math.exp(-time_decay_rate * days_held)
+
+    if "ATR" not in df.columns or df["ATR"].isna().all():
+        return min_threshold
+
+    current_atr = df["ATR"].iloc[-1]
+    avg_atr = df["ATR"].rolling(window=14, min_periods=1).mean().fillna(0).iloc[-1]
+
+    if avg_atr == 0:
+        vol_adj = 1
+    else:
+        vol_adj = 1 + vol_scaling_factor * (current_atr / avg_atr)
+
+    dynamic_threshold = base_threshold * (1 - time_weight_reduction * time_decay) * vol_adj
+    return dynamic_threshold
+

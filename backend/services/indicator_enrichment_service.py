@@ -7,7 +7,15 @@ logger, trade_logger = get_loggers()
 
 def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    df.set_index("date", inplace=True)
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"])
+        df.set_index("date", inplace=True)
+    elif isinstance(df.index, pd.DatetimeIndex):
+        pass
+    else:
+        logger.error("DataFrame lacks 'date' column or datetime index")
+        raise ValueError("Cannot enrich without a valid datetime index or 'date' column")
+
 
     df["RSI"] = rsi(df["close"])
     df["EMA_FAST"] = df["close"].ewm(span=12, adjust=False).mean()

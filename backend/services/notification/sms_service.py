@@ -6,6 +6,8 @@ from datetime import datetime
 from twilio.rest import Client
 import os
 from config.logging_config import get_loggers
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
 
@@ -23,7 +25,7 @@ def send_kite_login_sms():
     try:
         client = Client(account_sid, auth_token)
         message = client.messages.create(
-            body=f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] Zerodha Kite Login: {kite_login_url}",
+            body=f"[{datetime.now(india_tz).strftime('%Y-%m-%d %H:%M')}] Zerodha Kite Login: {kite_login_url}",
             from_=twilio_number,
             to=your_number
         )

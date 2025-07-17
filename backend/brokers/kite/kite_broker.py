@@ -11,6 +11,8 @@ from brokers.data.indexes import get_index_symbols
 from exceptions.exceptions import InvalidTokenException
 from util.util import retry
 from config.logging_config import get_loggers
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
 
@@ -45,7 +47,7 @@ class KiteBroker(BaseBroker):
             if from_date is None or to_date is None:
                 if days is None:
                     raise ValueError("Must provide either days or both from_date and to_date")
-                to_date = datetime.now()
+                to_date = datetime.now(india_tz)
                 from_date = to_date - timedelta(days=days)
 
             raw = kite.historical_data(

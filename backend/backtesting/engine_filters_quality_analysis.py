@@ -133,9 +133,7 @@ def run_quality_analysis():
             df = df[df.index <= current_date]
             result = exit_service._build_exit_result(
                 df=df,
-                symbol=symbol,
-                entry_price=pos["entry_price"],
-                entry_time=pos["entry_date"],
+                stock=pos,
                 current_date=current_date,
                 reason="Forced exit at end"
             )

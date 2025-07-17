@@ -12,6 +12,8 @@ from services.notification.email_alert import send_exit_email
 from exceptions.exceptions import InvalidTokenException
 from trading.trade_executor import TradeExecutor
 from brokers.kite.kite_broker import KiteBroker
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 from config.logging_config import get_loggers
 
@@ -51,7 +53,7 @@ def run_exit_checks(ticks=None):
                 path = Path(__file__).resolve().parent.parent / "logs" / "blocked_exits.log"
                 path.parent.mkdir(parents=True, exist_ok=True)
                 with open(path, "a", encoding="utf-8") as f:
-                    f.write(f"{datetime.now().isoformat()} - {message}\n")
+                    f.write(f"{datetime.now(india_tz).isoformat()} - {message}\n")
             except Exception:
                 logger.exception("Failed to log blocked exit message")
 

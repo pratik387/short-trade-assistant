@@ -7,10 +7,13 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from services.technical_analysis import passes_hard_filters, calculate_score
+from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers
 from brokers.mock.mock_broker import MockBroker
 from util.diagnostic_report_generator import diagnostics_tracker
+from pytz import timezone
+india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
 
@@ -62,7 +65,11 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
         if df is None or df.empty:
             return None
         
-        df = df[df.index <= as_of_date]  # 🧠 Slicing based on date context
+        #usually for live treading and get single stock suggestion
+        if "RSI" not in df.columns or "ADX_14" not in df.columns:
+            df = enrich_with_indicators_and_score(df, config=config)
+        df.set_index("date", inplace=True)
+        df = df[df.index <= as_of_date]
         if len(df) < 1:
             return None
 
@@ -71,8 +78,8 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
             logger.debug("%s did not pass hard filters, skipping", symbol)
             return None
 
-        avg_rsi = df["RSI"].rolling(14).mean().iloc[-1]
-        score, breakdown = calculate_score(latest, config, avg_rsi, symbol=symbol)
+        score = latest.get("ENTRY_SCORE")
+        breakdown = latest.get("ENTRY_BREAKDOWN", [])
         logger.info(f"Scored {symbol}: {score:.2f} | Breakdown: {breakdown}")
 
         elapsed_ms = (time.perf_counter() - symbol_start) * 1000
@@ -92,8 +99,8 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
             "obv": round(float(latest.get("OBV", 0)), 2),
             "atr": round(float(latest.get("ATR", 0)), 2),
             "stop_loss": round(latest["close"] * 0.97, 2),
-            "score": score,
-            "breakdown": breakdown,
+            "score": float(score) if score is not None else 0.0,
+            "breakdown": list(breakdown) if isinstance(breakdown, (list, tuple)) else [],
             "close": round(float(latest["close"]), 2),
             "volume": int(latest["volume"]),
         }
@@ -121,11 +128,11 @@ class EntryService:
         if isinstance(data_provider, MockBroker):
             self.max_workers = 20
         else:
-            self.max_workers = 3
+            self.max_workers = 1
 
     def get_suggestions(self, as_of_date: datetime = None) -> list:
         if as_of_date is None:
-            as_of_date = datetime.now()
+            as_of_date = datetime.now(india_tz)
         logger.info(
             "Starting get_suggestions (min_price=%s, min_volume=%s)",
             self.min_price, self.min_volume

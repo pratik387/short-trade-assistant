@@ -68,15 +68,13 @@ def evaluate_exit(
         # Score
         triggered = [r for r in reasons if r.get("triggered")]
         score = sum(r["weight"] for r in triggered)
-        exit_reason = "score_threshold" if score >= config.get("score_threshold") else "hold"
 
         return {
             "raw_reasons": reasons,
             "triggered": triggered,
-            "score": score,
-            "exit_reason": exit_reason,
-            "recommendation": "EXIT" if exit_reason != "hold" else "HOLD"
+            "score": score
         }
+
 
     except Exception as e:
         logger.warning(f"Exit evaluation failed: {e}")
@@ -85,8 +83,6 @@ def evaluate_exit(
                 "raw_reasons": [],
                 "triggered": [],
                 "score": 0,
-                "exit_reason": "fallback",
-                "recommendation": "EXIT"
             }
         else:
             raise

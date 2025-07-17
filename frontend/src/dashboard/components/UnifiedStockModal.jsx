@@ -46,30 +46,46 @@ export default function UnifiedStockModal({ entryResult, exitResult, onClose, mo
         )}
 
         {activeTab === "exit" && (
-          <div className="space-y-1">
-            {exitResult ? (
-              <>
-                <p>Entry Price: ₹{exitResult.entry_price}</p>
-                <p>Current Price: ₹{exitResult.current_price}</p>
-                <p>P&L %: {exitResult.pnl_percent}%</p>
-                <p>Days Held: {exitResult.days_held}</p>
-                <p className={recommendationColor}>Recommendation: {exitResult.recommendation}</p>
-                {exitResult.exit_reasons?.length > 0 && (
-                  <div>
-                    <p>Reasons:</p>
-                    <ul className="list-disc list-inside text-sm">
-                      {exitResult.exit_reasons.map((r, i) => (
-                        <li key={i}>{r}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-gray-500 italic">No exit result available.</p>
-            )}
+  <div className="space-y-1">
+    {exitResult ? (
+      <>
+        <p>Entry Price: ₹{exitResult.entry_price}</p>
+        <p>Current Price: ₹{exitResult.current_price}</p>
+        <p>P&L: ₹{exitResult.pnl}</p>
+        <p>P&L %: {exitResult.pnl_percent}%</p>
+        <p>Days Held: {exitResult.days_held}</p>
+        <p className={recommendationColor}>Recommendation: {exitResult.recommendation}</p>
+        {exitResult.exit_reason && (
+          <p className="italic text-sm text-gray-600">Reason: {exitResult.exit_reason}</p>
+        )}
+        {exitResult.reasons?.length > 0 && (
+          <div>
+            <p>Reasons:</p>
+            <ul className="list-disc list-inside text-sm">
+              {exitResult.reasons.map((r, i) => (
+                <li key={i}>{r.reason}</li>
+              ))}
+            </ul>
           </div>
         )}
+        {exitResult.breakdown?.length > 0 && (
+          <div>
+            <p>Filter Breakdown:</p>
+            <ul className="list-disc list-inside text-sm">
+              {exitResult.breakdown.map(([filter, weight, reason], i) => (
+                <li key={i}>
+                  <strong>{filter}</strong> (w: {weight}) – {reason}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </>
+    ) : (
+      <p className="text-gray-500 italic">No exit result available.</p>
+    )}
+  </div>
+)}
 
         <div className="flex justify-end pt-4">
           <button
