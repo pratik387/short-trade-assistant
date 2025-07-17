@@ -29,13 +29,14 @@ class DiagnosticsTracker:
         }
         self.trades.append(trade)
 
-    def record_exit(self, symbol, exit_time, exit_price, pnl, reason, exit_filters=None, indicators=None, days_held=0, score_before=None, score_after=None):
+    def record_exit(self, symbol, exit_time, exit_price, pnl, pnl_percent, reason, exit_filters=None, indicators=None, days_held=0, score_before=None, score_after=None):
         for trade in reversed(self.trades):
             if trade["symbol"] == symbol and trade["exit_time"] is None:
                 trade.update({
                     "exit_time": exit_time,
                     "exit_price": exit_price,
                     "pnl": pnl,
+                    "pnl_percent": pnl_percent,
                     "exit_reason": reason,
                     "exit_filters": exit_filters or [],
                     "exit_indicators": indicators or {},

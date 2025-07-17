@@ -6,17 +6,58 @@ from config.logging_config import get_loggers
 
 logger, trade_logger = get_loggers()
 
-def rsi_exit_filter(df, rsi_exit_threshold: int = 70, symbol: str = "") -> tuple[bool, str]:
-    if "RSI" in df.columns:
-        rsi = df["RSI"].iloc[-1]
-        price_now = df["close"].iloc[-1]
-        price_prev = df["close"].iloc[-2]
+import logging
+logger = logging.getLogger(__name__)
 
-        logger.info(f"[EXIT-RSI] {symbol} | RSI={rsi:.2f}, Price Now={price_now:.2f}, Price Prev={price_prev:.2f}")
+def rsi_exit_filter(df, config, symbol, **kwargs):
+    if config is None:
+        return []
 
-        if rsi > rsi_exit_threshold and price_now < price_prev:
-            return True, f"RSI={rsi:.2f} > {rsi_exit_threshold} and price fell ({price_now:.2f} < {price_prev:.2f})"
+    filter_cfg = config.get("rsi_drop_filter")
+    if not filter_cfg.get("enabled", False):
+        return []
+
+    weight = filter_cfg.get("weight", 3)
+    upper = filter_cfg.get("rsi_upper", 70)
+    lower = filter_cfg.get("rsi_lower", 45)
+
+    rsi = df["RSI"].iloc[-1] if "RSI" in df.columns else None
+    close = df["close"].iloc[-1] if "close" in df.columns else None
+    prev_close = df["close"].iloc[-2] if "close" in df.columns and len(df) >= 2 else None
+    reasons = []
+
+    if rsi is not None:
+        if rsi > upper:
+            if close is not None and prev_close is not None and close < prev_close:
+                logger.info(f"[EXIT-RSI] {symbol} | RSI={rsi:.2f}, Price Now={close:.2f}, Price Prev={prev_close:.2f}")
+                reasons.append({
+                    "filter": "rsi_exit_filter",
+                    "weight": weight,
+                    "reason": f"RSI overbought and price dropped: RSI={rsi:.2f}, Close={close} < Prev={prev_close}",
+                    "triggered": True
+                })
+            else:
+                logger.info(f"[EXIT-RSI] {symbol} | RSI={rsi:.2f} > {upper}, no price drop")
+                reasons.append({
+                    "filter": "rsi_exit_filter",
+                    "weight": 0,
+                    "reason": f"RSI in overbought zone but no price drop: RSI={rsi:.2f}",
+                    "triggered": False
+                })
+        elif rsi < lower:
+            logger.info(f"[EXIT-RSI] {symbol} | RSI={rsi:.2f} < {lower}")
+            reasons.append({
+                "filter": "rsi_exit_filter",
+                "weight": weight,
+                "reason": f"RSI fell below lower bound: {rsi:.2f} < {lower}",
+                "triggered": True
+            })
         else:
-            return False, f"RSI={rsi:.2f}, Price Now={price_now:.2f}, Price Prev={price_prev:.2f} — exit not triggered"
+            reasons.append({
+                "filter": "rsi_exit_filter",
+                "weight": 0,
+                "reason": f"RSI in normal range: {rsi:.2f}",
+                "triggered": False
+            })
 
-    return False, "RSI not available"
+    return reasons

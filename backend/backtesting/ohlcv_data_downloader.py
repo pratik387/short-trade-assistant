@@ -1,65 +1,94 @@
+import sys
 import yfinance as yf
 import pandas as pd
 import json
 from pathlib import Path
 
-# Directory to save CSVs
-CACHE_DIR = Path(__file__).resolve().parent / "ohlcv_cache"
-CACHE_DIR.mkdir(exist_ok=True)
+# Ensure the root directory is in sys.path for module imports
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-# Define symbols to download
+from config.filters_setup import load_filters
+from services.indicator_enrichment_service import enrich_with_indicators_and_score
+
+# Archive directory to store historical backtest data
+ARCHIVE_DIR = Path(__file__).resolve().parent / "ohlcv_archive"
+ARCHIVE_DIR.mkdir(exist_ok=True)
+
+config = load_filters()
+
+# Load all symbols from the NSE JSON index file
 INDEX_FILE = Path(__file__).resolve().parents[1] / "assets" / "indexes" / "nse_all.json"
 with open(INDEX_FILE) as f:
     data = json.load(f)
-    NIFTY_500_SYMBOLS = [entry["symbol"] for entry in data]
+    ALL_SYMBOLS = [entry["symbol"] for entry in data]
 
-# Date range
-START_DATE = "2024-01-02"
-END_DATE = "2025-06-19"
+# Configurable params
+START_DATE = "2022-01-01"
+END_DATE = "2025-07-14"
+INTERVALS = ["1d"]
 
-def download_and_save(symbol):
+def download_and_save(symbol, interval="1d"):
+
+    file_name = f"{symbol}_{interval}_{START_DATE}_{END_DATE}.feather"
+    folder = ARCHIVE_DIR / symbol
+    file_path = folder / file_name
+
+    if file_path.exists():
+        print(f"✅ {symbol} already cached.")
+        return
+    
+    print(f"⬇️  Downloading {symbol} ({interval})...")
+    df = yf.download(
+        symbol,
+        start=START_DATE,
+        end=END_DATE,
+        interval=interval,
+        auto_adjust=False
+    )
+    if df is None or df.empty:
+        print(f"⚠️  No usable data for {symbol}")
+        return
+    folder.mkdir(parents=True, exist_ok=True) 
+    
+    df = df.rename(columns={
+        "Open": "open", "High": "high", "Low": "low",
+        "Close": "close", "Adj Close": "adj_close", "Volume": "volume"
+    })
+    df.index.name = "date"
+    df = df.reset_index()
+    df["date"] = pd.to_datetime(df["date"]).dt.tz_localize("UTC").dt.tz_convert("Asia/Kolkata")
+
+    df.columns = [str(col).lower() if isinstance(col, str) else "unknown" for col in df.columns]
+    expected_columns = ["date", "open", "high", "low", "close", "adj_close", "volume"]
+    if len(df.columns) != len(expected_columns):
+        raise ValueError(f"Length mismatch: got {len(df.columns)} columns, expected {len(expected_columns)}")
+    df.columns = expected_columns
+
+    df = enrich_with_indicators_and_score(df, config)
+
+    # Convert complex types to string before saving
+    for col in ["ENTRY_BREAKDOWN"]:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (list, dict)) else str(x) if x is not None else "")
     try:
-        file_path = CACHE_DIR / f"{symbol}.feather"
-        if file_path.exists():
-            print(f"✅ {symbol} already cached.")
-            return
-
-        print(f"⬇️  Downloading {symbol}...")
-        df = yf.download(
-            symbol,
-            start=START_DATE,
-            end=END_DATE,
-            interval="1d",
-            auto_adjust=False
-        )
-        if df.empty:
-            print(f"⚠️ No data found for {symbol}")
-            return
-
-        # Clean and normalize column names
-        df = df.rename(columns={
-            "Open": "open", "High": "high", "Low": "low",
-            "Close": "close", "Adj Close": "adj_close", "Volume": "volume"
-        })
-
-        df.index.name = "date"  # Make sure index has a name before reset_index
-        df = df.reset_index()
-        df['date'] = pd.to_datetime(df['date']).dt.tz_localize('UTC').dt.tz_convert('Asia/Kolkata')  # Make timezone-aware
-
-        # Force first column name to be 'date'
-
-        df.columns = [str(col).lower() if isinstance(col, str) else "unknown" for col in df.columns]
-        expected_columns = ["date", "open", "high", "low", "close", "adj_close", "volume"]
-        if len(df.columns) != len(expected_columns):
-            raise ValueError(f"Length mismatch: got {len(df.columns)} columns, expected {len(expected_columns)}")
-        df.columns = expected_columns
-
         df.to_feather(file_path)
-        print(f"💾 Saved: {file_path.name}")
-
     except Exception as e:
-        print(f"❌ Error downloading {symbol}: {e}")
+        print(f"❌ Error saving {symbol}: {e}")
+        return
+    print(f"💾 Saved: {file_path.name}")
 
 if __name__ == "__main__":
-    for symbol in NIFTY_500_SYMBOLS:
-        download_and_save(symbol)
+    failed = []
+    for interval in INTERVALS:
+        for symbol in ALL_SYMBOLS:
+            try:
+                download_and_save(symbol)
+            except Exception as e:
+                failed.append(symbol)
+                print(f"❌ Fatal error for {symbol}: {e}")
+
+    print(f"\n🎯 Completed with {len(failed)} failures out of {len(ALL_SYMBOLS)}")
+    if failed:
+        print("Failed symbols:", failed[:10])

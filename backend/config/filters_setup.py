@@ -11,23 +11,35 @@ from pathlib import Path
 logger, trade_logger = get_loggers()
 REQUIRED_KEYS = [
     "score_weights",
-    "exit_strategy",
-    "exit_criteria"
+    "exit_filters"
 ]
 
 # Adjust path if your filters_config.json lives elsewhere
 CONFIG_PATH = Path(__file__).resolve().parent / "filters_config.json"
+EXIT_CONFIG_PATH = Path(__file__).resolve().parent / "exit_config.json"
 
 def load_filters():
     if not CONFIG_PATH.exists():
         logger.error(f"Missing filters_config.json at {CONFIG_PATH}")
         raise FileNotFoundError(f"{CONFIG_PATH} not found")
+    
+    if not EXIT_CONFIG_PATH.exists():
+        logger.error(f"Missing filters_config.json at {EXIT_CONFIG_PATH}")
+        raise FileNotFoundError(f"{EXIT_CONFIG_PATH} not found")
+
+    cfg = {}
+    try:
+        with CONFIG_PATH.open("r") as f:
+            cfg.update(json.load(f))
+    except Exception as e:
+        logger.exception(f"Failed to load entry config: {e}")
 
     try:
-        cfg = json.loads(CONFIG_PATH.read_text())
-    except json.JSONDecodeError:
-        logger.exception("Failed to parse filters_config.json")
-        raise
+        with EXIT_CONFIG_PATH.open("r") as f:
+            cfg.update(json.load(f))  # Will override if any keys clash
+    except Exception as e:
+        logger.exception(f"Failed to load exit config: {e}")
+
 
     missing = [k for k in REQUIRED_KEYS if k not in cfg]
     if missing:

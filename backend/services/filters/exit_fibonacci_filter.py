@@ -3,32 +3,40 @@
 # @filter_type: utility
 # @tags: exit, fibonacci, support
 from config.logging_config import get_loggers
-from services.filters.fibonacci_filter import is_fibonacci_support_zone
 
 logger, trade_logger = get_loggers()
 
-def fibonacci_exit_filter(df, fibonacci_exit_retracement_zone: float = 0.99, symbol: str = "") -> tuple[bool, str]:
-    if "fibonacci_resistance" not in df.columns or "close" not in df.columns:
-        return False, "Missing required columns for Fibonacci exit"
+def fibonacci_exit_filter(df, config, symbol, **kwargs):
+    if config is None or "fibonacci_exit_filter" not in config:
+        return []
 
-    close = df["close"].iloc[-1]
-    resistance = df["fibonacci_resistance"].iloc[-1]
-    logger.info(f"[EXIT-FIB] {symbol} | Close={close:.2f} vs Resistance={resistance:.2f} (Zone={fibonacci_exit_retracement_zone})")
+    cfg = config["fibonacci_exit_filter"]
+    if not cfg.get("enabled", False):
+        return []
 
-    if close >= resistance * fibonacci_exit_retracement_zone:
-        return True, f"Close ₹{close:.2f} ≥ ₹{resistance * fibonacci_exit_retracement_zone:.2f} — near Fibonacci resistance"
-    return False, f"Close ₹{close:.2f} < ₹{resistance * fibonacci_exit_retracement_zone:.2f} — below resistance zone"
+    retracement_zone = str(cfg.get("retracement_zone", "0.618"))
+    buffer_pct = cfg.get("buffer_pct")  # 0.5%
+    weight = cfg.get("weight", 3)
 
-
-def fibonacci_support_exit_filter(df, symbol: str = "") -> tuple[bool, str]:
     try:
-        levels = df["fibonacci_levels"].iloc[-1] if "fibonacci_levels" in df.columns else {}
-        current_price = df["close"].iloc[-1]
-        in_support = is_fibonacci_support_zone(current_price, levels, symbol=symbol)
-        if in_support:
-            return True, f"Price ₹{current_price:.2f} is near Fibonacci support levels: {levels}"
-        else:
-            return False, f"Price ₹{current_price:.2f} is not near Fibonacci support levels"
+        price = df["close"].iloc[-1]
+        fib = df["FIBONACCI_LEVELS"].iloc[-1]
+        if not isinstance(fib, dict):
+            return []
+
+        level = fib.get(retracement_zone)
+        if not level:
+            return []
+
+        # Trigger if price is below resistance
+        if price < level * (1 - buffer_pct):
+            return [{
+                "filter": "fibonacci_exit_filter",
+                "weight": weight,
+                "reason": f"Price={price:.2f} < Fib({retracement_zone})={level:.2f}",
+                "triggered": True
+            }]
     except Exception as e:
-        logger.warning(f"is_fibonacci_support_zone failed — {e}")
-        return False, f"Error checking Fibonacci support zone: {e}"
+        print(f"[EXIT-FIB] {symbol} | Error: {e}")
+
+    return []

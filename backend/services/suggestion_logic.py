@@ -4,7 +4,8 @@
 # @tags: suggestion, scoring, logic
 from config.filters_setup import load_filters
 from services.entry_service import EntryService
-from services.technical_analysis import prepare_indicators, calculate_score
+from services.technical_analysis import calculate_score
+from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
 from config.logging_config import get_loggers
@@ -40,7 +41,7 @@ class SuggestionLogic:
             if df is None or df.empty:
                 return None
 
-            enriched = prepare_indicators(df)
+            enriched = enrich_with_indicators_and_score(df)
             latest = enriched.iloc[-1]
 
             if latest["close"] <= self.min_price or latest["volume"] < self.min_volume:
@@ -53,7 +54,7 @@ class SuggestionLogic:
                 }
 
             avg_rsi = enriched["RSI"].rolling(14).mean().iloc[-1]
-            score, breakdown = calculate_score(latest, self.config, avg_rsi, candle_match=False, symbol=symbol)
+            score, breakdown = calculate_score(latest, self.config, avg_rsi, symbol=symbol)
 
             suggestion = "buy" if score >= 10 else "avoid"
             logger.info(f"Scored {symbol}: {score:.2f} ({suggestion}) | Breakdown: {breakdown}")

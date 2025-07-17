@@ -20,13 +20,16 @@ def send_kite_login_sms():
     auth_token = os.getenv("TWILIO_AUTH_TOKEN")
     twilio_number = os.getenv("TWILIO_PHONE")
     your_number = os.getenv("YOUR_PHONE")
+    try:
+        client = Client(account_sid, auth_token)
+        message = client.messages.create(
+            body=f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] Zerodha Kite Login: {kite_login_url}",
+            from_=twilio_number,
+            to=your_number
+        )
 
-    client = Client(account_sid, auth_token)
-    message = client.messages.create(
-        body=f"[{datetime.now().strftime('%Y-%m-%d %H:%M')}] Zerodha Kite Login: {kite_login_url}",
-        from_=twilio_number,
-        to=your_number
-    )
-
-    logger.info(f"✅ SMS sent to {your_number} with SID: {message.sid}")
-    print("SMS sent with SID:", message.sid)
+        logger.info(f"✅ SMS sent to {your_number} with SID: {message.sid}")
+        print("SMS sent with SID:", message.sid)
+    except Exception as e:
+        logger.error(f"❌ Failed to send SMS: {str(e)}")
+        print("Failed to send SMS:", str(e))

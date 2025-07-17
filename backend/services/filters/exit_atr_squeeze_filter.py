@@ -6,15 +6,37 @@ from config.logging_config import get_loggers
 
 logger, trade_logger = get_loggers()
 
-def atr_squeeze_filter(df, atr_squeeze_threshold: float = 0.01, symbol: str = "") -> tuple[bool, str]:
-    if "atr" not in df.columns or "close" not in df.columns:
-        return False, "ATR or close price data missing"
+def atr_squeeze_filter(df, config, symbol, **kwargs):
+    if config is None:
+        return []
 
-    atr = df["atr"].iloc[-1]
-    close = df["close"].iloc[-1]
-    atr_range = atr / close
-    logger.info(f"[EXIT-ATR] {symbol} | ATR Range={atr_range:.4f} vs threshold={atr_squeeze_threshold}")
+    filter_cfg = config.get("atr_squeeze_filter")
+    if not filter_cfg.get("enabled", False):
+        return []
 
-    if atr_range < atr_squeeze_threshold:
-        return True, f"ATR squeeze detected | ATR={atr:.2f}, Close={close:.2f}, Ratio={atr_range:.4f}"
-    return False, f"No ATR squeeze | ATR={atr:.2f}, Close={close:.2f}, Ratio={atr_range:.4f}"
+    weight = filter_cfg.get("weight", 3)
+    threshold = filter_cfg.get("threshold", 0.01)
+    reasons = []
+
+    if "ATR" in df.columns and len(df) >= 2:
+        atr_now = df["ATR"].iloc[-1]
+        atr_prev = df["ATR"].iloc[-2]
+        if atr_prev > 0:
+            contraction = abs(atr_now - atr_prev) / atr_prev
+            logger.info(f"[EXIT-ATR-SQUEEZE] {symbol} | ATR Now={atr_now:.2f}, Prev={atr_prev:.2f}, Change={contraction:.2%}")
+            if contraction < threshold:
+                reasons.append({
+                    "filter": "atr_squeeze_filter",
+                    "weight": weight,
+                    "reason": f"ATR squeeze detected: change={contraction:.2%} < threshold={threshold:.2%}",
+                    "triggered": True
+                })
+            else:
+                reasons.append({
+                    "filter": "atr_squeeze_filter",
+                    "weight": 0,
+                    "reason": f"ATR change normal: {contraction:.2%} >= {threshold:.2%}",
+                    "triggered": False
+                })
+
+    return reasons

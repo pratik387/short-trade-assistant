@@ -6,13 +6,36 @@ from config.logging_config import get_loggers
 
 logger, trade_logger = get_loggers()
 
-def bollinger_exit_filter(df, bb_exit_threshold: float = 0.9, symbol: str = "") -> tuple[bool, str]:
-    if "BB_%B" not in df.columns:
-        return False, "Missing BB_%B column"
+def bb_exit_filter(df, config, symbol, **kwargs):
+    if config is None:
+        return []
 
-    val = df["BB_%B"].iloc[-1]
-    logger.info(f"[EXIT-BB] {symbol} | %B={val:.2f} vs threshold={bb_exit_threshold}")
+    filter_cfg = config.get("bb_exit_filter")
+    if not filter_cfg.get("enabled", False):
+        return []
 
-    if val > bb_exit_threshold:
-        return True, f"%B={val:.2f} > threshold={bb_exit_threshold} — near upper Bollinger Band"
-    return False, f"%B={val:.2f} ≤ threshold={bb_exit_threshold} — within safe zone"
+    threshold = filter_cfg.get("threshold", 0.9)
+    weight = filter_cfg.get("weight", 3)
+
+    bbp = df["BB_%B"].iloc[-1] if "BB_%B" in df.columns else None
+    reasons = []
+
+    if bbp is not None:
+        logger.info(f"[EXIT-BB] {symbol} | %B={bbp:.2f}, Threshold={threshold:.2f}")
+        if bbp >= threshold:
+            reasons.append({
+                "filter": "bb_exit_filter",
+                "weight": weight,
+                "reason": f"%B={bbp:.2f} > threshold={threshold:.2f} — near upper Bollinger Band",
+                "triggered": True
+            })
+        else:
+            reasons.append({
+                "filter": "bb_exit_filter",
+                "weight": 0,
+                "reason": f"%B below threshold: {bbp:.2f} < {threshold:.2f}",
+                "triggered": False
+            })
+
+    return reasons
+

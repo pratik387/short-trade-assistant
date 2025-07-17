@@ -13,7 +13,7 @@ from services.entry_service import EntryService
 from services.exit_service import ExitService
 from brokers.mock.mock_broker import MockBroker
 from backtesting.trade_recorder import TradeRecorder
-from backtesting.config import BACKTEST_CONFIG
+from backend.backtesting.backtest_config import BACKTEST_CONFIG
 from config.filters_setup import load_filters
 from db.tinydb.client import get_table
 from util.util import is_market_active
@@ -29,21 +29,7 @@ MIN_ENTRY_SCORE = BACKTEST_CONFIG["minimum_entry_score"]
 MIN_HOLD_DAYS = BACKTEST_CONFIG["minimum_holding_days"]
 MIN_SCORE_GAP_TO_REPLACE = BACKTEST_CONFIG.get("min_score_gap_to_replace")
 
-logger, trade_logger = get_loggers()
-
-def place_order_entry(broker, symbol, qty, entry_price, entry_date, score):
-    broker.place_order(symbol=symbol, quantity=qty, action="buy", timestamp = entry_date)
-    invested = qty * entry_price
-    logger.info(f"🛂 Buying {symbol} | Qty: {qty} | Entry Price: ₹{entry_price:.2f} | Invested: ₹{invested:.2f} | Entry Score: {score}")
-    trade_logger.info(f"ENTRY | {symbol} | Qty: {qty} | Entry Price: ₹{entry_price:.2f} | Invested: ₹{invested:.2f} | Score: {score}")
-    return invested
-
-def place_order_exit(broker, symbol, qty, exit_price, entry_price, reason, exit_date):
-    broker.place_order(symbol=symbol, quantity=qty, action="sell", timestamp = exit_date)
-    pnl = qty * (exit_price - entry_price)
-    logger.info(f"✅ Exiting {symbol} at ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | Reason: {reason}")
-    trade_logger.info(f"EXIT | {symbol} | Qty: {qty} | Entry: ₹{entry_price:.2f} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} {reason}")
-    return pnl
+logger, trade_logger = get_loggers()  
 
 def run_backtest():
     config = load_filters()
@@ -136,7 +122,11 @@ def run_backtest():
 
                 if trigger_exit:
                     qty = position["qty"]
-                    pnl = place_order_exit(broker, symbol, qty, exit_price, entry_price, reason, current_date)
+                    
+                    exit_service.execute_exit(position, result, current_date)
+                    pnl = qty * (exit_price - entry_price)
+                    logger.info(f"✅ Exiting {symbol} at ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | Reason: {reason}")
+                    trade_logger.info(f"EXIT | {symbol} | Qty: {qty} | Entry: ₹{entry_price:.2f} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} {reason}")
                     capital += qty * exit_price
                     recorder.record_exit(symbol, current_date.strftime("%Y-%m-%d"), exit_price)
                     del open_positions[symbol]
@@ -165,7 +155,11 @@ def run_backtest():
                     weak_pos = open_positions[weakest_symbol]
                     qty = weak_pos["qty"]
                     exit_price = broker.get_ltp(weakest_symbol)
-                    pnl = place_order_exit(broker, weakest_symbol, qty, exit_price, weak_pos["entry_price"], "🔁 Rebalanced for better candidate", current_date)
+                    exit_service.execute_exit(position, result, current_date)
+                    reason = {"filter": "forced_exit", "weight": 0, "reason": "🔁 Rebalanced for better candidate"}
+                    pnl = qty * (exit_price - entry_price)
+                    logger.info(f"✅ Exiting {symbol} at ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | Reason: {reason}")
+                    trade_logger.info(f"EXIT | {symbol} | Qty: {qty} | Entry: ₹{entry_price:.2f} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} {reason}")
                     capital += qty * exit_price
                     recorder.record_exit(weakest_symbol, current_date.strftime("%Y-%m-%d"), exit_price)
                     del open_positions[weakest_symbol]
@@ -183,25 +177,36 @@ def run_backtest():
                 entry_date = df.index[-2]
                 entry_price = df.iloc[-2]["close"]
                 qty = int(TARGET_PER_TRADE // entry_price)
+                invested = qty * entry_price
                 if qty == 0:
                     continue
 
-                invested = place_order_entry(broker, symbol, qty, entry_price, current_date, score)
+                #invested = place_order_entry(broker, symbol, qty, entry_price, current_date, score)
+                entry_service.execute_entry(pick, quantity=qty, timestamp = current_date, entry_price = entry_price)
+                logger.info(f"🛢 Buying {symbol} | Qty: {qty} | Entry Price: ₹{entry_price:.2f} | Invested: ₹{invested:.2f} | Entry Score: {score}")
+                trade_logger.info(f"ENTRY | {symbol} | Qty: {qty} | Entry Price: ₹{entry_price:.2f} | Invested: ₹{invested:.2f} | Score: {score}")
+                recorder.record_entry(symbol, entry_date.strftime("%Y-%m-%d"), entry_price, invested)
                 capital -= invested
                 open_positions[symbol] = {
-                    "entry_date": entry_date,
+                    "entry_date": current_date,
                     "entry_price": entry_price,
                     "qty": qty,
-                    "score": score
+                    "score": score,
+                    "symbol": symbol,
+                    "entry_filters": pick.get("reasons", []),       # optional
+                    "entry_indicators": pick.get("indicators", {})  # optional
                 }
-                recorder.record_entry(symbol, entry_date.strftime("%Y-%m-%d"), entry_price, invested)
 
             current_date += timedelta(days=1)
             current_date = current_date.replace(hour=9, minute=30, second=0)
 
         for symbol, pos in open_positions.items():
             exit_price = broker.get_ltp(symbol)
-            pnl = place_order_exit(broker, symbol, pos["qty"], exit_price, pos["entry_price"], "📄 Forced exit at end", end_date)
+            reason = {"filter": "forced_exit", "weight": 0, "reason": "Forced exit at end"}
+            exit_service.execute_exit(position, result, current_date)
+            pnl = qty * (exit_price - entry_price)
+            logger.info(f"✅ Exiting {symbol} at ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | Reason: {reason}")
+            trade_logger.info(f"EXIT | {symbol} | Qty: {qty} | Entry: ₹{entry_price:.2f} | Exit: ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} {reason}")
             capital += pos["qty"] * exit_price
             recorder.record_exit(symbol, end_date.strftime("%Y-%m-%d"), exit_price)
 

@@ -3,9 +3,10 @@
 # @filter_type: logic
 # @tags: entry, strategy, service
 import time
+from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-from services.technical_analysis import passes_hard_filters, prepare_indicators, calculate_score
+from services.technical_analysis import passes_hard_filters, calculate_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers
 from brokers.mock.mock_broker import MockBroker
@@ -13,7 +14,7 @@ from util.diagnostic_report_generator import diagnostics_tracker
 
 logger, trade_logger = get_loggers()
 
-def preload_and_filter_symbols(symbols, data_provider, config, min_price, min_volume):
+def preload_and_filter_symbols(symbols, data_provider, config, min_price, min_volume, as_of_date):
     candle_cache = {}
     filtered_symbols = []
     lock = threading.Lock()
@@ -21,19 +22,20 @@ def preload_and_filter_symbols(symbols, data_provider, config, min_price, min_vo
     def load_symbol(item):
         symbol = item.get("symbol")
         try:
+            from_date = as_of_date - timedelta(days=config.get("lookback_days", 180))
             df = data_provider.fetch_candles(
                 symbol=symbol,
                 interval=config.get("interval", "day"),
-                days=config.get("lookback_days", 180)
+                from_date=from_date,
+                to_date=as_of_date
             )
+            
             if df is None or df.empty:
                 return
 
             latest = df.iloc[-1]
             if latest["close"] <= min_price or latest["volume"] < min_volume:
                 return
-
-            df = prepare_indicators(df, symbol=symbol)
 
             with lock:
                 candle_cache[symbol] = df
@@ -42,16 +44,26 @@ def preload_and_filter_symbols(symbols, data_provider, config, min_price, min_vo
             logger.exception("Error preloading or filtering %s", symbol)
 
     with ThreadPoolExecutor() as executor:
-        executor.map(load_symbol, symbols)
+        futures = {executor.submit(load_symbol, item): item for item in symbols}
+        for future in as_completed(futures):
+            try:
+                future.result()  # will raise if load_symbol errored
+            except Exception as e:
+                logger.error(f"Exception in preload thread: {e}")
+
 
     return filtered_symbols, candle_cache
 
-def evaluate_symbol(item, config, candle_cache):
+def evaluate_symbol(item, config, candle_cache, as_of_date):
     symbol = item.get("symbol")
     symbol_start = time.perf_counter()
     try:
         df = candle_cache.get(symbol)
         if df is None or df.empty:
+            return None
+        
+        df = df[df.index <= as_of_date]  # 🧠 Slicing based on date context
+        if len(df) < 1:
             return None
 
         latest = df.iloc[-1]
@@ -60,7 +72,7 @@ def evaluate_symbol(item, config, candle_cache):
             return None
 
         avg_rsi = df["RSI"].rolling(14).mean().iloc[-1]
-        score, breakdown = calculate_score(latest, config, avg_rsi, candle_match=False, symbol=symbol)
+        score, breakdown = calculate_score(latest, config, avg_rsi, symbol=symbol)
         logger.info(f"Scored {symbol}: {score:.2f} | Breakdown: {breakdown}")
 
         elapsed_ms = (time.perf_counter() - symbol_start) * 1000
@@ -74,11 +86,11 @@ def evaluate_symbol(item, config, candle_cache):
             "dmn": round(float(latest["DMN_14"]), 2),
             "rsi": round(float(latest["RSI"]), 2),
             "macd": round(float(latest["MACD"]), 2),
-            "macd_signal": round(float(latest["MACD_Signal"]), 2),
+            "macd_signal": round(float(latest["MACD_SIGNAL"]), 2),
             "bb": round(float(latest.get("BB_%B", 0)), 2),
-            "stochastic_k": round(float(latest.get("stochastic_k", 0)), 2),
-            "obv": round(float(latest.get("obv", 0)), 2),
-            "atr": round(float(latest.get("atr", 0)), 2),
+            "stochastic_k": round(float(latest.get("STOCHASTIC_K", 0)), 2),
+            "obv": round(float(latest.get("OBV", 0)), 2),
+            "atr": round(float(latest.get("ATR", 0)), 2),
             "stop_loss": round(latest["close"] * 0.97, 2),
             "score": score,
             "breakdown": breakdown,
@@ -92,8 +104,8 @@ def evaluate_symbol(item, config, candle_cache):
     except DataUnavailableException:
         logger.exception("Symbol not available: %s", symbol)
         return None
-    except Exception:
-        logger.exception("Error processing symbol %s", symbol)
+    except Exception as e:
+        logger.exception("Error processing symbol %s", symbol + f": {e}")
         return None
 
 class EntryService:
@@ -111,7 +123,9 @@ class EntryService:
         else:
             self.max_workers = 3
 
-    def get_suggestions(self) -> list:
+    def get_suggestions(self, as_of_date: datetime = None) -> list:
+        if as_of_date is None:
+            as_of_date = datetime.now()
         logger.info(
             "Starting get_suggestions (min_price=%s, min_volume=%s)",
             self.min_price, self.min_volume
@@ -124,14 +138,16 @@ class EntryService:
 
         # Preload candle data and filter early (multithreaded)
         filtered_symbols, candle_cache = preload_and_filter_symbols(
-            symbols, self.data_provider, self.config, self.min_price, self.min_volume
+            symbols, self.data_provider, self.config, self.min_price, self.min_volume, as_of_date=as_of_date
         )
 
         logger.info("Preloaded and filtered %d symbols", len(filtered_symbols))
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_symbol = {
-                executor.submit(evaluate_symbol, item, self.config, candle_cache): item for item in filtered_symbols
+                executor.submit(
+                    evaluate_symbol, item, self.config, candle_cache, as_of_date
+                ): item for item in filtered_symbols
             }
             for future in as_completed(future_to_symbol):
                 result = future.result()
@@ -152,14 +168,13 @@ class EntryService:
     def tie_breaker(self, x):
         return (
             -x.get("score", 0),                      # 1. Higher score
-            -x.get("ADX_14", 0),                     # 2. Stronger trend
-            abs(x.get("RSI", 50) - 50),              # 3. RSI closest to neutral
+            -x.get("adx", 0),                     # 2. Stronger trend
+            abs(x.get("rsi", 50) - 50),              # 3. RSI closest to neutral
             -x.get("volume", 0),                     # 4. Optional: Higher volume
         )
 
-    def execute_entry(self, suggestion: dict, quantity: int, timestamp):
+    def execute_entry(self, suggestion: dict, quantity: int, timestamp, entry_price):
         symbol = suggestion["symbol"]
-        entry_price = suggestion["close"]
         score = suggestion["score"]
         breakdown = suggestion["breakdown"]
         indicators = {k: v for k, v in suggestion.items() if k in ["adx", "dmp", "dmn", "rsi", "macd", "macd_signal", "bb", "stochastic_k", "obv", "atr"]}

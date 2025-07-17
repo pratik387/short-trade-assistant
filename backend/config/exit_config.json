@@ -1,0 +1,108 @@
+{
+    "score_threshold": 5,
+    "stop_loss_exit": {
+        "enabled": true,
+        "stop_loss_pct": 0.05
+    },
+    "profit_target_exit": {
+        "enabled": true,
+        "profit_target_pct": 0.03
+    },
+    "trailing_stop": {
+        "enabled": true,
+        "atr_multiplier": 3,
+        "lookback_days": 10
+    },
+    "profit_target_escalation": {
+        "enabled": true,
+        "macd_threshold": 20,
+        "pnl_threshold": 1.0
+    },
+    "multi_signal_weakness": {
+        "enabled": true,
+        "rsi_below": 45
+    },
+    "exit_filters": {
+        "rsi_drop_filter": {
+            "enabled": true,
+            "rsi_upper": 70,
+            "rsi_lower": 45,
+            "weight": 3
+        },
+        "macd_exit_filter": {
+            "enabled": true,
+            "weight": 3
+        },
+        "adx_exit_filter": {
+            "enabled": true,
+            "threshold": 35,
+            "weight": 3
+        },
+        "fibonacci_exit_filter": {
+            "enabled": true,
+            "retracement_zone": 0.5,
+            "buffer_pct": 0.005,
+            "weight": 2
+        },
+        "fibonacci_support_filter": {
+            "enabled": true,
+            "buffer_pct": 0.005,
+            "weight": -3
+        },
+        "atr_squeeze_filter": {
+            "enabled": true,
+            "threshold": 0.01,
+            "weight": 3
+        },
+        "bb_exit_filter": {
+            "enabled": true,
+            "threshold": 0.9,
+            "weight": 1
+        },
+        "exit_time_decay_filter": {
+            "enabled": true,
+            "min_hold_days_for_exit": 3,
+            "weight_schedule": [
+                {
+                    "days": 3,
+                    "weight": 2
+                },
+                {
+                    "days": 5,
+                    "weight": 4
+                },
+                {
+                    "days": 10,
+                    "weight": 6
+                }
+            ]
+        },
+        "score_drop_filter": {
+            "enabled": true,
+            "threshold_percent": 40,
+            "weight": 10
+        },
+        "supply_absorption_filter": {
+            "enabled": true,
+            "range_days": 3,
+            "volume_drop_pct": 30,
+            "price_range_pct": 1,
+            "weight": 2
+        },
+        "pattern_breakdown_filter": {
+            "enabled": true,
+            "weight": 3
+        },
+        "obv_exit_filter": {
+            "enabled": true,
+            "lookback_days": 5,
+            "min_drop_pct": 1.5,
+            "weight": 3
+        },
+        "volatility_spike_exit": {
+            "enabled": true,
+            "atr_spike_pct": 40,
+            "weight": 2
+        }
+    }
+}

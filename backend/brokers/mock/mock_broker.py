@@ -16,13 +16,14 @@ logger, trade_logger = get_loggers()
 class MockBroker(BaseBroker):
     def __init__(self, interval: str = "day", index: str = "nifty_50", use_cache: bool = True):
         self.use_cache = use_cache
-        self.cache_dir = Path(__file__).resolve().parents[2] / "backtesting" / "ohlcv_cache"
+        self.cache_root = Path(__file__).resolve().parents[2] / "backtesting" / "ohlcv_archive"
         self.live_broker = KiteBroker()
+        self.interval = interval
 
     def get_ltp(self, symbol: str) -> float:
     
         if self.use_cache:
-            file_path = self.cache_dir / f"{symbol}.feather"
+            file_path = self._locate_latest_file(symbol, interval=self.interval)
             if file_path.exists():
                 df = pd.read_feather(file_path)
                 df["date"] = pd.to_datetime(df["date"])
@@ -47,13 +48,18 @@ class MockBroker(BaseBroker):
     ):
         try:
             if self.use_cache:
-                file_path = self.cache_dir / f"{symbol}.feather"
-                if file_path.exists():
+                file_path = self._locate_latest_file(symbol, interval)
+
+                if file_path is not None and file_path.exists():
                     df = pd.read_feather(file_path)
                     df = df.set_index("date").sort_index()
                     df = df.sort_values("date")
+                    if from_date:
+                        df = df[df.index >= from_date]
+                    if to_date:
+                        df = df[df.index <= to_date]
                     if days and len(df) >= days:
-                        return df.iloc[-days:].copy()
+                        df = df.iloc[-days:]
                     return df.copy()
             # fallback to API
             return self.live_broker.fetch_candles(symbol, interval, 180)
@@ -88,3 +94,16 @@ class MockBroker(BaseBroker):
     def get_symbols(self, index):
         """Return all symbol-token mappings for the current index."""
         return get_index_symbols(index)
+    
+    def _locate_latest_file(self, symbol: str, interval: Optional[str] = None):
+        interval = interval or self.interval
+        if interval == "day":
+            interval = "1d"
+        folder = self.cache_root / symbol
+        if not folder.exists():
+            return None
+        matches = sorted(folder.glob(f"{symbol}_{interval}_*.feather"))
+        if not matches:
+            logger.warning(f"[MOCK] No cached data found for {symbol} with interval {interval} in {folder}")
+            return None
+        return matches[-1] if matches else None
