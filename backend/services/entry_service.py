@@ -68,7 +68,7 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
         #usually for live treading and get single stock suggestion
         if "RSI" not in df.columns or "ADX_14" not in df.columns:
             df = enrich_with_indicators_and_score(df, config=config)
-        df.set_index("date", inplace=True)
+            df.set_index("date", inplace=True)
         df = df[df.index <= as_of_date]
         if len(df) < 1:
             return None
@@ -100,7 +100,7 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
             "atr": round(float(latest.get("ATR", 0)), 2),
             "stop_loss": round(latest["close"] * 0.97, 2),
             "score": float(score) if score is not None else 0.0,
-            "breakdown": list(breakdown) if isinstance(breakdown, (list, tuple)) else [],
+            "breakdown": breakdown,
             "close": round(float(latest["close"]), 2),
             "volume": int(latest["volume"]),
         }

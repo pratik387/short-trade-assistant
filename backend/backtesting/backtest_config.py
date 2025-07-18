@@ -2,8 +2,8 @@
 Configuration for backtest parameters.
 """
 BACKTEST_CONFIG = {
-    "start_date": "2024-07-01",
-    "end_date": "2024-12-30",
+    "start_date": "2024-01-01",
+    "end_date": "2025-06-30",
     "capital": 100000,
     "capital_per_trade": 20000,
     "minimum_entry_score": 17,

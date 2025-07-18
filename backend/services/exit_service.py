@@ -89,8 +89,9 @@ class ExitService:
             df=df,
             days_held=days_held
         )
-        logger.debug(f"[DYNAMIC THRESHOLD] {symbol} | Days Held: {days_held}, Threshold: {dynamic_threshold:.2f}, Score: {score}")
+        
         score = result["score"]
+        logger.debug(f"[DYNAMIC THRESHOLD] {symbol} | Days Held: {days_held}, Threshold: {dynamic_threshold:.2f}, Score: {score}")
         raw_reasons = result["raw_reasons"]
 
         if score >= dynamic_threshold:
@@ -129,7 +130,7 @@ class ExitService:
                 exit_filters=result.get("breakdown"),
                 indicators=result.get("breakdown"),
                 days_held=result.get("days_held"),
-                score_before=result.get("score", 0),
+                score_before=stock.get("score", 0),
                 score_after=result.get("entry_score_at_exit", 0),
                 entry_score_drop=result.get("entry_score_drop", 0),
                 entry_score_drop_pct=result.get("entry_score_drop_pct", 0)

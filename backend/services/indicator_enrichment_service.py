@@ -7,6 +7,7 @@ logger, trade_logger = get_loggers()
 
 def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
+
     if "date" in df.columns:
         df["date"] = pd.to_datetime(df["date"])
         df.set_index("date", inplace=True)
@@ -15,44 +16,84 @@ def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
     else:
         logger.error("DataFrame lacks 'date' column or datetime index")
         raise ValueError("Cannot enrich without a valid datetime index or 'date' column")
+    
+    df.attrs["missing_indicators"] = []
 
+    try:
+        df["RSI"] = rsi(df["close"])
+    except Exception as e:
+        logger.warning(f"[RSI] failed: {e}")
+        df.attrs["missing_indicators"].append("RSI")
+        df["RSI"] = None
 
-    df["RSI"] = rsi(df["close"])
-    df["EMA_FAST"] = df["close"].ewm(span=12, adjust=False).mean()
-    df["EMA_SLOW"] = df["close"].ewm(span=26, adjust=False).mean()
-    df["MACD"] = df["EMA_FAST"] - df["EMA_SLOW"]
-    df["MACD_SIGNAL"] = df["MACD"].ewm(span=9, adjust=False).mean()
-    df["MACD_HIST"] = df["MACD"] - df["MACD_SIGNAL"]
+    try:
+        df["EMA_FAST"] = df["close"].ewm(span=12, adjust=False).mean()
+        df["EMA_SLOW"] = df["close"].ewm(span=26, adjust=False).mean()
+        df["MACD"] = df["EMA_FAST"] - df["EMA_SLOW"]
+        df["MACD_SIGNAL"] = df["MACD"].ewm(span=9, adjust=False).mean()
+        df["MACD_HIST"] = df["MACD"] - df["MACD_SIGNAL"]
+    except Exception as e:
+        logger.warning(f"[MACD] failed: {e}")
+        df.attrs["missing_indicators"].append("MACD")
+        df["MACD"] = df["MACD_SIGNAL"] = df["MACD_HIST"] = None
+
     if df.shape[0] < 15:
-        logger.warning("⚠️ Skipping indicator enrichment — insufficient candles")
+        logger.warning("⚠️ Skipping enrichment — insufficient candles")
         return df
-    adx_df = adx(df["high"], df["low"], df["close"])
-    if adx_df is not None:
+    try:
+        adx_df = adx(df["high"], df["low"], df["close"])
         df["ADX_14"] = adx_df["ADX_14"]
-    else:
-        logger.warning("⚠️ ADX skipped — not enough data for %s", df.index[-1])
-        df["ADX_14"] = 0  # or np.nan
-    df["ADX_14"] = adx_df["ADX_14"]
-    df["DMP_14"] = adx_df["DMP_14"]
-    df["DMN_14"] = adx_df["DMN_14"]
+        df["DMP_14"] = adx_df["DMP_14"]
+        df["DMN_14"] = adx_df["DMN_14"]
+    except Exception as e:
+        logger.warning(f"[ADX] failed: {e}")
+        df.attrs["missing_indicators"].append("ADX")
+        df["ADX_14"] = df["DMP_14"] = df["DMN_14"] = None
+    adx_df = adx(df["high"], df["low"], df["close"])
 
-    df["OBV"] = obv(df["close"], df["volume"])
-    df["ATR"] = atr(df["high"], df["low"], df["close"])
+    try:
+        df["OBV"] = obv(df["close"], df["volume"])
+    except Exception as e:
+        logger.warning(f"[OBV] failed: {e}")
+        df.attrs["missing_indicators"].append("OBV")
+        df["OBV"] = None
 
-    stoch_df = stoch(df["high"], df["low"], df["close"])
-    df["STOCHASTIC_K"] = stoch_df["STOCHk_14_3_3"]
-    df["STOCHASTIC_D"] = stoch_df["STOCHd_14_3_3"]
+    try:
+        df["ATR"] = atr(df["high"], df["low"], df["close"])
+    except Exception as e:
+        logger.warning(f"[ATR] failed: {e}")
+        df.attrs["missing_indicators"].append("ATR")
+        df["ATR"] = None
+    
+    try:
+        stoch_df = stoch(df["high"], df["low"], df["close"], k=14, d=3, smooth_k=3)
+        df["STOCHASTIC_K"] = stoch_df["STOCHk_14_3_3"]
+        df["STOCHASTIC_D"] = stoch_df["STOCHd_14_3_3"]
+    except Exception as e:
+        logger.warning(f"[STOCHASTIC] failed: {e}")
+        df.attrs["missing_indicators"].append("STOCHASTIC")
+        df["STOCHASTIC_K"] = df["STOCHASTIC_D"] = None
 
-    df["SMA_50"] = df["close"].rolling(50).mean()
-    df["SMA_20"] = df["close"].rolling(20).mean()
-    sma = df["SMA_20"]
-    std = df["close"].rolling(20).std()
-    df["BB_MIDDLE"] = sma
-    df["BB_UPPER"] = sma + (2 * std)
-    df["BB_LOWER"] = sma - (2 * std)
-    df["BB_%B"] = (df["close"] - df["BB_LOWER"]) / (df["BB_UPPER"] - df["BB_LOWER"])
+    try:
+        df["SMA_50"] = df["close"].rolling(50).mean()
+        df["SMA_20"] = df["close"].rolling(20).mean()
+        sma = df["SMA_20"]
+        std = df["close"].rolling(20).std()
+        df["BB_MIDDLE"] = sma
+        df["BB_UPPER"] = sma + (2 * std)
+        df["BB_LOWER"] = sma - (2 * std)
+        df["BB_%B"] = (df["close"] - df["BB_LOWER"]) / (df["BB_UPPER"] - df["BB_LOWER"])
+    except Exception as e:
+        logger.warning(f"[BOLLINGER] failed: {e}")
+        df.attrs["missing_indicators"].append("BOLLINGER")
+        df["BB_%B"] = df["BB_UPPER"] = df["BB_LOWER"] = df["BB_MIDDLE"] = None
 
-    df["AVG_RSI"] = df["RSI"].rolling(14).mean()
+    try:
+        df["AVG_RSI"] = df["RSI"].rolling(14).mean()
+    except Exception as e:
+        logger.warning(f"[AVG_RSI] failed: {e}")
+        df.attrs["missing_indicators"].append("AVG_RSI")
+        df["AVG_RSI"] = None
 
     try:
         window = 30
@@ -66,7 +107,9 @@ def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
         df["FIBONACCI_LEVELS"] = fib_data
     except Exception as e:
-        print(f"Fibonacci enrichment failed: {e}")
+        logger.warning(f"[FIBONACCI] failed: {e}")
+        df.attrs["missing_indicators"].append("FIBONACCI")
+        df["FIBONACCI_LEVELS"] = [{} for _ in range(len(df))]
 
     try:
         pattern_df = cdl_pattern(open_=df["open"], high=df["high"], low=df["low"], close=df["close"])
@@ -80,7 +123,9 @@ def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
         df["CANDLE_PATTERN"] = pattern_df.apply(get_pattern_name, axis=1)
     except Exception as e:
-        print(f"Candlestick pattern enrichment failed: {e}")
+        logger.warning(f"[CANDLE_PATTERN] failed: {e}")
+        df.attrs["missing_indicators"].append("CANDLE_PATTERN")
+        df["CANDLE_PATTERN"] = None
 
     df.reset_index(inplace=True)
     return df

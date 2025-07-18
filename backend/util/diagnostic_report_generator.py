@@ -1,8 +1,6 @@
 import os
 import sys
 import pandas as pd
-from datetime import datetime
-
 
 class DiagnosticsTracker:
     def __init__(self):
@@ -19,12 +17,10 @@ class DiagnosticsTracker:
             "exit_time": None,
             "exit_price": None,
             "pnl": None,
+            "pnl_percent": None,
             "exit_reason": None,
             "exit_filters": [],
             "exit_indicators": {},
-            "exit_score_before": None,
-            "exit_score_after": None,
-            "pnl_percent": None,
             "result": None
         }
         self.trades.append(trade)
