@@ -3,6 +3,7 @@ import yfinance as yf
 import pandas as pd
 import json
 from pathlib import Path
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # Ensure the root directory is in sys.path for module imports
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,7 +27,7 @@ with open(INDEX_FILE) as f:
 
 # Configurable params
 START_DATE = "2022-01-01"
-END_DATE = "2025-07-14"
+END_DATE = "2025-07-20"
 INTERVALS = ["1d"]
 
 def download_and_save(symbol, interval="1d"):
@@ -81,13 +82,18 @@ def download_and_save(symbol, interval="1d"):
 
 if __name__ == "__main__":
     failed = []
+    max_workers = 8  # Tune based on CPU core count
+
     for interval in INTERVALS:
-        for symbol in ALL_SYMBOLS:
-            try:
-                download_and_save(symbol)
-            except Exception as e:
-                failed.append(symbol)
-                print(f"❌ Fatal error for {symbol}: {e}")
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
+            future_to_symbol = {executor.submit(download_and_save, symbol, interval): symbol for symbol in ALL_SYMBOLS}
+            for future in as_completed(future_to_symbol):
+                symbol = future_to_symbol[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    failed.append(symbol)
+                    print(f"❌ Fatal error for {symbol}: {e}")
 
     print(f"\n🎯 Completed with {len(failed)} failures out of {len(ALL_SYMBOLS)}")
     if failed:

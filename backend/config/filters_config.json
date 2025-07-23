@@ -1,36 +1,83 @@
 {
-  "bb_lower": 0.2,
-  "bb_upper": 0.8,
-  "rsi_min": 63,
-  "rsi_max": 69,
   "min_price": 50,
   "min_volume": 100000,
-  "obv_min": 500000,
-  "atr_min": 10,
-  "stochastic_threshold": 60,
-  "adx_min": 30,
-  "adx_max": 45,
-  "bb_width_min": 5,
-  "macd_min": 8,
-  "macd_cap": 30,
-  "max_dmp_dmn_gap": 15,
   "late_entry_penalty": {
     "rsi_above": 74,
     "macd_above": 30,
     "penalty_score": -3
   },
-  "score_weights": {
-    "adx": 4,
-    "macd": 4,
-    "bb": 1,
-    "dmp_dmn": 1,
-    "price_sma": 2,
-    "candle_pattern": 3,
-    "rsi_above_avg": 2,
-    "stochastic": 2,
-    "obv": 2,
-    "atr": 2,
-    "rsi": 2,
-    "fibonacci_support": 2
+  "entry_filters": {
+    "adx": {
+      "enabled": true,
+      "weight": 4,
+      "min": 22,
+      "max": 35
+    },
+    "macd": {
+      "enabled": true,
+      "weight": 4,
+      "cap": 25,
+      "min": 5
+    },
+    "bb": {
+      "enabled": true,
+      "weight": 1,
+      "upper": 0.85,
+      "lower": 0.2,
+      "width_min": 5
+    },
+    "dmp_dmn": {
+      "enabled": true,
+      "weight": 1,
+      "gap_max": 12
+    },
+    "price_sma": {
+      "enabled": true,
+      "weight": 2,
+      "gap_max": 50
+    },
+    "candle_pattern": {
+      "enabled": true,
+      "weight": 3
+    },
+    "rsi_above_avg": {
+      "enabled": true,
+      "weight": 2
+    },
+    "stochastic": {
+      "enabled": true,
+      "weight": 2,
+      "threshold": 55,
+      "penalty_above": 85
+    },
+    "obv": {
+      "enabled": true,
+      "weight": 2,
+      "min": 10000000
+    },
+    "atr": {
+      "enabled": true,
+      "weight": 2,
+      "min": 13,
+      "max": 60
+    },
+    "rsi": {
+      "enabled": true,
+      "weight": 2,
+      "min": 63,
+      "max": 69
+    },
+    "fibonacci_support": {
+      "enabled": true,
+      "weight": 2
+    },
+    "breakout_ready": {
+      "enabled": true,
+      "weight": 3,
+      "bb_squeeze_factor": 0.7,
+      "rsi_slope_min": 0.2,
+      "rsi_slope_max": 2,
+      "macd_hist_slope_min": 0
+    }
   }
 }

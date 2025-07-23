@@ -119,9 +119,9 @@ class EntryService:
     def __init__(self, data_provider, config: dict, index: str = "nifty_50"):
         self.data_provider = data_provider
         self.config = config
-        self.weights = config.get("score_weights", {})
-        self.min_price = config.get("min_price", 50)
-        self.min_volume = config.get("min_volume", 100_000)
+        self.weights = config.get("entry_filters")
+        self.min_price = config.get("min_price")
+        self.min_volume = config.get("min_volume")
         self.index = index
 
         # Auto-adjust thread count for real brokers to avoid API throttling

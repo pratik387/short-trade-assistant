@@ -31,9 +31,9 @@ class SuggestionLogic:
         self.interval = interval
         self.config = load_filters()
         self.data_provider = KiteBroker()
-        self.weights = self.config.get("score_weights", {})
-        self.min_price = self.config.get("min_price", 50)
-        self.min_volume = self.config.get("min_volume", 100000)
+        self.weights = self.config.get("entry_filters")
+        self.min_price = self.config.get("min_price")
+        self.min_volume = self.config.get("min_volume")
 
     def score_single_stock(self, symbol: str):
         try:

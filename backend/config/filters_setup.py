@@ -10,7 +10,7 @@ from pathlib import Path
 
 logger, trade_logger = get_loggers()
 REQUIRED_KEYS = [
-    "score_weights",
+    "entry_filters",
     "exit_filters"
 ]
 

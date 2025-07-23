@@ -9,11 +9,11 @@
     },
     "stop_loss_exit": {
         "enabled": true,
-        "stop_loss_pct": 0.05
+        "stop_loss_pct": 0.07
     },
     "profit_target_exit": {
         "enabled": true,
-        "profit_target_pct": 0.03
+        "profit_target_pct": 0.05
     },
     "trailing_stop": {
         "enabled": true,

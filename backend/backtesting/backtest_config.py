@@ -8,7 +8,7 @@ BACKTEST_CONFIG = {
     "capital_per_trade": 20000,
     "minimum_entry_score": 17,
     "max_trades_per_day": 10,
-    "max_hold_days": 10,
+    "maximum_holding_days": 15,
     "stop_loss_threshold": -5.0,
     "profit_target": 5.0,
     "minimum_holding_days": 3,

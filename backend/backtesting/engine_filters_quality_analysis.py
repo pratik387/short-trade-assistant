@@ -24,6 +24,7 @@ PROFIT_TARGET = BACKTEST_CONFIG["profit_target"]
 STOP_LOSS_THRESHOLD = BACKTEST_CONFIG["stop_loss_threshold"]
 MIN_ENTRY_SCORE = BACKTEST_CONFIG["minimum_entry_score"]
 MIN_HOLD_DAYS = BACKTEST_CONFIG["minimum_holding_days"]
+MAX_HOLD_DAYS = BACKTEST_CONFIG["maximum_holding_days"]
 
 logger, trade_logger = get_loggers()
 
@@ -70,9 +71,51 @@ def run_quality_analysis():
                     continue
                 buy_date = position["entry_date"]
                 days_held = (current_date - buy_date).days
-                
+
+                if days_held >= MAX_HOLD_DAYS:
+                    logger.info(f"⏳ Forced exit for {symbol}: held {days_held} days ≥ max {MAX_HOLD_DAYS}")
+                    exit_price = df["close"].iloc[-1]
+                    entry_price = position["entry_price"]
+                    qty = position["qty"]
+                    pnl = qty * (exit_price - entry_price)
+                    days_held = (current_date - position["entry_date"]).days
+
+                    raw_reasons = [{"filter": "forced_max_hold", "weight": 0, "reason": "Held beyond max days"}]
+
+                    result = {
+                        "symbol": symbol,
+                        "entry_price": entry_price,
+                        "current_price": exit_price,
+                        "pnl": round(pnl, 2),
+                        "pnl_percent": round(((exit_price - entry_price) / entry_price) * 100, 2),
+                        "days_held": days_held,
+                        "recommendation": "EXIT",
+                        "exit_reason": "forced_max_hold",
+                        "score": position.get("score", 0),
+                        "reasons": raw_reasons,
+                        "breakdown": [(r["filter"], r["weight"], r["reason"]) for r in raw_reasons]
+                    }
+                    exit_service.execute_exit(position, result, current_date)
+                    capital += position["qty"] * df["close"].iloc[-1]
+                    del open_positions[symbol]
+                    recorder.record_entry(symbol, current_date.strftime("%Y-%m-%d"), entry_price, invested)
+                    continue
+                    
                 if days_held < MIN_HOLD_DAYS:
                     logger.info(f"⏳ Skipping exit for {symbol}: held {days_held} days < min {MIN_HOLD_DAYS}")
+
+                    # Try early exit on profit
+                    result = exit_service.check_early_exit_on_profit(position, df, symbol)
+                    if result and result.get("recommendation") == "EXIT":
+                        qty = position["qty"]
+                        exit_price = result["current_price"]
+                        pnl = qty * (exit_price - position["entry_price"])
+                        capital += qty * exit_price
+                        logger.info(f"⚡ Early EXIT {symbol} at ₹{exit_price:.2f} | PnL: ₹{pnl:.2f} | Reason: {result['exit_reason']}")
+                        exit_service.execute_exit(position, result, current_date)
+                        recorder.record_exit(symbol, current_date.strftime("%Y-%m-%d"), exit_price)
+                        del open_positions[symbol]
+
                     continue
 
                 result = exit_service.evaluate_exit_decision(position, current_date=current_date, df=df)

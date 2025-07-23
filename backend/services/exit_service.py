@@ -47,7 +47,7 @@ class ExitService:
         df = enrich_with_indicators(df)
 
         # 🎯 Profit Target Escalation Logic
-        if self.config.get("profit_target_escalation", {}).get("enabled", False):
+        if self.config.get("profit_target_escalation").get("enabled", False):
             pnl_threshold = self.config["profit_target_escalation"].get("pnl_threshold", 1.0)
             macd_threshold = self.config["profit_target_escalation"].get("macd_threshold", 20)
             macd_val = df["MACD"].iloc[-1] if "MACD" in df.columns else 0
@@ -55,22 +55,27 @@ class ExitService:
             cost_basis = entry_price
             pnl = ((close - cost_basis) / cost_basis) * 100 if cost_basis else 0
             if macd_val >= macd_threshold and pnl >= pnl_threshold:
-                self.config["profit_target_exit"]["profit_target_pct"] *= 1.1  # example bump
+                self.config["profit_target_exit"]["profit_target_pct"] *= 1.1
 
-        # 📉 1. Stop Loss Exit
-        if self.config.get("stop_loss_exit", {}).get("enabled", True):
-            stop_loss_pct = self.config["stop_loss_exit"].get("stop_loss_pct", 0.01)
-            if df["close"].iloc[-1] <= entry_price * (1 - stop_loss_pct):
-                return self._build_exit_result(df, stock, current_date, reason="stop_loss")
+        # 🛑 1. ATR Stop Loss Exit (replaces fixed stop loss)
+        triggered, reason_text = self._check_atr_stop_loss(df, entry_price, self.config, symbol)
+        if triggered:
+            return self._build_exit_result(df, stock, current_date, reason="atr_stop_loss") | {
+                "note": reason_text,
+                "reasons": [
+                    {"filter": "atr_stop_loss", "weight": 0, "reason": reason_text}
+                ],
+                "breakdown": [("atr_stop_loss", 0, reason_text)]
+            }
 
         # 🎯 2. Profit Target Exit
-        if self.config.get("profit_target_exit", {}).get("enabled", True):
+        if self.config.get("profit_target_exit").get("enabled", True):
             profit_pct = self.config["profit_target_exit"].get("profit_target_pct", 0.02)
             if df["close"].iloc[-1] >= entry_price * (1 + profit_pct):
                 return self._build_exit_result(df, stock, current_date, reason="profit_target")
 
         # 📈 3. Trailing ATR Stop
-        if self.config.get("trailing_stop", {}).get("enabled", True):
+        if self.config.get("trailing_stop").get("enabled", True):
             lookback = self.config["trailing_stop"].get("lookback_days", 10)
             atr_multiplier = self.config["trailing_stop"].get("atr_multiplier", 3)
             if "ATR" in df.columns and len(df) >= lookback:
@@ -202,3 +207,48 @@ class ExitService:
             "reasons": raw_reasons,
             "breakdown": [(r["filter"], r["weight"], r["reason"]) for r in raw_reasons]
         }
+
+    def _check_atr_stop_loss(self, df: pd.DataFrame, entry_price: float, config: dict, symbol: str = "") -> tuple[bool, str]:
+        try:
+            exit_cfg = config.get("stop_loss_exit", {})
+            if not exit_cfg.get("enabled", False):
+                return False, ""
+            if not exit_cfg.get("use_atr", False):
+                return False, ""
+
+            atr_multiplier = exit_cfg.get("atr_multiplier", 1.5)
+            close = df["close"].iloc[-1]
+            atr = df["ATR"].iloc[-1]
+            sl_price = entry_price - (atr_multiplier * atr)
+
+            if close <= sl_price:
+                reason = f"ATR SL hit: Close={close:.2f}, SL={sl_price:.2f}, ATR={atr:.2f}, Mult={atr_multiplier}"
+                logger.info(f"🛑 {symbol} triggered ATR stop loss: {reason}")
+                return True, reason
+            return False, ""
+
+        except Exception as e:
+            logger.exception(f"❌ Error in ATR stop loss logic for {symbol}: {e}")
+            return False, ""
+        
+    def check_early_exit_on_profit(self, position, df, symbol):
+        pnl = ((df['close'].iloc[-1] - position["entry_price"]) / position["entry_price"]) * 100
+        threshold = 5.0
+
+        if pnl >= threshold:
+            macd = df["MACD"].iloc[-1] if "MACD" in df.columns else 0
+            rsi = df["RSI"].iloc[-1] if "RSI" in df.columns else 50
+            bb = df["%B"].iloc[-1] if "%B" in df.columns else 0
+
+            macd_ok = macd < 20
+            rsi_overbought = rsi > 70
+            near_upper_band = bb > 0.95
+
+            # Champion early exit on strong PnL OR technical signal
+            if macd_ok or rsi_overbought or near_upper_band or pnl >= (threshold + 1.5):
+                logger.info(f"Early exit: {symbol} | PnL={pnl:.2f}%, MACD={macd}, RSI={rsi}, %B={bb}")
+                return self._build_exit_result(df, position, datetime.now(india_tz), reason="early_profit_exit")
+            else:
+                logger.info(f"⚠️ Skipping early exit due to weak indicators for {symbol} | PnL={pnl:.2f}%")
+
+        return None
