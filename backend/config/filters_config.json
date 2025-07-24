@@ -12,75 +12,89 @@
   "entry_filters": {
     "adx": {
       "enabled": true,
-      "weight": 4,
+      "weight": 0.25,
       "min": 22,
       "max": 35
     },
     "macd": {
       "enabled": true,
-      "weight": 4,
+      "weight": 0.25,
       "cap": 25,
       "min": 5
     },
     "bb": {
       "enabled": true,
-      "weight": 1,
+      "weight": 0.1,
       "upper": 0.85,
       "lower": 0.2,
       "width_min": 5
     },
     "dmp_dmn": {
       "enabled": true,
-      "weight": 1,
+      "weight": 0.1,
       "gap_max": 12
     },
     "price_sma": {
       "enabled": true,
-      "weight": 2,
+      "weight": 0.15,
       "gap_max": 50
     },
     "candle_pattern": {
       "enabled": true,
-      "weight": 3
+      "weight": 0.2
     },
     "rsi_above_avg": {
       "enabled": true,
-      "weight": 2
+      "weight": 0.15
+    },
+    "volume_surge": {
+      "enabled": true,
+      "weight": 1.0,
+      "surge_factor": 1.5
+    },
+    "rsi_slope": {
+      "enabled": true,
+      "weight": 0.8,
+      "min": 0.1,
+      "max": 0.5
     },
     "stochastic": {
       "enabled": true,
-      "weight": 2,
+      "weight": 0.15,
       "threshold": 55,
       "penalty_above": 85
     },
     "obv": {
       "enabled": true,
-      "weight": 2,
-      "min": 10000000
+      "min": 1000000,
+      "max": 10000000,
+      "weight": 0.5
     },
     "atr": {
       "enabled": true,
-      "weight": 2,
+      "weight": 0.15,
       "min": 13,
       "max": 60
     },
     "rsi": {
       "enabled": true,
-      "weight": 2,
+      "weight": 0.15,
       "min": 63,
       "max": 69
     },
     "fibonacci_support": {
       "enabled": true,
-      "weight": 2
+      "weight": 0.15
     },
     "breakout_ready": {
       "enabled": true,
-      "weight": 3,
       "bb_squeeze_factor": 0.7,
+      "bb_weight": 0.3,
       "rsi_slope_min": 0.2,
-      "rsi_slope_max": 2,
-      "macd_hist_slope_min": 0
+      "rsi_slope_max": 2.0,
+      "rsi_weight": 0.3,
+      "macd_hist_slope_min": 0,
+      "macd_weight": 0.4
     }
   }
 }

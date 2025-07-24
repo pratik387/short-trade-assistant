@@ -6,7 +6,7 @@ BACKTEST_CONFIG = {
     "end_date": "2025-06-30",
     "capital": 100000,
     "capital_per_trade": 20000,
-    "minimum_entry_score": 17,
+    "minimum_entry_score": 1.9,
     "max_trades_per_day": 10,
     "maximum_holding_days": 15,
     "stop_loss_threshold": -5.0,

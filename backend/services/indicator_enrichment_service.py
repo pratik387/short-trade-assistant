@@ -53,6 +53,7 @@ def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
 
     try:
         df["OBV"] = obv(df["close"], df["volume"])
+        df["VOLUME_AVG"] = df["volume"].rolling(20).mean()
     except Exception as e:
         logger.warning(f"[OBV] failed: {e}")
         df.attrs["missing_indicators"].append("OBV")
