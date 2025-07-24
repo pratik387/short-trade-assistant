@@ -230,8 +230,9 @@ class ExitService:
         except Exception as e:
             logger.exception(f"❌ Error in ATR stop loss logic for {symbol}: {e}")
             return False, ""
-        
-    def check_early_exit_on_profit(self, position, df, symbol):
+    
+    def check_early_exit_on_profit(self, position, df, symbol, current_date):
+        days_held = (current_date - position["entry_date"]).days
         pnl = ((df['close'].iloc[-1] - position["entry_price"]) / position["entry_price"]) * 100
         threshold = 5.0
 
@@ -244,11 +245,11 @@ class ExitService:
             rsi_overbought = rsi > 70
             near_upper_band = bb > 0.95
 
-            # Champion early exit on strong PnL OR technical signal
-            if macd_ok or rsi_overbought or near_upper_band or pnl >= (threshold + 1.5):
-                logger.info(f"Early exit: {symbol} | PnL={pnl:.2f}%, MACD={macd}, RSI={rsi}, %B={bb}")
-                return self._build_exit_result(df, position, datetime.now(india_tz), reason="early_profit_exit")
+            if days_held <= 5 and (macd_ok or rsi_overbought or near_upper_band or pnl >= (threshold + 1.5)):
+                logger.info(f"Early exit: {symbol} | Days={days_held}, PnL={pnl:.2f}%, MACD={macd}, RSI={rsi}, %B={bb}")
+                return self._build_exit_result(df, position, current_date, reason="early_profit_exit")
             else:
-                logger.info(f"⚠️ Skipping early exit due to weak indicators for {symbol} | PnL={pnl:.2f}%")
+                logger.info(f"⚠️ Skipping early exit for {symbol} | Days={days_held}, PnL={pnl:.2f}% — too late or weak signals")
 
         return None
+

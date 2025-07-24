@@ -1,6 +1,9 @@
 {
-  "min_price": 50,
   "min_volume": 100000,
+  "min_price": 50,
+  "max_price": 1500,
+  "min_atr_pct": 1.3,
+  "enable_soft_prefilter": true,
   "late_entry_penalty": {
     "rsi_above": 74,
     "macd_above": 30,

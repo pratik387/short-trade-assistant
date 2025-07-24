@@ -64,7 +64,7 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
         df = candle_cache.get(symbol)
         if df is None or df.empty:
             return None
-        
+
         #usually for live treading and get single stock suggestion
         if "RSI" not in df.columns or "ADX_14" not in df.columns:
             df = enrich_with_indicators_and_score(df, config=config)
@@ -74,6 +74,44 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
             return None
 
         latest = df.iloc[-1]
+
+        # Load thresholds from config
+        MIN_AVG_VOLUME = config.get("min_volume")
+        MIN_PRICE = config.get("min_price")
+        MAX_PRICE = config.get("max_price")
+        MIN_ATR_PCT = config.get("min_atr_pct")
+        SOFT_PREFILTER = config.get("enable_soft_prefilter")
+
+        # Prefilter checks
+        try:
+            atr = latest.get("ATR")
+            close = latest.get("close")
+            atr_pct = (atr / close) * 100 if atr and close else 0
+            avg_vol = df["volume"].rolling(20).mean().iloc[-1] if "volume" in df else 0
+
+            if avg_vol < MIN_AVG_VOLUME:
+                reason = f"low_volume={avg_vol:.0f}"
+                logger.info(f"[ENTRY SKIP] {symbol} — {reason}")
+                if not SOFT_PREFILTER:
+                    return None
+
+            elif not (MIN_PRICE <= close <= MAX_PRICE):
+                reason = f"price_outside_range=₹{close:.2f}"
+                logger.info(f"[ENTRY SKIP] {symbol} — {reason}")
+                if not SOFT_PREFILTER:
+                    return None
+
+            elif atr_pct < MIN_ATR_PCT:
+                reason = f"low_atr_pct={atr_pct:.2f}%"
+                logger.info(f"[ENTRY SKIP] {symbol} — {reason}")
+                if not SOFT_PREFILTER:
+                    return None
+
+        except Exception as e:
+            logger.warning(f"[PREFILTER ERROR] {symbol}: {e}")
+            if not SOFT_PREFILTER:
+                return None
+
         if not passes_hard_filters(latest, config, symbol=symbol):
             logger.debug("%s did not pass hard filters, skipping", symbol)
             return None

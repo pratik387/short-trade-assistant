@@ -105,7 +105,7 @@ def run_quality_analysis():
                     logger.info(f"⏳ Skipping exit for {symbol}: held {days_held} days < min {MIN_HOLD_DAYS}")
 
                     # Try early exit on profit
-                    result = exit_service.check_early_exit_on_profit(position, df, symbol)
+                    result = exit_service.check_early_exit_on_profit(position, df, symbol, current_date)
                     if result and result.get("recommendation") == "EXIT":
                         qty = position["qty"]
                         exit_price = result["current_price"]
