@@ -5,9 +5,9 @@
   "min_atr_pct": 1.3,
   "enable_soft_prefilter": true,
   "late_entry_penalty": {
-    "rsi_above": 74,
-    "macd_above": 30,
-    "penalty_score": -3
+    "rsi_above": 72,
+    "macd_above": 25,
+    "penalty_score": -5
   },
   "entry_filters": {
     "adx": {
@@ -45,7 +45,7 @@
     },
     "rsi_above_avg": {
       "enabled": true,
-      "weight": 0.15
+      "weight": 0.25
     },
     "volume_surge": {
       "enabled": true,
@@ -56,18 +56,17 @@
       "enabled": true,
       "weight": 0.8,
       "min": 0.1,
-      "max": 0.5
+      "max": 0.7
     },
     "stochastic": {
       "enabled": true,
-      "weight": 0.15,
+      "weight": 0.1,
       "threshold": 55,
-      "penalty_above": 85
+      "penalty_above": 90
     },
     "obv": {
       "enabled": true,
       "min": 1000000,
-      "max": 10000000,
       "weight": 0.5
     },
     "atr": {
@@ -79,8 +78,8 @@
     "rsi": {
       "enabled": true,
       "weight": 0.15,
-      "min": 63,
-      "max": 69
+      "min": 60,
+      "max": 74
     },
     "fibonacci_support": {
       "enabled": true,
@@ -94,7 +93,7 @@
       "rsi_slope_max": 2.0,
       "rsi_weight": 0.3,
       "macd_hist_slope_min": 0,
-      "macd_weight": 0.4
+      "macd_weight": 0.5
     }
   }
 }

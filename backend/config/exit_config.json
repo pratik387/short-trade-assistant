@@ -9,6 +9,8 @@
     },
     "stop_loss_exit": {
         "enabled": true,
+        "use_atr": true,
+        "atr_multiplier": 1.8,
         "stop_loss_pct": 0.07
     },
     "profit_target_exit": {
@@ -33,7 +35,7 @@
         "rsi_drop_filter": {
             "enabled": true,
             "rsi_upper": 70,
-            "rsi_lower": 45,
+            "rsi_lower": 48,
             "weight": 3
         },
         "macd_exit_filter": {
@@ -48,7 +50,7 @@
         "fibonacci_exit_filter": {
             "enabled": true,
             "retracement_zone": 0.5,
-            "buffer_pct": 0.005,
+            "buffer_pct": 0.003,
             "weight": 2
         },
         "fibonacci_support_filter": {
@@ -63,7 +65,7 @@
         },
         "bb_exit_filter": {
             "enabled": true,
-            "threshold": 0.9,
+            "threshold": 0.95,
             "weight": 1
         },
         "exit_time_decay_filter": {
@@ -85,9 +87,9 @@
             ]
         },
         "score_drop_filter": {
-            "enabled": false,
-            "threshold_percent": 40,
-            "weight": 10
+            "enabled": true,
+            "threshold_percent": 60,
+            "weight": 4
         },
         "supply_absorption_filter": {
             "enabled": true,
@@ -108,7 +110,7 @@
         },
         "volatility_spike_exit": {
             "enabled": true,
-            "atr_spike_pct": 40,
+            "atr_spike_pct": 50,
             "weight": 2
         }
     }

@@ -18,6 +18,11 @@ from config.filters_setup import load_filters
 from db.tinydb.client import get_table
 from util.util import is_market_active
 from config.logging_config import get_loggers, switch_agent_log_file
+from backtesting.config_tracker import get_combined_config_hash
+import subprocess
+from pathlib import Path
+
+HASH_PATH = Path(".score_cache/global_config.hash")
 
 # Trading parameters
 PROFIT_TARGET = BACKTEST_CONFIG["profit_target"]
@@ -28,7 +33,18 @@ MAX_HOLD_DAYS = BACKTEST_CONFIG["maximum_holding_days"]
 
 logger, trade_logger = get_loggers()
 
+def ensure_fresh_score_cache():
+    current_hash = get_combined_config_hash()
+    if HASH_PATH.exists() and HASH_PATH.read_text().strip() == current_hash:
+        print("✅ Config unchanged. Using cached scores.")
+        return
+    print("⚠️ Config changed. Running ohlcv_data_downloader.py to refresh scores...")
+    subprocess.run([sys.executable, "backend/backtesting/ohlcv_data_downloader.py"])
+
+    HASH_PATH.write_text(current_hash)
+
 def run_quality_analysis():
+    ensure_fresh_score_cache()
     config = load_filters()
     broker = MockBroker(use_cache=True)
     broker.get_ltp = lambda symbol: {symbol: broker.fetch_candles(symbol, interval="day").iloc[-1]["close"]}

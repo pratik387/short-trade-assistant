@@ -213,22 +213,34 @@ class ExitService:
             exit_cfg = config.get("stop_loss_exit", {})
             if not exit_cfg.get("enabled", False):
                 return False, ""
-            if not exit_cfg.get("use_atr", False):
-                return False, ""
 
-            atr_multiplier = exit_cfg.get("atr_multiplier", 1.5)
             close = df["close"].iloc[-1]
-            atr = df["ATR"].iloc[-1]
-            sl_price = entry_price - (atr_multiplier * atr)
+            triggered = False
+            reason = ""
 
-            if close <= sl_price:
-                reason = f"ATR SL hit: Close={close:.2f}, SL={sl_price:.2f}, ATR={atr:.2f}, Mult={atr_multiplier}"
-                logger.info(f"🛑 {symbol} triggered ATR stop loss: {reason}")
+            if exit_cfg.get("use_atr", False) and "ATR" in df.columns:
+                atr_multiplier = exit_cfg.get("atr_multiplier", 1.5)
+                atr = df["ATR"].iloc[-1]
+                sl_price = entry_price - (atr_multiplier * atr)
+                if close <= sl_price:
+                    reason = f"ATR SL hit: Close={close:.2f}, SL={sl_price:.2f}, ATR={atr:.2f}, Mult={atr_multiplier}"
+                    triggered = True
+
+            if not triggered and "stop_loss_pct" in exit_cfg:
+                sl_pct = exit_cfg["stop_loss_pct"]
+                hard_sl = entry_price * (1 - sl_pct)
+                if close <= hard_sl:
+                    reason = f"Fixed SL hit: Close={close:.2f}, SL={hard_sl:.2f}, Threshold={sl_pct*100:.2f}%"
+                    triggered = True
+
+            if triggered:
+                logger.info(f"🛑 {symbol} triggered Stop Loss: {reason}")
                 return True, reason
+
             return False, ""
 
         except Exception as e:
-            logger.exception(f"❌ Error in ATR stop loss logic for {symbol}: {e}")
+            logger.exception(f"❌ Error in stop loss logic for {symbol}: {e}")
             return False, ""
     
     def check_early_exit_on_profit(self, position, df, symbol, current_date):

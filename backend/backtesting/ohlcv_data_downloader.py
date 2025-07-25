@@ -12,6 +12,7 @@ if str(ROOT) not in sys.path:
 
 from config.filters_setup import load_filters
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
+from config_tracker import is_config_stale, update_config_hash
 
 # Archive directory to store historical backtest data
 ARCHIVE_DIR = Path(__file__).resolve().parent / "ohlcv_archive"
@@ -30,16 +31,33 @@ START_DATE = "2022-01-01"
 END_DATE = "2025-07-20"
 INTERVALS = ["1d"]
 
-def download_and_save(symbol, interval="1d"):
+def process_and_save(df, file_path, symbol):
+    df = enrich_with_indicators_and_score(df, config)
+    for col in ["ENTRY_BREAKDOWN"]:
+        if col in df.columns:
+            df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (list, dict)) else str(x) if x is not None else "")
+    df.to_feather(file_path)
+    update_config_hash(symbol)
 
+def download_and_save(symbol, interval="1d"):
     file_name = f"{symbol}_{interval}_{START_DATE}_{END_DATE}.feather"
     folder = ARCHIVE_DIR / symbol
     file_path = folder / file_name
 
     if file_path.exists():
-        print(f"✅ {symbol} already cached.")
-        return
-    
+        if is_config_stale(symbol):
+            print(f"♻️  Recalculating score for {symbol} using cached data...")
+            try:
+                df = pd.read_feather(file_path)
+                process_and_save(df, file_path, symbol)
+                print(f"💾 Updated: {file_path.name}")
+            except Exception as e:
+                print(f"❌ Error rescoring {symbol}: {e}")
+            return
+        else:
+            print(f"✅ {symbol} already cached and config unchanged.")
+            return
+
     print(f"⬇️  Downloading {symbol} ({interval})...")
     df = yf.download(
         symbol,
@@ -51,8 +69,8 @@ def download_and_save(symbol, interval="1d"):
     if df is None or df.empty:
         print(f"⚠️  No usable data for {symbol}")
         return
-    folder.mkdir(parents=True, exist_ok=True) 
-    
+    folder.mkdir(parents=True, exist_ok=True)
+
     df = df.rename(columns={
         "Open": "open", "High": "high", "Low": "low",
         "Close": "close", "Adj Close": "adj_close", "Volume": "volume"
@@ -67,18 +85,12 @@ def download_and_save(symbol, interval="1d"):
         raise ValueError(f"Length mismatch: got {len(df.columns)} columns, expected {len(expected_columns)}")
     df.columns = expected_columns
 
-    df = enrich_with_indicators_and_score(df, config)
-
-    # Convert complex types to string before saving
-    for col in ["ENTRY_BREAKDOWN"]:
-        if col in df.columns:
-            df[col] = df[col].apply(lambda x: json.dumps(x) if isinstance(x, (list, dict)) else str(x) if x is not None else "")
     try:
-        df.to_feather(file_path)
+        process_and_save(df, file_path, symbol)
+        print(f"💾 Saved: {file_path.name}")
     except Exception as e:
         print(f"❌ Error saving {symbol}: {e}")
         return
-    print(f"💾 Saved: {file_path.name}")
 
 if __name__ == "__main__":
     failed = []

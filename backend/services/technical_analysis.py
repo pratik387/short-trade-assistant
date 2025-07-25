@@ -116,10 +116,8 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             fcfg = filters["obv"]
             obv = latest.get("OBV")
             if obv and obv > fcfg["min"]:
-                weighted = calculate_weighted_score(obv, fcfg, min_key="min", max_key="max")
-                score += weighted
-                breakdown.append(("OBV", weighted, f"OBV={obv:.2f} > {fcfg['min']}"))
-
+                score += fcfg["weight"]
+                breakdown.append(("OBV", fcfg["weight"], f"OBV={obv:.2f} > {fcfg['min']}"))
         # ATR
         if is_enabled("atr"):
             fcfg = filters["atr"]
