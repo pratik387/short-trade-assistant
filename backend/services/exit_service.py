@@ -4,6 +4,7 @@
 
 from datetime import datetime, timedelta
 import pandas as pd
+from typing import Dict
 from pytz import timezone as pytz_timezone
 from config.logging_config import get_loggers
 from services.technical_analysis_exit import evaluate_exit
@@ -58,23 +59,31 @@ class ExitService:
                 self.config["profit_target_exit"]["profit_target_pct"] *= 1.1
 
         # 🛑 1. ATR Stop Loss Exit (replaces fixed stop loss)
-        triggered, reason_text = self._check_atr_stop_loss(df, entry_price, self.config, symbol)
-        if triggered:
-            return self._build_exit_result(df, stock, current_date, reason="atr_stop_loss") | {
-                "note": reason_text,
-                "reasons": [
-                    {"filter": "atr_stop_loss", "weight": 0, "reason": reason_text}
-                ],
-                "breakdown": [("atr_stop_loss", 0, reason_text)]
-            }
+        days_held = (current_date - entry_time).days
+        if days_held >= self.config.get("minimum_holding_days"):
+            triggered, reason_text = self._check_atr_stop_loss(df, entry_price, self.config, symbol)
+            if triggered:
+                return self._build_exit_result(df, stock, current_date, reason="atr_stop_loss") | {
+                    "note": reason_text,
+                    "reasons": [
+                        {"filter": "atr_stop_loss", "weight": 0, "reason": reason_text}
+                    ],
+                    "breakdown": [("atr_stop_loss", 0, reason_text)]
+                }
 
-        # 🎯 2. Profit Target Exit
+        # 🔥 2. Early Profit Exit
+        early_exit_result = self.check_early_exit_on_profit(stock, df, symbol, current_date)
+        if early_exit_result and early_exit_result.get("recommendation") == "EXIT":
+            return self._build_exit_result(df, stock, current_date, reason="early_profit_exit")
+
+
+        # 🌟 3. Profit Target Exit
         if self.config.get("profit_target_exit").get("enabled", True):
             profit_pct = self.config["profit_target_exit"].get("profit_target_pct", 0.02)
             if df["close"].iloc[-1] >= entry_price * (1 + profit_pct):
                 return self._build_exit_result(df, stock, current_date, reason="profit_target")
 
-        # 📈 3. Trailing ATR Stop
+        # 📈 4. Trailing ATR Stop
         if self.config.get("trailing_stop").get("enabled", True):
             lookback = self.config["trailing_stop"].get("lookback_days", 10)
             atr_multiplier = self.config["trailing_stop"].get("atr_multiplier", 3)
@@ -86,25 +95,35 @@ class ExitService:
                     return self._build_exit_result(df, stock, current_date, reason="trailing_atr")
 
 
-        # 🧠 4. Filter-based Exit
+         # 🧐 5. Filter-based Exit
         result = evaluate_exit(df, entry_price, entry_time, current_date, self.config, symbol)
-        days_held=(current_date - entry_time).days
         dynamic_threshold = calculate_dynamic_exit_threshold(
             config=self.config,
             df=df,
             days_held=days_held
         )
-        
-        score = result["score"]
-        logger.debug(f"[DYNAMIC THRESHOLD] {symbol} | Days Held: {days_held}, Threshold: {dynamic_threshold:.2f}, Score: {score}")
-        raw_reasons = result["raw_reasons"]
 
-        if score >= dynamic_threshold:
+        score = result["score"]
+        raw_reasons = result["raw_reasons"]
+        logger.debug(f"[DYNAMIC THRESHOLD] {symbol} | Days Held: {days_held}, Threshold: {dynamic_threshold:.2f}, Score: {score}")
+
+        reduced_threshold = dynamic_threshold * 0.75
+        logger.info(f"[EXIT CHECK] {symbol} | Score: {score:.2f} | Threshold: {dynamic_threshold:.2f} | Reduced: {reduced_threshold:.2f}")
+
+        if score >= reduced_threshold:
             return self._build_exit_result(df, stock, current_date, reason="🔁 exit filters triggered") | {
                 "score": score,
                 "reasons": raw_reasons,
                 "breakdown": [(r["filter"], r["weight"], r["reason"]) for r in raw_reasons],
             }
+
+        # 🧐 6. Score Collapse with Filter Loss Logic
+        if self.config.get("core_filter_loss_exit", {}).get("enabled", False):
+            decision = self.evaluate_score_collapse_impact(df, stock["symbol"], stock, current_date)
+            if decision == "EXIT":
+                return self._build_exit_result(df, stock, current_date, reason="score_collapse_and_filter_loss")
+            elif decision == "REDUCE":
+                return self._build_exit_result(df, stock, current_date, reason="score_collapse_reduce_treated_as_exit")
 
         return self._build_hold_result(df, stock, current_date, raw_reasons, score)
 
@@ -173,6 +192,7 @@ class ExitService:
             "recommendation": "EXIT",
             "exit_reason": reason,
             "score": 0,
+            "exit_date": str(current_date),
             "entry_score_at_exit": entry_score_at_exit,
             "entry_score_drop": entry_score_drop,
             "entry_score_drop_pct": entry_score_drop_pct,
@@ -249,9 +269,9 @@ class ExitService:
         threshold = 5.0
 
         if pnl >= threshold:
-            macd = df["MACD"].iloc[-1] if "MACD" in df.columns else 0
-            rsi = df["RSI"].iloc[-1] if "RSI" in df.columns else 50
-            bb = df["%B"].iloc[-1] if "%B" in df.columns else 0
+            macd = df["MACD"].iloc[-1] if "MACD" in df.columns and pd.notna(df["MACD"].iloc[-1]) else 0
+            rsi = df["RSI"].iloc[-1] if "RSI" in df.columns and pd.notna(df["RSI"].iloc[-1]) else 50
+            bb = df["%B"].iloc[-1] if "%B" in df.columns and pd.notna(df["%B"].iloc[-1]) else 0
 
             macd_ok = macd < 20
             rsi_overbought = rsi > 70
@@ -264,4 +284,50 @@ class ExitService:
                 logger.info(f"⚠️ Skipping early exit for {symbol} | Days={days_held}, PnL={pnl:.2f}% — too late or weak signals")
 
         return None
+
+
+    def evaluate_score_collapse_impact(self, df: pd.DataFrame, stock: str, position: Dict, current_date: datetime) -> str:
+        cfg = self.config.get("core_filter_loss_exit", {})
+        if not cfg.get("enabled", False):
+            return "HOLD"
+
+        min_hold_days = cfg.get("min_hold_days", 1)
+        drop_threshold = cfg.get("score_drop_pct", 60)
+        core_filters = set(cfg.get("core_filters", []))
+
+        days_held = (current_date - position["entry_date"]).days
+        if days_held < min_hold_days:
+            return "HOLD"
+
+        entry_score = position.get("score", 0)
+        final_score = position.get("final_score", 0)
+        if entry_score == 0:
+            return "HOLD"
+
+        score_drop_pct = ((entry_score - final_score) / entry_score) * 100
+        if score_drop_pct < drop_threshold:
+            return "HOLD"
+
+        # Check if any core filter is still active
+        filters = position.get("filters", [])
+        active_filters = {f[0] for f in filters if isinstance(f, list) and f[1] > 0}
+        core_active = core_filters.intersection(active_filters)
+
+        if core_active:
+            return "HOLD"
+
+        # Structural break logic
+        try:
+            swing_lookback = cfg.get("swing_lookback", 3)
+            recent_lows = df[df["date"] <= current_date].tail(swing_lookback)["low"]
+            swing_low = recent_lows.min()
+            latest_price = df[df["date"] == current_date]["close"].values[0]
+
+            if latest_price < swing_low:
+                return "EXIT"
+            else:
+                return "REDUCE"
+        except Exception:
+            return "EXIT"
+
 
