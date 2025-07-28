@@ -17,17 +17,40 @@
             "env": {
                 "PYTHONPATH": "${workspaceFolder}/backend"
             }
-
         },
         {
             "name": "Run Frontend (npm start)",
             "type": "node",
             "request": "launch",
             "runtimeExecutable": "npm.cmd",
-            "runtimeArgs": ["start"],
+            "runtimeArgs": [
+                "start"
+            ],
             "cwd": "${workspaceFolder}/frontend",
             "console": "integratedTerminal",
             "internalConsoleOptions": "neverOpen"
+        },
+        {
+            "name": "Engine: Quality Analysis",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/backtesting/engine_filters_quality_analysis.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            }
+        },
+        {
+            "name": "Download OHLCV + Score",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/backend/backtesting/ohlcv_data_downloader.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/backend"
+            }
         }
     ]
 }

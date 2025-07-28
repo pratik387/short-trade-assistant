@@ -1168,6 +1168,10 @@
     "instrument_token": 4432129
   },
   {
+    "symbol": "LODHA.NS",
+    "instrument_token": 824321
+  },
+  {
     "symbol": "LUPIN.NS",
     "instrument_token": 2672641
   },
@@ -1178,10 +1182,6 @@
   {
     "symbol": "MRF.NS",
     "instrument_token": 582913
-  },
-  {
-    "symbol": "LODHA.NS",
-    "instrument_token": 824321
   },
   {
     "symbol": "MGL.NS",
@@ -1850,10 +1850,6 @@
   {
     "symbol": "VGUARD.NS",
     "instrument_token": 3932673
-  },
-  {
-    "symbol": "DBREALTY.NS",
-    "instrument_token": 4639745
   },
   {
     "symbol": "VTL.NS",
