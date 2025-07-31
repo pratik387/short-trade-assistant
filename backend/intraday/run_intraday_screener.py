@@ -10,11 +10,13 @@ if str(ROOT) not in sys.path:
 import pandas as pd
 from brokers.kite.kite_broker import KiteBroker
 from config.filters_setup import load_filters
-from services.entry_service import EntryService, evaluate_symbol
+from services.entry_service import evaluate_symbol
 from intraday.ltp_fetcher import fetch_ltp_for_symbols
 from config.logging_config import get_loggers
 from util.util import is_market_active
-
+from brokers.data.indexes import get_token_for_symbol
+from datetime import datetime, timezone
+from services.indicator_enrichment_service import enrich_with_indicators_and_score
 
 logger, _ = get_loggers()
 
@@ -64,13 +66,31 @@ def run_intraday_scoring():
             ltp_map[symbol] = ltp
             logger.info(f"📦 Using fallback LTP from cache for {symbol}: ₹{ltp}")
 
-    # ✅ Run suggestion engine
-    service = EntryService(config=config)
-    suggestions = service.get_suggestions(symbols=symbols, cached_data=cached_data)
+    results = []
+    for symbol in symbols:
+        item = {"symbol": symbol, "instrument_token": get_token_for_symbol(symbol)}
+        df = cached_data.get(symbol)
+        if df is None:
+            continue
+        try:
+            # Overwrite the final candle's close with live LTP if available
+            if symbol in ltp_map:
+                df.at[df.index[-1], "close"] = ltp_map[symbol]
+            df = enrich_with_indicators_and_score(df, config)
+            df.set_index("date", inplace=True)
+            result = evaluate_symbol(item, config=config, candle_cache={symbol: df}, as_of_date=datetime.now(timezone.utc))
+            if result:
+                results.append(result)
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to evaluate {symbol}: {e}")
+
+    results.sort(key=lambda x: (-x.get("score", 0), -x.get("adx", 0)))
+    suggestions = results[:15]
 
     logger.info(f"✅ Got {len(suggestions)} intraday suggestions")
     for s in suggestions:
-        logger.info(f"{s['symbol']} | Score: {s['score']} | LTP: {s.get('ltp')} | Reasons: {s.get('reasons')}")
+        print(f"{s['symbol']} | Score: {s['score']} | LTP: ₹{s['close']} | Filters: {s['breakdown']}")
+
 
 if __name__ == "__main__":
     run_intraday_scoring()

@@ -22,7 +22,7 @@ def fetch_ltp_for_symbols(symbols, index="all"):
             response = broker.get_ltp_batch(kite_symbols)
             for k, v in response.items():
                 symbol = k.split(":")[-1]
-                ltp_data[symbol] = v["last_price"]
+                ltp_data[symbol] = v
             time.sleep(0.25)
         except Exception as e:
             logger.error(f"❌ LTP fetch failed for batch: {batch} | Error: {e}")

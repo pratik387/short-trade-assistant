@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-from services.technical_analysis import passes_hard_filters, calculate_score
+from services.technical_analysis import passes_hard_filters
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers

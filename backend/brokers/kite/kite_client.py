@@ -28,12 +28,6 @@ def set_access_token_from_file():
             token = f.read().strip()
             kite.set_access_token(token)
             logger.info("🔑 Access token loaded from file.")
-            profile = kite.profile()
-            try:
-                quote = kite.ltp("AARTIIND.NS")
-                print("✅ Single Symbol LTP:", quote)
-            except Exception as e:
-                print("❌ Error fetching single LTP:", e)
     else:
         logger.warning("⚠️ Access token file not found.")
 

@@ -47,17 +47,24 @@ def fetch_and_update(symbol, broker):
         df_old = pd.DataFrame()
         last_timestamp = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS * 2)
 
-    # Defensive check
+     # Defensive check
     if last_timestamp >= datetime.now(timezone.utc):
         logger.warning(f"⏩ Skipping {symbol}: computed from_date is in the future or too recent")
         return
 
+    # Align last timestamp to candle interval (round down to nearest 15min)
+    last_timestamp = last_timestamp - timedelta(minutes=last_timestamp.minute % 15,
+                                               seconds=last_timestamp.second,
+                                               microseconds=last_timestamp.microsecond)
+
+    df_new = None
+    from_date = last_timestamp.to_pydatetime().replace(tzinfo=timezone.utc)
     # Step 2: Fetch new candles
     try:
         df_new = broker.fetch_candles(
             symbol=symbol,
             interval=INTERVAL,
-            from_date=last_timestamp,
+            from_date=from_date,
             to_date=datetime.now(timezone.utc)
         )
     except Exception as e:

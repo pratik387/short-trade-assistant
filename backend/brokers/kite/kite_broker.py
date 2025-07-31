@@ -133,7 +133,7 @@ class KiteBroker(BaseBroker):
     @retry()
     def get_ltp_batch(self, symbols: List[str]) -> Dict[str, float]:
         try:
-            kite_symbols = [s if s.startswith("NSE:") else f"NSE:{s}" for s in symbols]
+            kite_symbols = [f"NSE:{s.replace('NSE:', '').replace('.NS', '')}" for s in symbols]
             quote = kite.ltp(kite_symbols)
             return {s.split(":")[1]: quote[s]["last_price"] for s in quote}
         except Exception as e:
