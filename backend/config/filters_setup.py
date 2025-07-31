@@ -14,11 +14,11 @@ REQUIRED_KEYS = [
     "exit_filters"
 ]
 
-# Adjust path if your filters_config.json lives elsewhere
-CONFIG_PATH = Path(__file__).resolve().parent / "filters_config.json"
 EXIT_CONFIG_PATH = Path(__file__).resolve().parent / "exit_config.json"
 
-def load_filters():
+def load_filters(mode: str = "swing"):
+    config_file = f"filters_config_intraday.json" if mode == "intraday" else "filters_config.json"
+    CONFIG_PATH = Path(__file__).resolve().parent / config_file
     if not CONFIG_PATH.exists():
         logger.error(f"Missing filters_config.json at {CONFIG_PATH}")
         raise FileNotFoundError(f"{CONFIG_PATH} not found")

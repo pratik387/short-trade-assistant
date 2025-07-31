@@ -4,6 +4,7 @@
 # @tags: utility, helpers, tools
 import pandas as pd
 from pathlib import Path
+import random
 import math
 import json
 import time
@@ -79,7 +80,38 @@ def is_market_active(date=None):
         logger.error(f"⚠️ Could not determine market status: {e}")
         return False
     
-def retry(max_attempts=3, delay=2, exceptions=(Exception,), exclude=(InvalidTokenException,)):
+def is_trading_day(date):
+    """
+    Returns True if the given date is a valid NSE trading day (not weekend, not holiday).
+    Uses same holiday logic as is_market_active().
+    """
+    try:
+        dt = pd.Timestamp(date).normalize()
+
+        # Weekend
+        if dt.weekday() >= 5:
+            return False
+
+        # Holidays (same logic)
+        if not HOLIDAY_FILE.exists():
+            download_nse_holidays()
+
+        with open(HOLIDAY_FILE, "r", encoding="utf-8") as f:
+            items = json.load(f)
+            holidays = [
+                pd.to_datetime(item.get("tradingDate") or item.get("holidayDate"), format="%d-%b-%Y", errors="coerce").normalize()
+                for item in items
+            ]
+            holidays = [d for d in holidays if not pd.isna(d)]
+
+        return dt not in holidays
+
+    except Exception as e:
+        logger.warning(f"⚠️ is_trading_day fallback triggered: {e}")
+        return True  # fallback to assume trading day
+
+    
+def retry(max_attempts=3, base_delay=1, exceptions=(Exception,), exclude=(InvalidTokenException,)):
     """
     Decorator to retry a function if it raises specified exceptions.
 
@@ -99,23 +131,34 @@ def retry(max_attempts=3, delay=2, exceptions=(Exception,), exclude=(InvalidToke
                 try:
                     return func(*args, **kwargs)
                 except InvalidTokenException as e:
-                    logger.warning(f"[Retry {attempt}/{max_attempts}] Token error: {e}")
-                    logger.info("🔄 Refreshing Kite token...")
-                    set_access_token_from_file()  # reapply valid token
-                    time.sleep(delay)
+                    logger.warning(f"[Retry {attempt}/{max_attempts}] Actual token error: {e}")
+                    set_access_token_from_file()
+                    time.sleep(base_delay)
+                    continue
+
                 except exceptions as e:
-                    logger.warning(f"[Retry {attempt}/{max_attempts}] Exception: {e}")
-                    if attempt == max_attempts:
-                        logger.error(f"Exceeded max retries for {func.__name__}")
-                        raise
-                    if  'invalid token' in str(e).lower():
-                        logger.error(f"Symbol not available in NSE {func.__name__}")
+                    err_msg = str(e).lower()
+
+                    # 🟥 Zerodha-specific behavior: invalid symbol triggers 'invalid token'
+                    if "invalid token" in err_msg:
+                        logger.error(f"🔍 Symbol not available in NSE during {func.__name__}")
                         raise DataUnavailableException(f"Symbol not available in NSE : {e}")
-                    time.sleep(delay)
+
+                    if attempt == max_attempts:
+                        logger.error(f"❌ Max retries exceeded for {func.__name__}: {e}")
+                        raise
+
+                    backoff = base_delay * (2 ** (attempt - 1))
+                    jitter = random.uniform(0, 0.3 * backoff)
+                    wait_time = round(backoff + jitter, 2)
+
+                    logger.warning(f"[Retry {attempt}/{max_attempts}] {func.__name__} failed: {e} -> waiting {wait_time}s")
+                    time.sleep(wait_time)
+
         return wrapper
     return decorator
 
-import math
+
 
 def calculate_dynamic_exit_threshold(config, df, days_held):
     """

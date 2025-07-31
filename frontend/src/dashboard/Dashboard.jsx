@@ -64,7 +64,7 @@ export default function Dashboard() {
   const fetchStocks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/short-term-suggestions?interval=day&index=${indexFilter}`);
+      const res = await axios.get(`/api/short-term-suggestions?interval=15minute&index=${indexFilter}`);
       setStocks(Array.isArray(res.data) ? res.data : []);
       setTokenExpired(false);
     } catch (err) {
