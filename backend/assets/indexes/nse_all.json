@@ -2784,10 +2784,6 @@
     "instrument_token": 2200577
   },
   {
-    "symbol": "INDOBORAX.NS",
-    "instrument_token": 2205185
-  },
-  {
     "symbol": "VETO.NS",
     "instrument_token": 2214913
   },
@@ -7756,8 +7752,20 @@
     "instrument_token": 194001153
   },
   {
+    "symbol": "RMDRIP.NS",
+    "instrument_token": 194005505
+  },
+  {
+    "symbol": "INDIQUBE.NS",
+    "instrument_token": 194008321
+  },
+  {
     "symbol": "CRIZAC.NS",
     "instrument_token": 194009601
+  },
+  {
+    "symbol": "EBGNG.NS",
+    "instrument_token": 194012673
   },
   {
     "symbol": "ANTHEM.NS",

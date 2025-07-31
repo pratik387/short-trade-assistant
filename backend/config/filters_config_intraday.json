@@ -1,0 +1,103 @@
+{
+  "min_volume": 100000,
+  "min_price": 100,
+  "max_price": 5000,
+  "min_atr_pct": 1.0,
+  "enable_soft_prefilter": true,
+  "minimum_holding_days": 0,
+  "interval": "15minute",
+  "lookback_days": 5,
+  "late_entry_penalty": {
+    "rsi_above": 70,
+    "macd_above": 15,
+    "penalty_score": -3
+  },
+  "entry_filters": {
+    "adx": {
+      "enabled": true,
+      "weight": 0.75,
+      "min": 15,
+      "max": 35
+    },
+    "macd": {
+      "enabled": true,
+      "weight": 1.0,
+      "cap": 20,
+      "min": 2
+    },
+    "bb": {
+      "enabled": true,
+      "weight": 1.0,
+      "upper": 0.95,
+      "lower": 0.05,
+      "width_min": 2
+    },
+    "dmp_dmn": {
+      "enabled": true,
+      "weight": 0.5,
+      "gap_max": 15
+    },
+    "price_sma": {
+      "enabled": true,
+      "weight": 0.75,
+      "gap_max": 20
+    },
+    "candle_pattern": {
+      "enabled": true,
+      "weight": 0.2
+    },
+    "rsi_above_avg": {
+      "enabled": true,
+      "weight": 1.0,
+      "gap_min": 0.5
+    },
+    "volume_surge": {
+      "enabled": true,
+      "weight": 1.25,
+      "surge_factor": 2.0
+    },
+    "rsi_slope": {
+      "enabled": true,
+      "weight": 0.8,
+      "min": 0.2,
+      "max": 1.5
+    },
+    "stochastic": {
+      "enabled": true,
+      "weight": 0.1,
+      "threshold": 60,
+      "penalty_above": 90
+    },
+    "obv": {
+      "enabled": true,
+      "min": 1000000,
+      "weight": 0.5
+    },
+    "atr": {
+      "enabled": true,
+      "weight": 0.15,
+      "min": 10,
+      "max": 50
+    },
+    "rsi": {
+      "enabled": true,
+      "weight": 0.25,
+      "min": 58,
+      "max": 72
+    },
+    "fibonacci_support": {
+      "enabled": true,
+      "weight": 0.15
+    },
+    "breakout_ready": {
+      "enabled": true,
+      "bb_squeeze_factor": 0.65,
+      "bb_weight": 0.3,
+      "rsi_slope_min": 0.2,
+      "rsi_slope_max": 2.0,
+      "rsi_weight": 0.3,
+      "macd_hist_slope_min": 0,
+      "macd_weight": 0.5
+    }
+  }
+}

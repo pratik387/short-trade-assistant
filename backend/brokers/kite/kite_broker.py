@@ -4,7 +4,10 @@
 # @tags: broker, kite, data_provider
 from datetime import datetime, timedelta
 import pandas as pd
-from typing import Optional
+import time
+import random
+
+from typing import Optional, List, Dict
 from brokers.base_broker import BaseBroker
 from brokers.kite.kite_client import kite
 from brokers.data.indexes import get_index_symbols
@@ -49,7 +52,7 @@ class KiteBroker(BaseBroker):
                     raise ValueError("Must provide either days or both from_date and to_date")
                 to_date = datetime.now(india_tz)
                 from_date = to_date - timedelta(days=days)
-
+            time.sleep(0.3 + random.uniform(0, 0.2))  # 300–500ms jittered delay
             raw = kite.historical_data(
                 instrument_token=instrument,
                 from_date=from_date,
@@ -125,4 +128,25 @@ class KiteBroker(BaseBroker):
             return quote[f"NSE:{symbol}"]["last_price"]
         except Exception as e:
             logger.exception(f"Failed to fetch LTP for {symbol}: {e}")
+            raise
+
+    @retry()
+    def get_ltp_batch(self, symbols: List[str]) -> Dict[str, float]:
+        try:
+            kite_symbols = [f"NSE:{s.replace('NSE:', '').replace('.NS', '')}" for s in symbols]
+            quote = kite.ltp(kite_symbols)
+            return {s.split(":")[1]: quote[s]["last_price"] for s in quote}
+        except Exception as e:
+            err_msg = str(e).lower()
+            logger.exception(f"❌ Failed to get ltp batch data: {e}")
+
+            if '429' in err_msg or 'too many requests' in err_msg or 'timeout' in err_msg:
+                logger.info(f"🔁 Retry advised for {symbols} due to rate/timeout error")
+                raise
+
+            if any(t in err_msg for t in ['token', 'invalid', 'unauthorized']):
+                logger.error(f"🚫 Token issue for {symbols}. Raising InvalidTokenException.")
+                raise InvalidTokenException(f"Kite token invalid or expired: {e}")
+
+            logger.error(f"❌ Non-retryable error for {symbols}: {e}")
             raise
