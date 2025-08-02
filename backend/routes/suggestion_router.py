@@ -29,11 +29,12 @@ router = APIRouter()
 )
 async def get_suggestions(
     interval: str = Query("day", description="Interval: 'day', '5minute', etc."),
-    index: str = Query("all", description="Index: 'nifty_50', 'nifty_100', etc.")
+    index: str = Query("all", description="Index: 'nifty_50', 'nifty_100', etc."),
+    strategy: str = Query("intraday", description="Strategy: 'intraday', 'swing', etc.")
 ):
-    logger.debug("get_suggestions called with interval=%s index=%s", interval, index)
+    logger.debug("get_suggestions called with interval=%s index=%s for strategy=%s", interval, index,strategy)
     try:
-        suggestions = get_filtered_stock_suggestions(interval=interval, index=index)
+        suggestions = get_filtered_stock_suggestions(interval=interval, index=index, strategy=strategy)
         logger.info("Returning %d suggestions for %s/%s", len(suggestions), interval, index)
         return suggestions
     except InvalidTokenException:

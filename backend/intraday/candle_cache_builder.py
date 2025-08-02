@@ -10,11 +10,11 @@ import os
 import time
 import pandas as pd
 from datetime import datetime, timedelta, timezone
-from datetime import datetime, timedelta
 from brokers.kite.kite_broker import KiteBroker
 from config.filters_setup import load_filters
 from config.logging_config import get_loggers
 from util.util import is_trading_day
+from services.indicator_enrichment_service import enrich_with_indicators_and_score
 
 logger, _ = get_loggers()
 
@@ -41,31 +41,33 @@ def fetch_and_update(symbol, broker):
     # Step 1: Load existing data
     if os.path.exists(path):
         df_old = pd.read_feather(path)
-        df_old['date'] = pd.to_datetime(df_old['date'], utc=True)
-        last_timestamp = df_old['date'].max() - timedelta(minutes=30)
+
+        df_old['date'] = pd.to_datetime(df_old['date']).dt.tz_localize(None)
+        last_timestamp = df_old['date'].max() - timedelta(minutes=15)
+
     else:
         df_old = pd.DataFrame()
-        last_timestamp = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS * 2)
+        last_timestamp = datetime.now() - timedelta(days=LOOKBACK_DAYS * 2)
 
-     # Defensive check
-    if last_timestamp >= datetime.now(timezone.utc):
+    if last_timestamp >= datetime.now():
+        logger.warning(f"⏩ Skipping {symbol}: computed from_date is in the future or too recent")
+        return
+    
+    # Align last timestamp to candle interval (round down to nearest 15min)
+    if last_timestamp >= datetime.now():
         logger.warning(f"⏩ Skipping {symbol}: computed from_date is in the future or too recent")
         return
 
-    # Align last timestamp to candle interval (round down to nearest 15min)
-    last_timestamp = last_timestamp - timedelta(minutes=last_timestamp.minute % 15,
-                                               seconds=last_timestamp.second,
-                                               microseconds=last_timestamp.microsecond)
-
     df_new = None
-    from_date = last_timestamp.to_pydatetime().replace(tzinfo=timezone.utc)
+    to_date = datetime.now().replace(hour=15, minute=30, second=0, microsecond=0)
+
     # Step 2: Fetch new candles
     try:
         df_new = broker.fetch_candles(
             symbol=symbol,
             interval=INTERVAL,
-            from_date=from_date,
-            to_date=datetime.now(timezone.utc)
+            from_date=last_timestamp,
+            to_date=to_date
         )
     except Exception as e:
         logger.error(f"❌ Error fetching data {symbol}: {e}")
@@ -74,12 +76,10 @@ def fetch_and_update(symbol, broker):
         
         if df_new is not None and not df_new.empty:
             df_new.reset_index(inplace=True)
-            df_new['date'] = pd.to_datetime(df_new['date'], utc=True)
+            df_new['date'] = pd.to_datetime(df_new['date']).dt.tz_localize(None)
             df = pd.concat([df_old, df_new]).drop_duplicates(subset='date').sort_values(by='date')
             df.set_index('date', inplace=True)
-
-            # ⏳ Filter only valid Indian market hours (09:15–15:30 IST → 03:45–10:00 UTC)
-            df = df.between_time("03:45", "10:00")
+            df = df.between_time("09:15", "15:30")
 
             # Step 3: Trim to last N trading days
             last_date = df.index.max()
@@ -91,9 +91,12 @@ def fetch_and_update(symbol, broker):
 
             min_date = min(valid_days)
             df = df[df.index >= min_date]
-
+            df = enrich_with_indicators_and_score(df, config)
             # Step 4: Save
-            df.reset_index().to_feather(path)
+            df = df.reset_index()
+            if "level_0" in df.columns:
+                df.drop(columns=["level_0"], inplace=True)
+            df.to_feather(path)
             logger.info(f"✅ Updated: {symbol} ({len(df_new)} new candles, {len(df)} kept)")
 
     except Exception as e:

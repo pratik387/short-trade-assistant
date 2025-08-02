@@ -175,9 +175,8 @@ class ExitService:
         days_held = (current_date - entry_time).days
 
         latest = df.iloc[-1]
-        avg_rsi = df["RSI"].rolling(14).mean().iloc[-1]
 
-        entry_score_at_exit, _ = calculate_score(latest, self.config, avg_rsi, symbol=symbol)
+        entry_score_at_exit, _ = calculate_score(latest, self.config, symbol=symbol)
         entry_score = stock.get("score", 0) if isinstance(stock, dict) else 0
         entry_score_drop = entry_score - entry_score_at_exit
         entry_score_drop_pct = round((entry_score_drop / entry_score) * 100, 2) if entry_score else 0

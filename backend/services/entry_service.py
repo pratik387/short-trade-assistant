@@ -6,14 +6,12 @@ import time
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
-from services.technical_analysis import passes_hard_filters
+from services.strategies.strategy_factory import get_strategy
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers
 from brokers.mock.mock_broker import MockBroker
 from util.diagnostic_report_generator import diagnostics_tracker
-from pytz import timezone
-india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
 
@@ -57,7 +55,8 @@ def preload_and_filter_symbols(symbols, data_provider, config, min_price, min_vo
 
     return filtered_symbols, candle_cache
 
-def evaluate_symbol(item, config, candle_cache, as_of_date):
+def evaluate_symbol(item, config, candle_cache, as_of_date, strategy):
+
     symbol = item.get("symbol")
     symbol_start = time.perf_counter()
     try:
@@ -69,6 +68,8 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
         if "RSI" not in df.columns or "ADX_14" not in df.columns:
             df = enrich_with_indicators_and_score(df, config=config)
             df.set_index("date", inplace=True)
+
+        as_of_date = as_of_date.replace(tzinfo=None)
         df = df[df.index <= as_of_date]
         if len(df) < 1:
             return None
@@ -111,8 +112,8 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
             logger.warning(f"[PREFILTER ERROR] {symbol}: {e}")
             if not SOFT_PREFILTER:
                 return None
-
-        if not passes_hard_filters(latest, config, symbol=symbol):
+            
+        if not strategy.apply_hard_filters(symbol, df):
             logger.debug("%s did not pass hard filters, skipping", symbol)
             return None
 
@@ -154,13 +155,14 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
         return None
 
 class EntryService:
-    def __init__(self, data_provider, config: dict, index: str = "nifty_50"):
+    def __init__(self, data_provider, config: dict, index: str = "nifty_50", strategy: str = "intraday"):
         self.data_provider = data_provider
         self.config = config
         self.weights = config.get("entry_filters")
         self.min_price = config.get("min_price")
         self.min_volume = config.get("min_volume")
         self.index = index
+        self.strategy = get_strategy(strategy, config)
 
         # Auto-adjust thread count for real brokers to avoid API throttling
         if isinstance(data_provider, MockBroker):
@@ -168,9 +170,9 @@ class EntryService:
         else:
             self.max_workers = 1
 
-    def get_suggestions(self, as_of_date: datetime = None) -> list:
+    def get_suggestions(self, as_of_date: datetime = None,  candle_cache_override: dict = None) -> list:
         if as_of_date is None:
-            as_of_date = datetime.now(india_tz)
+            as_of_date = datetime.now()
         logger.info(
             "Starting get_suggestions (min_price=%s, min_volume=%s)",
             self.min_price, self.min_volume
@@ -178,20 +180,23 @@ class EntryService:
         start_all = time.perf_counter()
 
         suggestions = []
-        symbols = self.data_provider.get_symbols(self.index) or []
-        logger.debug("Fetched %d symbols to evaluate", len(symbols))
 
-        # Preload candle data and filter early (multithreaded)
-        filtered_symbols, candle_cache = preload_and_filter_symbols(
-            symbols, self.data_provider, self.config, self.min_price, self.min_volume, as_of_date=as_of_date
-        )
-
+        if candle_cache_override is not None:
+            symbols = [{"symbol": s} for s in candle_cache_override.keys()]
+            candle_cache = candle_cache_override
+            filtered_symbols = symbols
+        else:
+            symbols = self.data_provider.get_symbols(self.index) or []
+            filtered_symbols, candle_cache = preload_and_filter_symbols(
+                self.data_provider.get_symbols(self.index) or [],
+                self.data_provider, self.config, self.min_price, self.min_volume, as_of_date=as_of_date
+            )
         logger.info("Preloaded and filtered %d symbols", len(filtered_symbols))
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_symbol = {
                 executor.submit(
-                    evaluate_symbol, item, self.config, candle_cache, as_of_date
+                    evaluate_symbol, item, self.config, candle_cache, as_of_date, self.strategy
                 ): item for item in filtered_symbols
             }
             for future in as_completed(future_to_symbol):

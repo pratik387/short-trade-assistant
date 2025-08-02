@@ -18,7 +18,7 @@ def passes_hard_filters(latest: pd.Series, cfg: dict, symbol: str = "") -> bool:
         dmp = latest.get("DMP_14")
         dmn = latest.get("DMN_14")
 
-        if not (cfg.get('rsi_min', 40) <= rsi <= cfg.get('rsi_max', 70)): return False
+        if not (cfg.get('rsi_min') <= rsi <= cfg.get('rsi_max')): return False
         if macd <= macd_signal: return False
         if dmp <= dmn: return False
 
@@ -38,11 +38,12 @@ def calculate_weighted_score(value: float, fcfg: dict, min_key="min", max_key="m
     normalized = max(0.0, min(normalized, 1.0))
     return round(normalized * weight, 2)
 
-def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str = "", full_df=None) -> tuple[int, list]:
+def calculate_score(latest: pd.Series, config: dict, symbol: str = "", full_df=None) -> tuple[int, list, dict]:
     try:
         score = 0
         breakdown = []
         filters = config.get("entry_filters", {})
+        extras = {}
 
         def is_enabled(f): return filters.get(f).get("enabled")
 
@@ -65,6 +66,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
                 breakdown.append({"filter": "rsi", "weight": weighted, "details": {"rsi": rsi}})
 
         # RSI > Avg RSI
+        avg_rsi = latest.get("AVG_RSI")
         if is_enabled("rsi_above_avg") and rsi and avg_rsi and rsi > avg_rsi:
             val = filters["rsi_above_avg"]["weight"]
             score += val
@@ -162,6 +164,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             vol_avg = latest.get("VOLUME_AVG")
             if vol and vol_avg:
                 ratio = vol / vol_avg
+                extras["volume_ratio"] = ratio
                 surge_factor = fcfg.get("surge_factor")
                 if ratio >= surge_factor:
                     normalized = min((ratio - surge_factor) / surge_factor, 1.0)
@@ -193,7 +196,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             rsi_weight = 0
             macd_weight = 0
 
-            if bb_now < bb_avg * fcfg.get("bb_squeeze_factor", 0.7):
+            if bb_now < bb_avg * fcfg.get("bb_squeeze_factor"):
                 bb_weight = round((1 - bb_now / (bb_avg * fcfg["bb_squeeze_factor"])) * fcfg["bb_weight"], 2)
 
             if fcfg["rsi_slope_min"] < rsi_slope < fcfg["rsi_slope_max"]:
@@ -211,6 +214,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
                 })
 
             total_weight = round(bb_weight + rsi_weight + macd_weight, 2)
+            extras["breakout_ready"] = total_weight
             if total_weight > 0:
                 score += total_weight
                 breakdown.append({"filter": "breakout_ready", "weight": total_weight, "details": {"bb": bb_weight, "rsi": rsi_weight, "macd_hist": macd_weight}})
@@ -229,7 +233,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
         if score >= 20 and len(breakdown) >= 7:
             return 0, [{"filter": "signal_blocked", "weight": 0, "details": {"reason": "Signal saturation"}}]
 
-        return score, breakdown
+        return score, breakdown, extras
 
     except Exception as e:
         logger.exception(f"❌ Error calculating score for {symbol}: {e}")

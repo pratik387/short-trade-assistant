@@ -34,7 +34,7 @@ logger, trade_logger = get_loggers()
 def run_backtest():
     config = load_filters()
     broker = MockBroker(use_cache=True)
-    entry_service = EntryService(broker, config, "nifty_500")
+    entry_service = EntryService(broker, config, "all", "swing")
     portfolio_db = get_table("portfolio")
     exit_service = ExitService(config=config, portfolio_db=portfolio_db, data_provider=broker)
     recorder = TradeRecorder()

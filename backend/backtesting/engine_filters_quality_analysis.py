@@ -47,7 +47,7 @@ def run_quality_analysis():
     broker = MockBroker(use_cache=True)
     broker.get_ltp = lambda symbol: {symbol: broker.fetch_candles(symbol, interval="day").iloc[-1]["close"]}
 
-    entry_service = EntryService(broker, config, "all")
+    entry_service = EntryService(broker, config, "all", "swing")
     portfolio_db = get_table("portfolio")
     exit_service = ExitService(config=config, portfolio_db=portfolio_db, data_provider=broker)
     recorder = TradeRecorder()

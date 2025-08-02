@@ -4,7 +4,6 @@
 # @tags: suggestion, scoring, logic
 from config.filters_setup import load_filters
 from services.entry_service import EntryService
-from services.technical_analysis import calculate_score
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
@@ -13,11 +12,11 @@ from config.logging_config import get_loggers
 # Set up logging first
 logger, trade_logger = get_loggers()
 
-def get_filtered_stock_suggestions(interval="day", index="nifty_50"):
+def get_filtered_stock_suggestions(interval="day", index="nifty_50", strategy="intraday"):
     try:
         config = load_filters()
         data_provider = KiteBroker()
-        entry_service = EntryService(data_provider, config, index)
+        entry_service = EntryService(data_provider, config, index, strategy)
         return entry_service.get_suggestions()
     except InvalidTokenException:
         raise
