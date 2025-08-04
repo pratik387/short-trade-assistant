@@ -18,7 +18,7 @@ from config_tracker import is_config_stale, update_config_hash
 ARCHIVE_DIR = Path(__file__).resolve().parent / "ohlcv_archive"
 ARCHIVE_DIR.mkdir(exist_ok=True)
 
-config = load_filters()
+config = load_filters("swing")
 
 # Load all symbols from the NSE JSON index file
 INDEX_FILE = Path(__file__).resolve().parents[1] / "assets" / "indexes" / "nse_all.json"

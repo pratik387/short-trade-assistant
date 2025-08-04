@@ -9,7 +9,8 @@ if str(ROOT) not in sys.path:
 import os
 import time
 import pandas as pd
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+from typing import List, Optional
 from brokers.kite.kite_broker import KiteBroker
 from config.filters_setup import load_filters
 from config.logging_config import get_loggers
@@ -35,7 +36,7 @@ def cache_path(symbol):
     return os.path.join(CACHE_DIR, f"{symbol}_{INTERVAL}.feather")
 
 
-def fetch_and_update(symbol, broker):
+def fetch_and_update(symbol, broker, config) -> Optional[pd.DataFrame]:
     path = cache_path(symbol)
 
     # Step 1: Load existing data
@@ -98,9 +99,27 @@ def fetch_and_update(symbol, broker):
                 df.drop(columns=["level_0"], inplace=True)
             df.to_feather(path)
             logger.info(f"✅ Updated: {symbol} ({len(df_new)} new candles, {len(df)} kept)")
+            df.set_index("date", inplace=True)
+            df.index = pd.to_datetime(df.index)
+            return df
 
     except Exception as e:
         logger.error(f"❌ Error updating {symbol}: {e}")
+
+
+def preload_intraday_cache(symbols: List[str], broker, config):
+    cached_data = {}
+    filtered_symbols = []
+
+    for symbol_obj in symbols:
+        symbol = symbol_obj.get("symbol")
+        df = fetch_and_update(symbol, broker, config)
+
+        if df is not None and not df.empty:
+            cached_data[symbol] = df
+            filtered_symbols.append(symbol_obj)
+    return filtered_symbols, cached_data
+
 
 if __name__ == "__main__":
     logger.info("📦 Starting candle cache builder (smart update mode)")
@@ -112,7 +131,7 @@ if __name__ == "__main__":
 
     for item in symbols:
         symbol = item["symbol"]
-        fetch_and_update(symbol, broker)
+        fetch_and_update(symbol, broker, config)
         time.sleep(RATE_LIMIT_DELAY)
 
     logger.info("✅ Candle cache update complete.")

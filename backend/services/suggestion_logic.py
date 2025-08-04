@@ -14,7 +14,7 @@ logger, trade_logger = get_loggers()
 
 def get_filtered_stock_suggestions(interval="day", index="nifty_50", strategy="intraday"):
     try:
-        config = load_filters()
+        config = load_filters(strategy)
         data_provider = KiteBroker()
         entry_service = EntryService(data_provider, config, index, strategy)
         return entry_service.get_suggestions()

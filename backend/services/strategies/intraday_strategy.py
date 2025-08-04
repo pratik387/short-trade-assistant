@@ -1,7 +1,7 @@
 from services.strategies.base_strategy import BaseStrategy
 from config.logging_config import get_loggers
 import pandas as pd
-from typing import List
+from intraday.candle_cache_builder import preload_intraday_cache
 
 logger, _ = get_loggers()
 
@@ -46,4 +46,9 @@ class IntradayStrategy(BaseStrategy):
         except Exception as e:
             logger.exception(f"❌ Error processing {symbol}")
             return False
+        
+    
+    def preload_and_filter_symbols(self, symbols, data_provider, config, as_of_date):
+        filtered_symbols, cached_data = preload_intraday_cache(symbols, data_provider, config)
+        return filtered_symbols, cached_data
 
