@@ -14,7 +14,6 @@ from intraday.ltp_fetcher import fetch_ltp_for_symbols
 from config.logging_config import get_loggers
 from util.util import is_market_active
 from datetime import datetime
-from services.strategies.strategy_factory import get_strategy
 from services.entry_service import EntryService
 
 logger, _ = get_loggers()
