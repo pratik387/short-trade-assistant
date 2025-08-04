@@ -136,9 +136,12 @@ def calculate_entry_score(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     df.set_index("date", inplace=True)
     scores, breakdowns = [], []
     for i, (index, row) in enumerate(df.iterrows()):
-        score, breakdown = calculate_score(row, config, row.get("AVG_RSI"), full_df=df.iloc[:i+1])
+        score, breakdown, extras = calculate_score(row, config, full_df=df.iloc[:i+1])
         scores.append(score)
         breakdowns.append(breakdown if isinstance(breakdown, list) else [])
+        for key, val in extras.items():
+            if val is not None:
+                df.at[row.name, key] = val
     df["ENTRY_SCORE"] = scores
     df["ENTRY_BREAKDOWN"] = breakdowns
     df.reset_index(inplace=True)

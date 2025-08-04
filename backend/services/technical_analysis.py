@@ -17,8 +17,9 @@ def passes_hard_filters(latest: pd.Series, cfg: dict, symbol: str = "") -> bool:
         macd_signal = latest.get("MACD_SIGNAL")
         dmp = latest.get("DMP_14")
         dmn = latest.get("DMN_14")
-
-        if not (cfg.get('rsi_min', 40) <= rsi <= cfg.get('rsi_max', 70)): return False
+        filters = cfg.get("entry_filters", {})
+        fcfg = filters["rsi"]
+        if not (fcfg.get('min') <= rsi <= fcfg.get('max')): return False
         if macd <= macd_signal: return False
         if dmp <= dmn: return False
 
@@ -38,11 +39,12 @@ def calculate_weighted_score(value: float, fcfg: dict, min_key="min", max_key="m
     normalized = max(0.0, min(normalized, 1.0))
     return round(normalized * weight, 2)
 
-def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str = "", full_df=None) -> tuple[int, list]:
+def calculate_score(latest: pd.Series, config: dict, symbol: str = "", full_df=None) -> tuple[int, list, dict]:
     try:
         score = 0
         breakdown = []
         filters = config.get("entry_filters", {})
+        extras = {}
 
         def is_enabled(f): return filters.get(f).get("enabled")
 
@@ -53,7 +55,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             if adx and fcfg["min"] <= adx <= fcfg["max"]:
                 weighted = calculate_weighted_score(adx, fcfg)
                 score += weighted
-                breakdown.append(("ADX", weighted, f"ADX={adx:.2f} in [{fcfg['min']}-{fcfg['max']}]"))
+                breakdown.append({"filter": "adx", "weight": weighted, "details": {"adx": adx}})
 
         # RSI
         if is_enabled("rsi"):
@@ -62,13 +64,14 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             if rsi and fcfg["min"] <= rsi <= fcfg["max"]:
                 weighted = calculate_weighted_score(rsi, fcfg)
                 score += weighted
-                breakdown.append(("RSI", weighted, f"RSI={rsi:.2f} in [{fcfg['min']}-{fcfg['max']}]"))
+                breakdown.append({"filter": "rsi", "weight": weighted, "details": {"rsi": rsi}})
 
         # RSI > Avg RSI
+        avg_rsi = latest.get("AVG_RSI")
         if is_enabled("rsi_above_avg") and rsi and avg_rsi and rsi > avg_rsi:
             val = filters["rsi_above_avg"]["weight"]
             score += val
-            breakdown.append(("RSI > AvgRSI", val, f"RSI={rsi:.2f}, AvgRSI={avg_rsi:.2f}"))
+            breakdown.append({"filter": "rsi_above_avg", "weight": val, "details": {"rsi": rsi, "avg_rsi": avg_rsi}})
 
         # MACD
         if is_enabled("macd"):
@@ -81,16 +84,17 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
                 normalized = min(gap / cap, 1.0)
                 weighted = round(normalized * fcfg["weight"], 2)
                 score += weighted
-                breakdown.append(("MACD", weighted, f"MACD={macd:.2f} > Signal={signal:.2f} (Cap={cap})"))
+                breakdown.append({"filter": "macd", "weight": weighted, "details": {"macd": macd, "macd_signal": signal, "gap": gap, "cap": cap}})
 
-        # BB
+        # Bollinger Band
         if is_enabled("bb"):
             fcfg = filters["bb"]
             bb_val = latest.get("BB_%B")
-            width = ((latest.get("BB_UPPER") - latest.get("BB_LOWER")) / latest.get("BB_MIDDLE")) * 100 if latest.get("BB_MIDDLE") else 0
+            mid = latest.get("BB_MIDDLE")
+            width = ((latest.get("BB_UPPER") - latest.get("BB_LOWER")) / mid) * 100 if mid else 0
             if bb_val and fcfg["lower"] <= bb_val <= fcfg["upper"] and width >= fcfg["width_min"]:
                 score += fcfg["weight"]
-                breakdown.append(("Bollinger Band", fcfg["weight"], f"%B={bb_val:.2f}, Width={width:.2f}%"))
+                breakdown.append({"filter": "bb", "weight": fcfg["weight"], "details": {"%B": bb_val, "width": width}})
 
         # DMP > DMN
         if is_enabled("dmp_dmn"):
@@ -99,9 +103,9 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             dmn = latest.get("DMN_14")
             if dmp and dmn and dmp > dmn and (dmp - dmn) <= fcfg["gap_max"]:
                 score += fcfg["weight"]
-                breakdown.append(("DMP > DMN", fcfg["weight"], f"DMP={dmp:.2f} > DMN={dmn:.2f}, Gap={dmp - dmn:.2f}"))
+                breakdown.append({"filter": "dmp_dmn", "weight": fcfg["weight"], "details": {"dmp": dmp, "dmn": dmn, "gap": dmp - dmn}})
 
-        # Price > SMA50
+        # Close > SMA50
         if is_enabled("price_sma"):
             fcfg = filters["price_sma"]
             close = latest.get("close")
@@ -109,7 +113,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             if close and sma and close > sma:
                 if not fcfg.get("gap_max") or (close - sma) <= fcfg["gap_max"]:
                     score += fcfg["weight"]
-                    breakdown.append(("Close > SMA50", fcfg["weight"], f"Close={close:.2f} > SMA50={sma:.2f}"))
+                    breakdown.append({"filter": "price_sma", "weight": fcfg["weight"], "details": {"close": close, "sma50": sma}})
 
         # OBV
         if is_enabled("obv"):
@@ -117,7 +121,8 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             obv = latest.get("OBV")
             if obv and obv > fcfg["min"]:
                 score += fcfg["weight"]
-                breakdown.append(("OBV", fcfg["weight"], f"OBV={obv:.2f} > {fcfg['min']}"))
+                breakdown.append({"filter": "obv", "weight": fcfg["weight"], "details": {"obv": obv}})
+
         # ATR
         if is_enabled("atr"):
             fcfg = filters["atr"]
@@ -125,7 +130,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             if atr and atr > fcfg["min"] and (not fcfg.get("max") or atr < fcfg["max"]):
                 weighted = calculate_weighted_score(atr, fcfg)
                 score += weighted
-                breakdown.append(("ATR", weighted, f"ATR={atr:.2f} > {fcfg['min']}"))
+                breakdown.append({"filter": "atr", "weight": weighted, "details": {"atr": atr}})
 
         # Stochastic
         if is_enabled("stochastic"):
@@ -134,38 +139,39 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             d = latest.get("STOCHASTIC_D")
             if k and d and k > d and k > fcfg["threshold"]:
                 score += fcfg["weight"]
-                breakdown.append(("Stochastic", fcfg["weight"], f"%K={k:.2f} > %D={d:.2f} & > {fcfg['threshold']}"))
+                breakdown.append({"filter": "stochastic", "weight": fcfg["weight"], "details": {"%K": k, "%D": d}})
                 if k > fcfg.get("penalty_above", 100):
                     score -= 1
-                    breakdown.append(("Stochastic Overbought", -1, f"%K={k:.2f} > {fcfg['penalty_above']}"))
+                    breakdown.append({"filter": "stochastic_overbought", "weight": -1, "details": {"%K": k}})
 
         # Candle pattern
         if is_enabled("candle_pattern") and full_df is not None:
             fcfg = filters["candle_pattern"]
             if bullish_candle_pattern_filter(full_df):
                 score += fcfg["weight"]
-                breakdown.append(("Candle Pattern", fcfg["weight"], "Pattern match"))
+                breakdown.append({"filter": "candle_pattern", "weight": fcfg["weight"], "details": {"match": True}})
 
         # Fibonacci
         if is_enabled("fibonacci_support"):
             fcfg = filters["fibonacci_support"]
             if latest.get("fibonacci_levels"):
                 score += fcfg["weight"]
-                breakdown.append(("Fibonacci", fcfg["weight"], "In support zone"))
+                breakdown.append({"filter": "fibonacci_support", "weight": fcfg["weight"], "details": {"in_zone": True}})
 
-         # Volume Surge
+        # Volume Surge
         if is_enabled("volume_surge"):
             fcfg = filters["volume_surge"]
             vol = latest.get("volume")
             vol_avg = latest.get("VOLUME_AVG")
             if vol and vol_avg:
                 ratio = vol / vol_avg
+                extras["volume_ratio"] = ratio
                 surge_factor = fcfg.get("surge_factor")
                 if ratio >= surge_factor:
                     normalized = min((ratio - surge_factor) / surge_factor, 1.0)
                     weighted = round(normalized * fcfg["weight"], 2)
                     score += weighted
-                    breakdown.append(("Volume Surge", weighted, f"Vol={vol}, Avg={vol_avg}, Ratio={ratio:.2f}"))
+                    breakdown.append({"filter": "volume_surge", "weight": weighted, "details": {"volume": vol, "avg_volume": vol_avg, "ratio": ratio}})
 
         # RSI Slope
         if is_enabled("rsi_slope") and full_df is not None:
@@ -176,7 +182,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             if min_slope <= slope <= max_slope:
                 weighted = calculate_weighted_score(slope, fcfg, min_key="min", max_key="max")
                 score += weighted
-                breakdown.append(("RSI Slope", weighted, f"Slope={slope:.3f} in [{min_slope}, {max_slope}]"))
+                breakdown.append({"filter": "rsi_slope", "weight": weighted, "details": {"slope": slope}})
 
         # Breakout Ready
         if is_enabled("breakout_ready") and full_df is not None:
@@ -191,7 +197,7 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
             rsi_weight = 0
             macd_weight = 0
 
-            if bb_now < bb_avg * fcfg.get("bb_squeeze_factor", 0.7):
+            if bb_now < bb_avg * fcfg.get("bb_squeeze_factor"):
                 bb_weight = round((1 - bb_now / (bb_avg * fcfg["bb_squeeze_factor"])) * fcfg["bb_weight"], 2)
 
             if fcfg["rsi_slope_min"] < rsi_slope < fcfg["rsi_slope_max"]:
@@ -207,11 +213,14 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
                     "max": fcfg.get("macd_hist_slope_max", macd_hist_slope + 1),
                     "weight": fcfg["macd_weight"]
                 })
+
             total_weight = round(bb_weight + rsi_weight + macd_weight, 2)
+            extras["breakout_ready"] = total_weight
             if total_weight > 0:
                 score += total_weight
-                breakdown.append(("Breakout Ready", total_weight, f"BB={bb_weight}, RSI={rsi_weight}, MACD_Hist={macd_weight}"))
+                breakdown.append({"filter": "breakout_ready", "weight": total_weight, "details": {"bb": bb_weight, "rsi": rsi_weight, "macd_hist": macd_weight}})
 
+        # Late Entry Penalty
         lep_cfg = config.get("late_entry_penalty")
         rsi_threshold = lep_cfg.get("rsi_above")
         macd_threshold = lep_cfg.get("macd_above")
@@ -219,15 +228,14 @@ def calculate_score(latest: pd.Series, config: dict, avg_rsi: float, symbol: str
 
         if rsi and rsi > rsi_threshold or (macd and macd > macd_threshold):
             score += penalty
-            breakdown.append(("Late Entry Penalty", penalty, f"RSI={rsi}, MACD={macd} > thresholds"))
+            breakdown.append({"filter": "late_entry_penalty", "weight": penalty, "details": {"rsi": rsi, "macd": macd}})
 
         # Signal Saturation Block
         if score >= 20 and len(breakdown) >= 7:
-            return 0, [("Blocked", 0, "Skipped due to signal saturation")]
+            return 0, [{"filter": "signal_blocked", "weight": 0, "details": {"reason": "Signal saturation"}}]
 
-        return score, breakdown
+        return score, breakdown, extras
 
     except Exception as e:
         logger.exception(f"❌ Error calculating score for {symbol}: {e}")
         return 0, []
-

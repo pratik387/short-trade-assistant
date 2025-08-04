@@ -3,59 +3,20 @@
 # @filter_type: logic
 # @tags: entry, strategy, service
 import time
-from datetime import datetime, timedelta
+import pandas as pd
+from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
-from services.technical_analysis import passes_hard_filters, calculate_score
+from services.technical_analysis import passes_hard_filters
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from config.logging_config import get_loggers
 from brokers.mock.mock_broker import MockBroker
 from util.diagnostic_report_generator import diagnostics_tracker
+from jobs.daily_cache_builder import preload_daily_cache
 from pytz import timezone
 india_tz = timezone("Asia/Kolkata")
 
 logger, trade_logger = get_loggers()
-
-def preload_and_filter_symbols(symbols, data_provider, config, min_price, min_volume, as_of_date):
-    candle_cache = {}
-    filtered_symbols = []
-    lock = threading.Lock()
-
-    def load_symbol(item):
-        symbol = item.get("symbol")
-        try:
-            from_date = as_of_date - timedelta(days=config.get("lookback_days", 180))
-            df = data_provider.fetch_candles(
-                symbol=symbol,
-                interval=config.get("interval", "day"),
-                from_date=from_date,
-                to_date=as_of_date
-            )
-            
-            if df is None or df.empty:
-                return
-
-            latest = df.iloc[-1]
-            if latest["close"] <= min_price or latest["volume"] < min_volume:
-                return
-
-            with lock:
-                candle_cache[symbol] = df
-                filtered_symbols.append(item)
-        except Exception:
-            logger.exception("Error preloading or filtering %s", symbol)
-
-    with ThreadPoolExecutor() as executor:
-        futures = {executor.submit(load_symbol, item): item for item in symbols}
-        for future in as_completed(futures):
-            try:
-                future.result()  # will raise if load_symbol errored
-            except Exception as e:
-                logger.error(f"Exception in preload thread: {e}")
-
-
-    return filtered_symbols, candle_cache
 
 def evaluate_symbol(item, config, candle_cache, as_of_date):
     symbol = item.get("symbol")
@@ -69,7 +30,8 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
         if "RSI" not in df.columns or "ADX_14" not in df.columns:
             df = enrich_with_indicators_and_score(df, config=config)
             df.set_index("date", inplace=True)
-        df = df[df.index <= as_of_date]
+        df.index = pd.to_datetime(df.index).tz_localize(None)
+        as_of_date = as_of_date.replace(tzinfo=None)
         if len(df) < 1:
             return None
 
@@ -181,9 +143,13 @@ class EntryService:
         symbols = self.data_provider.get_symbols(self.index) or []
         logger.debug("Fetched %d symbols to evaluate", len(symbols))
 
-        # Preload candle data and filter early (multithreaded)
-        filtered_symbols, candle_cache = preload_and_filter_symbols(
-            symbols, self.data_provider, self.config, self.min_price, self.min_volume, as_of_date=as_of_date
+        filtered_symbols, candle_cache = preload_daily_cache(
+            symbols=symbols,
+            broker=self.data_provider,
+            config=self.config,
+            interval="day",
+            lookback_days=self.config.get("lookback_days", 180),
+            cache_dir="backend/cache/swing_ohlcv_cache"
         )
 
         logger.info("Preloaded and filtered %d symbols", len(filtered_symbols))

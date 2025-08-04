@@ -167,3 +167,33 @@ def calculate_dynamic_exit_threshold(config, df, days_held):
     dynamic_threshold = base_threshold * (1 - time_weight_reduction * time_decay) * vol_adj
     return dynamic_threshold
 
+def is_trading_day(date):
+    """
+    Returns True if the given date is a valid NSE trading day (not weekend, not holiday).
+    Uses same holiday logic as is_market_active().
+    """
+    try:
+        dt = pd.Timestamp(date).normalize()
+
+        # Weekend
+        if dt.weekday() >= 5:
+            return False
+
+        # Holidays (same logic)
+        if not HOLIDAY_FILE.exists():
+            download_nse_holidays()
+
+        with open(HOLIDAY_FILE, "r", encoding="utf-8") as f:
+            items = json.load(f)
+            holidays = [
+                pd.to_datetime(item.get("tradingDate") or item.get("holidayDate"), format="%d-%b-%Y", errors="coerce").normalize()
+                for item in items
+            ]
+            holidays = [d for d in holidays if not pd.isna(d)]
+
+        return dt not in holidays
+
+    except Exception as e:
+        logger.warning(f"⚠️ is_trading_day fallback triggered: {e}")
+        return True  # fallback to assume trading day
+
