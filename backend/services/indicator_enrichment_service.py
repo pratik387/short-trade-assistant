@@ -1,6 +1,7 @@
 import pandas as pd
 from pandas_ta import rsi, adx, obv, atr, stoch, cdl_pattern
 from services.technical_analysis import calculate_score
+import numpy as np
 
 from config.logging_config import get_loggers
 logger, trade_logger = get_loggers()
@@ -138,10 +139,13 @@ def calculate_entry_score(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     for i, (index, row) in enumerate(df.iterrows()):
         score, breakdown, extras = calculate_score(row, config, full_df=df.iloc[:i+1])
         scores.append(score)
-        breakdowns.append(breakdown if isinstance(breakdown, list) else [])
+        if isinstance(breakdown, list):
+            breakdown = [item for item in breakdown if item.get("weight", 0) != 0]
+        breakdowns.append(breakdown)
         for key, val in extras.items():
             if val is not None:
                 df.at[row.name, key] = val
+                
     df["ENTRY_SCORE"] = scores
     df["ENTRY_BREAKDOWN"] = breakdowns
     df.reset_index(inplace=True)
@@ -173,3 +177,86 @@ def calculate_fibonacci_levels(series: pd.Series) -> dict:
         "0.786": round(high - 0.786 * diff, 2),
         "1.0": round(low, 2)
     }
+
+def compute_intraday_breakout_score(df: pd.DataFrame, config: dict) -> pd.DataFrame:
+    df = df.copy()
+
+    # VWAP (manual for few candles)
+    typical_price = (df['high'] + df['low'] + df['close']) / 3
+    df['vwap'] = (typical_price * df['volume']).cumsum() / df['volume'].cumsum()
+
+    # RSI + slope
+    df['RSI'] = df['close'].rolling(14).apply(lambda x: x.pct_change().add(1).prod() if len(x) >= 14 else np.nan, raw=False)
+    df['rsi_slope'] = df['RSI'].diff().rolling(3).mean()
+
+    # ADX + slope (assumes already enriched)
+    df['ADX_14'] = df.get('ADX_14', pd.Series(index=df.index, dtype='float'))
+    df['adx_slope'] = df['ADX_14'].diff().rolling(3).mean()
+
+    # Volume surge
+    df['volume_avg_14'] = df['volume'].rolling(14).mean()
+    df['volume_ratio'] = df['volume'] / df['volume_avg_14']
+
+    # Candle info
+    df['is_green'] = (df['close'] > df['open']).astype(int)
+    df['above_vwap'] = (df['close'] > df['vwap']).astype(int)
+
+    # Range position
+    high_20 = df['high'].rolling(20).max()
+    low_20 = df['low'].rolling(20).min()
+    bb_width = (high_20 - low_20).replace(0, np.nan)
+    df['range_position'] = (df['close'] - low_20) / bb_width
+
+    # Use dedicated intraday filter config
+    filters = config["intraday_filters"]
+    hard_filters = config["intraday_hard_filters"]
+
+    score = (
+        filters["volume_ratio"]["weight"] * (df['volume_ratio'] > filters["volume_ratio"]["min"]).astype(float) +
+        filters["above_vwap"]["weight"] * df['above_vwap'] +
+        filters["green_candle"]["weight"] * df['is_green'] +
+        filters["adx_slope"]["weight"] * ((df['ADX_14'] > filters["adx_slope"]["min_adx"]) & (df['adx_slope'] > 0)).astype(float) +
+        filters["rsi_slope"]["weight"] * (df['rsi_slope'] > 0).astype(float) +
+        filters["range_position"]["weight"] * df['range_position'].fillna(0)
+    )
+
+    df['breakout_score'] = score
+
+    # Optional hard checks for future use in screener (not scored)
+    df['passes_min_breakout'] = df['breakout_score'] >= hard_filters["min_breakout_score"]
+    df['passes_volume_ratio'] = df['volume_ratio'] >= hard_filters["min_volume_ratio"]
+    df['passes_top_wick'] = ((df['high'] - df['close']) / (df['high'] - df['low'] + 1e-6)) <= hard_filters["max_top_wick_ratio"]
+    df['passes_green_candle'] = ~hard_filters["require_green_candle"] | (df['is_green'] == 1)
+    df['passes_all_green'] = ~hard_filters["require_all_green_candles"] | (
+        df['is_green'].rolling(3).sum() == 3
+    )
+    df['passes_higher_highs'] = ~hard_filters["require_higher_highs"] | (
+        df['high'].diff().rolling(2).apply(lambda x: x.iloc[1] > 0 and x.iloc[0] > 0 if len(x.dropna()) == 2 else False, raw=False).fillna(False).astype(bool)
+    )
+
+    df['passes_all_hard_filters'] = (
+        df['passes_min_breakout'] &
+        df['passes_volume_ratio'] &
+        df['passes_top_wick'] &
+        df['passes_green_candle'] &
+        df['passes_all_green'] &
+        df['passes_higher_highs']
+    )
+
+    for i, row in df.iterrows():
+        reasons = []
+        if not row['passes_min_breakout']: reasons.append("low_score")
+        if not row['passes_volume_ratio']: reasons.append("volume")
+        if not row['passes_top_wick']: reasons.append("top_wick")
+        if not row['passes_green_candle']: reasons.append("not_green")
+        if not row['passes_all_green']: reasons.append("not_all_green")
+        if not row['passes_higher_highs']: reasons.append("no_higher_highs")
+        if reasons:
+            logger.debug(f"❌ {row.name} rejected: {', '.join(reasons)}")
+        else:
+            logger.debug(f"✅ {row.name} passed all checks")
+
+    return df
+
+
+

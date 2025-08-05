@@ -135,11 +135,6 @@ def fetch_and_update(symbol, broker, config, interval, lookback_days, cache_dir)
         df = df.reset_index()
         if "level_0" in df.columns:
             df.drop(columns=["level_0"], inplace=True)
-            
-        if "breakdown" in df.columns:
-            df["breakdown"] = df["breakdown"].apply(
-                lambda b: [item for item in b if item.get("weight", 0) != 0]
-            )
 
         df.to_feather(path)
         update_cache_meta(cache_dir, symbol, df["date"].max())

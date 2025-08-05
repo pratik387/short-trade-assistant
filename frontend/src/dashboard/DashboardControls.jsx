@@ -7,6 +7,8 @@ export default function DashboardControls({
   toggleAutoEmail,
   indexFilter,
   handleIndexChange,
+  handleStrategyChange,
+  strategyPicker
 }) {
   return (
     <div className="flex items-center space-x-2">
@@ -53,6 +55,14 @@ export default function DashboardControls({
         <option value="nifty_200">Nifty 200</option>
         <option value="nifty_500">Nifty 500</option>
         <option value="all">All</option>
+      </select>
+            <select
+        value={strategyPicker}
+        onChange={handleStrategyChange}
+        className="border border-gray-400 rounded py-2 px-3"
+      >
+        <option value="intraday">Intraday</option>
+        <option value="swing">Swing</option>
       </select>
     </div>
   );

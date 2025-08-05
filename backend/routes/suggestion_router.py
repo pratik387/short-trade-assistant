@@ -28,13 +28,13 @@ router = APIRouter()
     summary="Get filtered short-term stock suggestions"
 )
 async def get_suggestions(
-    interval: str = Query("day", description="Interval: 'day', '5minute', etc."),
+    strategy: str = Query("swing", description="Strategy: 'swing', 'intraday', etc."),
     index: str = Query("all", description="Index: 'nifty_50', 'nifty_100', etc.")
 ):
-    logger.debug("get_suggestions called with interval=%s index=%s", interval, index)
+    logger.debug("get_suggestions called with interval=%s index=%s", strategy, index)
     try:
-        suggestions = get_filtered_stock_suggestions(interval=interval, index=index)
-        logger.info("Returning %d suggestions for %s/%s", len(suggestions), interval, index)
+        suggestions = get_filtered_stock_suggestions( strategy=strategy, index=index)
+        logger.info("Returning %d suggestions for %s/%s", len(suggestions), strategy, index)
         return suggestions
     except InvalidTokenException:
         raise HTTPException(status_code=401, detail="Session expired—please log in again")

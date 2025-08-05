@@ -22,6 +22,7 @@ export default function Dashboard() {
   const [indexFilter, setIndexFilter] = useState("nifty_50");
   const [tokenExpired, setTokenExpired] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [strategyPicker, setStrategy] = useState("intraday");
 
   const navigate = useNavigate();
 
@@ -64,7 +65,7 @@ export default function Dashboard() {
   const fetchStocks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/short-term-suggestions?interval=day&index=${indexFilter}`);
+      const res = await axios.get(`/api/short-term-suggestions?interval=15minute&index=${indexFilter}&strategy=${strategyPicker}`);
       setStocks(Array.isArray(res.data) ? res.data : []);
       setTokenExpired(false);
     } catch (err) {
@@ -139,6 +140,8 @@ export default function Dashboard() {
         toggleAutoEmail={() => setAutoEmail((prev) => !prev)}
         indexFilter={indexFilter}
         handleIndexChange={(e) => setIndexFilter(e.target.value)}
+        strategyPicker={strategyPicker}
+        handleStrategyChange={(e) => setStrategy(e.target.value)}
       />
 
       <UnifiedStockChecker />
