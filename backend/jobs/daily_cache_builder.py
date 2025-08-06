@@ -14,6 +14,7 @@ from typing import List, Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
 from brokers.kite.kite_broker import KiteBroker
+from brokers.yahoo.yahoo_broker import YahooBroker
 from config.filters_setup import load_filters
 from config.logging_config import get_loggers
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
@@ -36,17 +37,14 @@ def cache_path(symbol, interval, cache_dir):
 def get_expected_last_candle_time() -> datetime:
     now = datetime.now()
 
-    # Market hasn't opened yet today
     if now.time() < dt_time(hour=9, minute=15):
         current_date = now.date() - timedelta(days=1)
         while not is_trading_day(current_date):
             current_date -= timedelta(days=1)
         return datetime.combine(current_date, dt_time(hour=15, minute=15))
 
-    # During market hours: calculate latest 1D candle time
     expected = now.replace(hour=15, minute=15, second=0, microsecond=0)
 
-    # Ensure we’re not expecting future candles during early hours on non-trading days
     while not is_trading_day(expected.date()):
         expected -= timedelta(days=1)
         expected = expected.replace(hour=15, minute=15)
@@ -88,22 +86,19 @@ def fetch_and_update(symbol, broker, config, interval, lookback_days, cache_dir)
     expected_date = get_expected_last_candle_time().date()
 
     if symbol in cache_meta:
-        last_cached = pd.to_datetime(cache_meta[symbol]).date()
-        if last_cached >= expected_date:
-            logger.info(f"⏩ Skipping {symbol}: already cached for {last_cached}")
-            try:
-                return pd.read_feather(path).set_index("date")
-            except Exception as e:
-                logger.warning(f"⚠️ Failed to read cached feather for {symbol}. Rebuilding... ({e})")
+        try:
+            last_cached = pd.to_datetime(cache_meta[symbol]).date()
+            if last_cached >= expected_date:
+                logger.info(f"⏩ Skipping {symbol}: already cached for {last_cached}")
+                return pd.read_feather(path)
+        except Exception as e:
+            logger.warning(f"⚠️ Failed to parse cache meta for {symbol}: {e}")
 
     try:
         df_old = pd.read_feather(path) if os.path.exists(path) else pd.DataFrame()
     except Exception as e:
         logger.warning(f"⚠️ Failed to read existing feather file for {symbol}. Treating as empty. ({e})")
         df_old = pd.DataFrame()
-
-    if not df_old.empty:
-        df_old["date"] = pd.to_datetime(df_old["date"]).dt.tz_localize(None)
 
     try:
         df_new = broker.fetch_candles(
@@ -114,36 +109,37 @@ def fetch_and_update(symbol, broker, config, interval, lookback_days, cache_dir)
         )
         if df_new is None or df_new.empty:
             return
-
-        df_new.reset_index(inplace=True)
+        
+        df_new = df_new.rename(columns={
+            "Open": "open", "High": "high", "Low": "low",
+            "Close": "close", "Volume": "volume"
+        })
+        df_new.index.name = "date"
+        df_new = df_new.reset_index()
         df_new["date"] = pd.to_datetime(df_new["date"]).dt.tz_localize(None)
+        df_new.columns = [str(col).lower() if isinstance(col, str) else "unknown" for col in df_new.columns]
+        expected_columns = ["date", "open", "high", "low", "close", "volume"]
+        if len(df_new.columns) != len(expected_columns):
+            raise ValueError(f"Length mismatch: got {len(df_new.columns)} columns, expected {len(expected_columns)}")
+        df_new.columns = expected_columns
+
+
+
         df = pd.concat([df_old, df_new]).drop_duplicates(subset="date").sort_values(by="date")
-        df.index = pd.to_datetime(df.index).tz_localize(None)
-        df.set_index("date", inplace=True)
-
-        last_date = df.index.max()
-        valid_days = []
-        while len(valid_days) < lookback_days:
-            if is_trading_day(last_date):
-                valid_days.append(last_date)
-            last_date -= timedelta(days=1)
-
-        min_date = min(valid_days)
-        df = df[df.index >= min_date]
-
         df = enrich_with_indicators_and_score(df, config)
-        df = df.reset_index()
-        if "level_0" in df.columns:
-            df.drop(columns=["level_0"], inplace=True)
+
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values("date")
+        min_required_date = df["date"].max() - timedelta(days=lookback_days * 2)
+        df = df[df["date"] >= min_required_date]
 
         df.to_feather(path)
         update_cache_meta(cache_dir, symbol, df["date"].max())
         logger.info(f"✅ Cached {symbol} ({len(df)} rows)")
-        df.set_index("date", inplace=True)
         return df
 
     except Exception as e:
-        logger.error(f"❌ Error updating {symbol}: {e}")
+        logger.exception(f"❌ Error updating {symbol}: {e}")
         return
 
 def preload_daily_cache(symbols: List[dict], broker, config, interval, lookback_days, cache_dir):
@@ -172,13 +168,14 @@ if __name__ == "__main__":
     parser.add_argument("--interval", default="day")
     parser.add_argument("--lookback_days", type=int, default=150)
     parser.add_argument("--cache_dir", default="backend/swing/swing_ohlcv_cache")
+    parser.add_argument("--broker", default="kite", choices=["kite", "yahoo"])
     args = parser.parse_args()
 
     logger.info("🗂 Starting OHLCV cache builder")
     ensure_cache_dir(args.cache_dir)
 
     config = load_filters(mode="swing")
-    broker = KiteBroker()
+    broker = KiteBroker() if args.broker == "kite" else YahooBroker()
     symbols = broker.get_symbols(args.index)
 
     preload_daily_cache(

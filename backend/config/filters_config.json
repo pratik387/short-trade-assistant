@@ -1,10 +1,10 @@
 {
   "min_volume": 100000,
   "min_price": 50,
-  "max_price": 1500,
+  "max_price": 10000,
   "min_atr_pct": 1.3,
   "enable_soft_prefilter": true,
-  "minimum_holding_days":3,
+  "minimum_holding_days": 3,
   "late_entry_penalty": {
     "rsi_above": 72,
     "macd_above": 25,
@@ -95,6 +95,36 @@
       "rsi_weight": 0.3,
       "macd_hist_slope_min": 0,
       "macd_weight": 0.5
+    }
+  },
+  "intraday_hard_filters": {
+    "min_breakout_score": 0.5,
+    "min_volume_ratio": 2.5,
+    "max_top_wick_ratio": 0.6,
+    "require_green_candle": true,
+    "require_all_green_candles": true,
+    "require_higher_highs": true
+  },
+  "intraday_filters": {
+    "volume_ratio": {
+      "weight": 0.25,
+      "min": 1.5
+    },
+    "above_vwap": {
+      "weight": 0.15
+    },
+    "green_candle": {
+      "weight": 0.1
+    },
+    "adx_slope": {
+      "weight": 0.2,
+      "min_adx": 20
+    },
+    "rsi_slope": {
+      "weight": 0.15
+    },
+    "range_position": {
+      "weight": 0.15
     }
   }
 }

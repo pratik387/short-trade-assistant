@@ -1,0 +1,1701 @@
+[
+  {
+    "symbol": "SARDAEN.NS",
+    "instrument_token": 4546049,
+    "adx": 18.6,
+    "dmp": 42.38,
+    "dmn": 9.62,
+    "rsi": 71.89,
+    "macd": 11.5,
+    "macd_signal": 3.6,
+    "bb": 1.15,
+    "stochastic_k": 75.63,
+    "obv": 45016813.0,
+    "atr": 22.12,
+    "stop_loss": 502.46,
+    "score": 2.4499999999999997,
+    "breakdown": {
+      "adx": null,
+      "atr": {
+        "atr": 22.121954301239676
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.36,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 7.898952599532205,
+        "macd": 11.501315343871624,
+        "macd_signal": 3.6023627443394197
+      },
+      "obv": {
+        "obv": 45016813.0
+      },
+      "price_sma": null,
+      "rsi": {
+        "rsi": 71.8881259086519
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 54.73956908267541,
+        "rsi": 71.8881259086519
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 65.10547450764437,
+        "%K": 75.62833501247172
+      },
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 1786999.7,
+        "ratio": 7.4983101564034955,
+        "volume": 13399478
+      }
+    },
+    "close": 518.0,
+    "volume": 13399478
+  },
+  {
+    "symbol": "SKIPPER.NS",
+    "instrument_token": 2413569,
+    "adx": 20.52,
+    "dmp": 30.03,
+    "dmn": 10.23,
+    "rsi": 63.02,
+    "macd": 2.86,
+    "macd_signal": -2.33,
+    "bb": 1.04,
+    "stochastic_k": 63.94,
+    "obv": 46335216.0,
+    "atr": 27.08,
+    "stop_loss": 509.25,
+    "score": 2.41,
+    "breakdown": {
+      "adx": null,
+      "atr": {
+        "atr": 27.07807772450877
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.34,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": null,
+      "obv": {
+        "obv": 46335216.0
+      },
+      "price_sma": {
+        "close": 525.0,
+        "sma50": 494.2930004882812
+      },
+      "rsi": {
+        "rsi": 63.02194997289497
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 48.453882538035536,
+        "rsi": 63.02194997289497
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 59.62774334329834,
+        "%K": 63.94273931855984
+      },
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 1343517.0,
+        "ratio": 3.753059321169736,
+        "volume": 5042299
+      }
+    },
+    "close": 525.0,
+    "volume": 5042299
+  },
+  {
+    "symbol": "ZUARIIND.NS",
+    "instrument_token": 979713,
+    "adx": 26.99,
+    "dmp": 26.39,
+    "dmn": 5.39,
+    "rsi": 67.81,
+    "macd": 6.68,
+    "macd_signal": 1.42,
+    "bb": 1.15,
+    "stochastic_k": 65.54,
+    "obv": 2408428.0,
+    "atr": 19.59,
+    "stop_loss": 311.37,
+    "score": 2.3800000000000003,
+    "breakdown": {
+      "adx": {
+        "adx": 26.993599348961325
+      },
+      "atr": {
+        "atr": 19.589316067078464
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.2,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 5.262614368089004,
+        "macd": 6.6824895587110404,
+        "macd_signal": 1.4198751906220364
+      },
+      "obv": {
+        "obv": 2408428.0
+      },
+      "price_sma": {
+        "close": 321.0,
+        "sma50": 281.38200012207034
+      },
+      "rsi": {
+        "rsi": 67.81381379095612
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 52.35106229985612,
+        "rsi": 67.81381379095612
+      },
+      "rsi_slope": {
+        "slope": 0.20474709875368072
+      },
+      "stochastic": {
+        "%D": 65.51375393464507,
+        "%K": 65.5361458155629
+      },
+      "volume_surge": {
+        "avg_volume": 260152.25,
+        "ratio": 2.6868343441196454,
+        "volume": 698986
+      }
+    },
+    "close": 321.0,
+    "volume": 698986
+  },
+  {
+    "symbol": "BHARATRAS.NS",
+    "instrument_token": 981505,
+    "adx": 26.99,
+    "dmp": 26.39,
+    "dmn": 5.39,
+    "rsi": 67.81,
+    "macd": 6.68,
+    "macd_signal": 1.42,
+    "bb": 1.15,
+    "stochastic_k": 65.54,
+    "obv": 2408428.0,
+    "atr": 19.59,
+    "stop_loss": 311.37,
+    "score": 2.3800000000000003,
+    "breakdown": {
+      "adx": {
+        "adx": 26.993599348961325
+      },
+      "atr": {
+        "atr": 19.589316067078464
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.2,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 5.262614368089004,
+        "macd": 6.6824895587110404,
+        "macd_signal": 1.4198751906220364
+      },
+      "obv": {
+        "obv": 2408428.0
+      },
+      "price_sma": {
+        "close": 321.0,
+        "sma50": 281.38200012207034
+      },
+      "rsi": {
+        "rsi": 67.81381379095612
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 52.35106229985612,
+        "rsi": 67.81381379095612
+      },
+      "rsi_slope": {
+        "slope": 0.20474709875368072
+      },
+      "stochastic": {
+        "%D": 65.51375393464507,
+        "%K": 65.5361458155629
+      },
+      "volume_surge": {
+        "avg_volume": 260152.25,
+        "ratio": 2.6868343441196454,
+        "volume": 698986
+      }
+    },
+    "close": 321.0,
+    "volume": 698986
+  },
+  {
+    "symbol": "TOKYOPLAST.NS",
+    "instrument_token": 982273,
+    "adx": 26.99,
+    "dmp": 26.39,
+    "dmn": 5.39,
+    "rsi": 67.81,
+    "macd": 6.68,
+    "macd_signal": 1.42,
+    "bb": 1.15,
+    "stochastic_k": 65.54,
+    "obv": 2408428.0,
+    "atr": 19.59,
+    "stop_loss": 311.37,
+    "score": 2.3800000000000003,
+    "breakdown": {
+      "adx": {
+        "adx": 26.993599348961325
+      },
+      "atr": {
+        "atr": 19.589316067078464
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.2,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 5.262614368089004,
+        "macd": 6.6824895587110404,
+        "macd_signal": 1.4198751906220364
+      },
+      "obv": {
+        "obv": 2408428.0
+      },
+      "price_sma": {
+        "close": 321.0,
+        "sma50": 281.38200012207034
+      },
+      "rsi": {
+        "rsi": 67.81381379095612
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 52.35106229985612,
+        "rsi": 67.81381379095612
+      },
+      "rsi_slope": {
+        "slope": 0.20474709875368072
+      },
+      "stochastic": {
+        "%D": 65.51375393464507,
+        "%K": 65.5361458155629
+      },
+      "volume_surge": {
+        "avg_volume": 260152.25,
+        "ratio": 2.6868343441196454,
+        "volume": 698986
+      }
+    },
+    "close": 321.0,
+    "volume": 698986
+  },
+  {
+    "symbol": "HEADSUP.NS",
+    "instrument_token": 4916481,
+    "adx": 17.3,
+    "dmp": 20.66,
+    "dmn": 9.79,
+    "rsi": 61.98,
+    "macd": -4.57,
+    "macd_signal": -6.29,
+    "bb": 1.15,
+    "stochastic_k": 44.74,
+    "obv": 1581371.0,
+    "atr": 24.8,
+    "stop_loss": 685.79,
+    "score": 2.33,
+    "breakdown": {
+      "adx": null,
+      "atr": {
+        "atr": 24.79589699225556
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.29,
+        "rsi": 0.0
+      },
+      "dmp_dmn": {
+        "dmn": 9.792312411930657,
+        "dmp": 20.66412249591631,
+        "gap": 10.871810083985652
+      },
+      "late_entry_penalty": null,
+      "macd": null,
+      "obv": {
+        "obv": 1581371.0
+      },
+      "price_sma": {
+        "close": 707.0,
+        "sma50": 683.7679992675781
+      },
+      "rsi": {
+        "rsi": 61.977050205805675
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 43.21861104490277,
+        "rsi": 61.977050205805675
+      },
+      "rsi_slope": null,
+      "stochastic": null,
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 113580.85,
+        "ratio": 2.974946921069881,
+        "volume": 337897
+      }
+    },
+    "close": 707.0,
+    "volume": 337897
+  },
+  {
+    "symbol": "BLACKBUCK.NS",
+    "instrument_token": 6948865,
+    "adx": 25.2,
+    "dmp": 29.91,
+    "dmn": 12.59,
+    "rsi": 61.52,
+    "macd": 6.66,
+    "macd_signal": 4.36,
+    "bb": 0.97,
+    "stochastic_k": 61.17,
+    "obv": 1287906.0,
+    "atr": 21.49,
+    "stop_loss": 458.23,
+    "score": 2.2700000000000005,
+    "breakdown": {
+      "adx": {
+        "adx": 25.20217204273848
+      },
+      "atr": {
+        "atr": 21.49456868050967
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.0,
+        "rsi": 0.24
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 2.3004057574261587,
+        "macd": 6.66430164223533,
+        "macd_signal": 4.363895884809171
+      },
+      "obv": {
+        "obv": 1287906.0
+      },
+      "price_sma": {
+        "close": 472.3999938964844,
+        "sma50": 444.88099975585936
+      },
+      "rsi": {
+        "rsi": 61.52004481905492
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 55.725920034047704,
+        "rsi": 61.52004481905492
+      },
+      "rsi_slope": null,
+      "stochastic": null,
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 613266.75,
+        "ratio": 4.497602389172411,
+        "volume": 2758230
+      }
+    },
+    "close": 472.4,
+    "volume": 2758230
+  },
+  {
+    "symbol": "WEALTH.NS",
+    "instrument_token": 492289,
+    "adx": 20.43,
+    "dmp": 27.46,
+    "dmn": 12.5,
+    "rsi": 62.79,
+    "macd": 20.66,
+    "macd_signal": 15.47,
+    "bb": 1.1,
+    "stochastic_k": 74.2,
+    "obv": 237359.0,
+    "atr": 79.37,
+    "stop_loss": 1295.92,
+    "score": 1.84,
+    "breakdown": {
+      "adx": null,
+      "atr": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.41,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 5.191107311011603,
+        "macd": 20.65826160235906,
+        "macd_signal": 15.467154291347459
+      },
+      "price_sma": null,
+      "rsi": {
+        "rsi": 62.792517205226304
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 53.68046739232109,
+        "rsi": 62.792517205226304
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 61.24406845936603,
+        "%K": 74.19607126967554
+      },
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 7851.3,
+        "ratio": 6.528472991733853,
+        "volume": 51257
+      }
+    },
+    "close": 1336.0,
+    "volume": 51257
+  },
+  {
+    "symbol": "LIQUIDETF.NS",
+    "instrument_token": 493313,
+    "adx": 20.43,
+    "dmp": 27.46,
+    "dmn": 12.5,
+    "rsi": 62.79,
+    "macd": 20.66,
+    "macd_signal": 15.47,
+    "bb": 1.1,
+    "stochastic_k": 74.2,
+    "obv": 237359.0,
+    "atr": 79.37,
+    "stop_loss": 1295.92,
+    "score": 1.84,
+    "breakdown": {
+      "rsi": {
+        "rsi": 62.792517205226304
+      },
+      "rsi_above_avg": {
+        "rsi": 62.792517205226304,
+        "avg_rsi": 53.68046739232109
+      },
+      "macd": {
+        "macd": 20.65826160235906,
+        "macd_signal": 15.467154291347459,
+        "gap": 5.191107311011603,
+        "cap": 25
+      },
+      "stochastic": {
+        "%K": 74.19607126967554,
+        "%D": 61.24406845936603
+      },
+      "volume_surge": {
+        "volume": 51257,
+        "avg_volume": 7851.3,
+        "ratio": 6.528472991733853
+      },
+      "breakout_ready": {
+        "bb": 0,
+        "rsi": 0,
+        "macd_hist": 0.41
+      }
+    },
+    "close": 1336.0,
+    "volume": 51257
+  },
+  {
+    "symbol": "STALLION.NS",
+    "instrument_token": 7476225,
+    "adx": 61.62,
+    "dmp": 33.15,
+    "dmn": 4.78,
+    "rsi": 67.87,
+    "macd": 11.36,
+    "macd_signal": 9.85,
+    "bb": 0.85,
+    "stochastic_k": 76.41,
+    "obv": 4863762.0,
+    "atr": 10.0,
+    "stop_loss": 126.97,
+    "score": 1.7799999999999998,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.08,
+        "rsi": 0.07
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 1.5144477770058913,
+        "macd": 11.36465049176374,
+        "macd_signal": 9.850202714757849
+      },
+      "obv": {
+        "obv": 4863762.0
+      },
+      "price_sma": {
+        "close": 130.89999389648438,
+        "sma50": 92.49540008544922
+      },
+      "rsi": {
+        "rsi": 67.86940103563603
+      },
+      "rsi_above_avg": null,
+      "rsi_slope": {
+        "slope": 0.6127798447478009
+      },
+      "stochastic": {
+        "%D": 73.60476029256813,
+        "%K": 76.41112851483848
+      },
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 1495241.05,
+        "ratio": 1.6502623439879476,
+        "volume": 2467540
+      }
+    },
+    "close": 130.9,
+    "volume": 2467540
+  },
+  {
+    "symbol": "RALLIS.NS",
+    "instrument_token": 720897,
+    "adx": 47.38,
+    "dmp": 21.1,
+    "dmn": 9.56,
+    "rsi": 65.1,
+    "macd": 14.48,
+    "macd_signal": 14.2,
+    "bb": 0.81,
+    "stochastic_k": 75.63,
+    "obv": 78315870.0,
+    "atr": 16.97,
+    "stop_loss": 370.54,
+    "score": 1.6800000000000002,
+    "breakdown": {
+      "rsi": {
+        "rsi": 65.10061100205931
+      },
+      "rsi_above_avg": {
+        "rsi": 65.10061100205931,
+        "avg_rsi": 65.01958905555385
+      },
+      "bb": {
+        "%B": 0.811597597735298,
+        "width": 20.998888370227732
+      },
+      "dmp_dmn": {
+        "dmp": 21.103195447027513,
+        "dmn": 9.5626359687512,
+        "gap": 11.540559478276313
+      },
+      "obv": {
+        "obv": 78315870.0
+      },
+      "atr": {
+        "atr": 16.972065376133703
+      },
+      "stochastic": {
+        "%K": 75.63305932116435,
+        "%D": 74.5443048031475
+      },
+      "rsi_slope": {
+        "slope": 0.4879111880916511
+      },
+      "breakout_ready": {
+        "bb": 0,
+        "rsi": 0.05,
+        "macd_hist": 0
+      }
+    },
+    "close": 382.0,
+    "volume": 874131
+  },
+  {
+    "symbol": "GOLDCASE.NS",
+    "instrument_token": 5862657,
+    "adx": 32.74,
+    "dmp": 23.0,
+    "dmn": 8.26,
+    "rsi": 71.42,
+    "macd": 5.39,
+    "macd_signal": 4.2,
+    "bb": 1.06,
+    "stochastic_k": 76.48,
+    "obv": 9363911.0,
+    "atr": 8.98,
+    "stop_loss": 178.87,
+    "score": 1.52,
+    "breakdown": {
+      "adx": {
+        "adx": 32.74320059024972
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.18,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 1.1879605772144615,
+        "macd": 5.389240063622651,
+        "macd_signal": 4.20127948640819
+      },
+      "obv": {
+        "obv": 9363911.0
+      },
+      "price_sma": {
+        "close": 184.39999389648438,
+        "sma50": 156.46532586336798
+      },
+      "rsi": {
+        "rsi": 71.4210306674967
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 59.83054345998084,
+        "rsi": 71.4210306674967
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 64.88749239289228,
+        "%K": 76.47719061915622
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 184.4,
+    "volume": 471961
+  },
+  {
+    "symbol": "IOLCP.NS",
+    "instrument_token": 5225729,
+    "adx": 27.91,
+    "dmp": 21.75,
+    "dmn": 12.62,
+    "rsi": 63.0,
+    "macd": 2.54,
+    "macd_signal": 1.95,
+    "bb": 0.97,
+    "stochastic_k": 74.75,
+    "obv": 10389187.0,
+    "atr": 5.37,
+    "stop_loss": 99.52,
+    "score": 1.4900000000000002,
+    "breakdown": {
+      "adx": {
+        "adx": 27.906984698207793
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.1,
+        "rsi": 0.15
+      },
+      "dmp_dmn": {
+        "dmn": 12.618211960605263,
+        "dmp": 21.748337327383208,
+        "gap": 9.130125366777945
+      },
+      "late_entry_penalty": null,
+      "macd": null,
+      "obv": {
+        "obv": 10389187.0
+      },
+      "price_sma": {
+        "close": 102.5999984741211,
+        "sma50": 92.49099990844726
+      },
+      "rsi": {
+        "rsi": 63.00015056885954
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 57.59167516839883,
+        "rsi": 63.00015056885954
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 64.96462947794016,
+        "%K": 74.75083230509738
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 102.6,
+    "volume": 1878683
+  },
+  {
+    "symbol": "OSWALPUMPS.NS",
+    "instrument_token": 193741313,
+    "adx": 17.21,
+    "dmp": 23.1,
+    "dmn": 16.39,
+    "rsi": 64.37,
+    "macd": 18.8,
+    "macd_signal": 18.46,
+    "bb": 0.97,
+    "stochastic_k": 71.74,
+    "obv": 43996799.0,
+    "atr": 39.12,
+    "stop_loss": 761.45,
+    "score": 1.4900000000000002,
+    "breakdown": {
+      "adx": null,
+      "atr": {
+        "atr": 39.120214969049925
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0,
+        "macd_hist": 0.3,
+        "rsi": 0.0
+      },
+      "dmp_dmn": {
+        "dmn": 16.38702748888635,
+        "dmp": 23.104403610690486,
+        "gap": 6.717376121804136
+      },
+      "late_entry_penalty": null,
+      "macd": null,
+      "obv": {
+        "obv": 43996799.0
+      },
+      "rsi": {
+        "rsi": 64.36928262804706
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 62.11509295540595,
+        "rsi": 64.36928262804706
+      },
+      "stochastic": {
+        "%D": 55.591027304898994,
+        "%K": 71.74489269396526
+      },
+      "volume_surge": {
+        "avg_volume": 1360621.3,
+        "ratio": 1.6663505120785629,
+        "volume": 2267272
+      }
+    },
+    "close": 785.0,
+    "volume": 2267272
+  },
+  {
+    "symbol": "GATEWAY.NS",
+    "instrument_token": 2178561,
+    "adx": 15.97,
+    "dmp": 21.73,
+    "dmn": 14.5,
+    "rsi": 62.21,
+    "macd": 8.22,
+    "macd_signal": 0.05,
+    "bb": 1.1,
+    "stochastic_k": 68.67,
+    "obv": 23646836.0,
+    "atr": 80.24,
+    "stop_loss": 2862.47,
+    "score": 1.48,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.43,
+        "rsi": 0.0
+      },
+      "dmp_dmn": {
+        "dmn": 14.500988368074697,
+        "dmp": 21.72580595775266,
+        "gap": 7.224817589677961
+      },
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 8.165876461992902,
+        "macd": 8.217257892536509,
+        "macd_signal": 0.051381430543606665
+      },
+      "obv": {
+        "obv": 23646836.0
+      },
+      "price_sma": null,
+      "rsi": {
+        "rsi": 62.21223230733926
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 50.10357667068257,
+        "rsi": 62.21223230733926
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 51.32598258354809,
+        "%K": 68.6714311737322
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 2951.0,
+    "volume": 1159281
+  },
+  {
+    "symbol": "NESCO.NS",
+    "instrument_token": 3944705,
+    "adx": 24.72,
+    "dmp": 25.32,
+    "dmn": 8.39,
+    "rsi": 66.15,
+    "macd": 4.1,
+    "macd_signal": 3.41,
+    "bb": 1.23,
+    "stochastic_k": 50.2,
+    "obv": 2586677.0,
+    "atr": 15.09,
+    "stop_loss": 394.55,
+    "score": 1.43,
+    "breakdown": {
+      "adx": {
+        "adx": 24.721660281089953
+      },
+      "atr": {
+        "atr": 15.088748041019992
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.16,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "macd": null,
+      "obv": {
+        "obv": 2586677.0
+      },
+      "price_sma": {
+        "close": 406.75,
+        "sma50": 383.1607971329826
+      },
+      "rsi": {
+        "rsi": 66.1452957982355
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 57.13506176011106,
+        "rsi": 66.1452957982355
+      },
+      "rsi_slope": null,
+      "stochastic": null,
+      "stochastic_overbought": null,
+      "volume_surge": {
+        "avg_volume": 34763.4,
+        "ratio": 1.8669922964957397,
+        "volume": 64903
+      }
+    },
+    "close": 406.75,
+    "volume": 64903
+  },
+  {
+    "symbol": "APARINDS.NS",
+    "instrument_token": 2941697,
+    "adx": 35.77,
+    "dmp": 25.13,
+    "dmn": 6.81,
+    "rsi": 66.1,
+    "macd": 9.71,
+    "macd_signal": 6.77,
+    "bb": 1.11,
+    "stochastic_k": 71.39,
+    "obv": 36157356.0,
+    "atr": 39.11,
+    "stop_loss": 908.65,
+    "score": 1.4100000000000001,
+    "breakdown": {
+      "adx": null,
+      "atr": {
+        "atr": 39.10680114498792
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.38,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 2.9456186106776485,
+        "macd": 9.711052506192914,
+        "macd_signal": 6.765433895515265
+      },
+      "obv": {
+        "obv": 36157356.0
+      },
+      "price_sma": null,
+      "rsi": {
+        "rsi": 66.09524621051449
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 52.403724504931816,
+        "rsi": 66.09524621051449
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 52.33185943610919,
+        "%K": 71.38974587791576
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 936.75,
+    "volume": 272804
+  },
+  {
+    "symbol": "JAYNECOIND.NS",
+    "instrument_token": 596737,
+    "adx": 26.1,
+    "dmp": 25.08,
+    "dmn": 10.99,
+    "rsi": 62.62,
+    "macd": 2.9,
+    "macd_signal": 1.82,
+    "bb": 0.89,
+    "stochastic_k": 84.78,
+    "obv": 409946036.0,
+    "atr": 6.02,
+    "stop_loss": 51.41,
+    "score": 1.4000000000000001,
+    "breakdown": {
+      "adx": {
+        "adx": 26.100763546845005
+      },
+      "rsi": {
+        "rsi": 62.62041720179128
+      },
+      "rsi_above_avg": {
+        "rsi": 62.62041720179128,
+        "avg_rsi": 56.56315064865061
+      },
+      "price_sma": {
+        "close": 53.0,
+        "sma50": 41.52620010375976
+      },
+      "obv": {
+        "obv": 409946036.0
+      },
+      "stochastic": {
+        "%K": 84.7794700203736,
+        "%D": 83.85830963606215
+      },
+      "volume_surge": {
+        "volume": 159093606,
+        "avg_volume": 92690032.6,
+        "ratio": 1.7164046827619739
+      },
+      "rsi_slope": {
+        "slope": 0.18529421995136156
+      },
+      "breakout_ready": {
+        "bb": 0,
+        "rsi": 0,
+        "macd_hist": 0.04
+      }
+    },
+    "close": 53.0,
+    "volume": 159093606
+  },
+  {
+    "symbol": "NAVNETEDUL.NS",
+    "instrument_token": 610561,
+    "adx": 26.1,
+    "dmp": 25.08,
+    "dmn": 10.99,
+    "rsi": 62.62,
+    "macd": 2.9,
+    "macd_signal": 1.82,
+    "bb": 0.89,
+    "stochastic_k": 84.78,
+    "obv": 409938714.0,
+    "atr": 6.02,
+    "stop_loss": 51.41,
+    "score": 1.4000000000000001,
+    "breakdown": {
+      "adx": {
+        "adx": 26.100763546845005
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.04,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "obv": {
+        "obv": 409938714.0
+      },
+      "price_sma": {
+        "close": 53.0,
+        "sma50": 41.52620010375976
+      },
+      "rsi": {
+        "rsi": 62.62041720179128
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 56.56315064865061,
+        "rsi": 62.62041720179128
+      },
+      "rsi_slope": {
+        "slope": 0.18529421995136156
+      },
+      "stochastic": {
+        "%D": 83.85830963606215,
+        "%K": 84.7794700203736
+      },
+      "volume_surge": {
+        "avg_volume": 92689666.5,
+        "ratio": 1.716332467330649,
+        "volume": 159086284
+      }
+    },
+    "close": 53.0,
+    "volume": 159086284
+  },
+  {
+    "symbol": "TAINWALCHM.NS",
+    "instrument_token": 869377,
+    "adx": 32.02,
+    "dmp": 24.78,
+    "dmn": 9.2,
+    "rsi": 63.34,
+    "macd": 6.74,
+    "macd_signal": 4.85,
+    "bb": 0.95,
+    "stochastic_k": 56.07,
+    "obv": 1017148.0,
+    "atr": 21.15,
+    "stop_loss": 257.05,
+    "score": 1.3900000000000001,
+    "breakdown": {
+      "adx": {
+        "adx": 32.01904013656868
+      },
+      "atr": {
+        "atr": 21.153222998089714
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.11,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 1.8903628941260013,
+        "macd": 6.7394252267711465,
+        "macd_signal": 4.849062332645145
+      },
+      "obv": {
+        "obv": 1017148.0
+      },
+      "price_sma": {
+        "close": 265.0,
+        "sma50": 224.3081997680664
+      },
+      "rsi": {
+        "rsi": 63.34479973027034
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 54.668917797856956,
+        "rsi": 63.34479973027034
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 45.67928969876771,
+        "%K": 56.072637116809766
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 265.0,
+    "volume": 119023
+  },
+  {
+    "symbol": "AJOONI.NS",
+    "instrument_token": 871169,
+    "adx": 32.02,
+    "dmp": 24.78,
+    "dmn": 9.2,
+    "rsi": 63.34,
+    "macd": 6.74,
+    "macd_signal": 4.85,
+    "bb": 0.95,
+    "stochastic_k": 56.07,
+    "obv": 1017148.0,
+    "atr": 21.15,
+    "stop_loss": 257.05,
+    "score": 1.3900000000000001,
+    "breakdown": {
+      "adx": {
+        "adx": 32.01904013656868
+      },
+      "atr": {
+        "atr": 21.153222998089714
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.11,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 1.8903628941260013,
+        "macd": 6.7394252267711465,
+        "macd_signal": 4.849062332645145
+      },
+      "obv": {
+        "obv": 1017148.0
+      },
+      "price_sma": {
+        "close": 265.0,
+        "sma50": 224.3081997680664
+      },
+      "rsi": {
+        "rsi": 63.34479973027034
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 54.668917797856956,
+        "rsi": 63.34479973027034
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 45.67928969876771,
+        "%K": 56.072637116809766
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 265.0,
+    "volume": 119023
+  },
+  {
+    "symbol": "TATACHEM.NS",
+    "instrument_token": 871681,
+    "adx": 32.02,
+    "dmp": 24.78,
+    "dmn": 9.2,
+    "rsi": 63.34,
+    "macd": 6.74,
+    "macd_signal": 4.85,
+    "bb": 0.95,
+    "stochastic_k": 56.07,
+    "obv": 1017148.0,
+    "atr": 21.15,
+    "stop_loss": 257.05,
+    "score": 1.3900000000000001,
+    "breakdown": {
+      "adx": {
+        "adx": 32.01904013656868
+      },
+      "atr": {
+        "atr": 21.153222998089714
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.11,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 1.8903628941260013,
+        "macd": 6.7394252267711465,
+        "macd_signal": 4.849062332645145
+      },
+      "obv": {
+        "obv": 1017148.0
+      },
+      "price_sma": {
+        "close": 265.0,
+        "sma50": 224.3081997680664
+      },
+      "rsi": {
+        "rsi": 63.34479973027034
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 54.668917797856956,
+        "rsi": 63.34479973027034
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 45.67928969876771,
+        "%K": 56.072637116809766
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 265.0,
+    "volume": 119023
+  },
+  {
+    "symbol": "LICMFGOLD.NS",
+    "instrument_token": 6563841,
+    "adx": 19.44,
+    "dmp": 24.27,
+    "dmn": 11.85,
+    "rsi": 61.47,
+    "macd": -1.07,
+    "macd_signal": -1.34,
+    "bb": 1.02,
+    "stochastic_k": 34.98,
+    "obv": -11583953.0,
+    "atr": 5.53,
+    "stop_loss": 142.57,
+    "score": 1.33,
+    "breakdown": {
+      "adx": null,
+      "atr": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.14,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": null,
+      "obv": null,
+      "price_sma": {
+        "close": 146.97999572753906,
+        "sma50": 141.7263998413086
+      },
+      "rsi": {
+        "rsi": 61.465596286188784
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 44.460338250561556,
+        "rsi": 61.465596286188784
+      },
+      "rsi_slope": null,
+      "stochastic": null,
+      "volume_surge": {
+        "avg_volume": 56879.8,
+        "ratio": 2.6597139933684715,
+        "volume": 151284
+      }
+    },
+    "close": 146.98,
+    "volume": 151284
+  },
+  {
+    "symbol": "YATRA.NS",
+    "instrument_token": 4802561,
+    "adx": 35.01,
+    "dmp": 25.82,
+    "dmn": 5.54,
+    "rsi": 68.91,
+    "macd": 2.59,
+    "macd_signal": 1.22,
+    "bb": 1.02,
+    "stochastic_k": 79.87,
+    "obv": 12179731.0,
+    "atr": 4.82,
+    "stop_loss": 98.91,
+    "score": 1.32,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.04,
+        "rsi": 0.18
+      },
+      "dmp_dmn": null,
+      "macd": null,
+      "obv": {
+        "obv": 12179731.0
+      },
+      "price_sma": {
+        "close": 101.97000122070312,
+        "sma50": 91.9697998046875
+      },
+      "rsi": {
+        "rsi": 68.90722374026039
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 58.51498057337971,
+        "rsi": 68.90722374026039
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 75.93205674360702,
+        "%K": 79.87047200057123
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 101.97,
+    "volume": 578854
+  },
+  {
+    "symbol": "IDFNIFTYET.NS",
+    "instrument_token": 4808449,
+    "adx": 35.01,
+    "dmp": 25.82,
+    "dmn": 5.54,
+    "rsi": 68.91,
+    "macd": 2.59,
+    "macd_signal": 1.22,
+    "bb": 1.02,
+    "stochastic_k": 79.87,
+    "obv": 12179731.0,
+    "atr": 4.82,
+    "stop_loss": 98.91,
+    "score": 1.32,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.04,
+        "rsi": 0.18
+      },
+      "dmp_dmn": null,
+      "macd": null,
+      "obv": {
+        "obv": 12179731.0
+      },
+      "price_sma": {
+        "close": 101.97000122070312,
+        "sma50": 91.9697998046875
+      },
+      "rsi": {
+        "rsi": 68.90722374026039
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 58.51498057337971,
+        "rsi": 68.90722374026039
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 75.93205674360702,
+        "%K": 79.87047200057123
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 101.97,
+    "volume": 578854
+  },
+  {
+    "symbol": "ENDURANCE.NS",
+    "instrument_token": 4818433,
+    "adx": 35.01,
+    "dmp": 25.82,
+    "dmn": 5.54,
+    "rsi": 68.91,
+    "macd": 2.59,
+    "macd_signal": 1.22,
+    "bb": 1.02,
+    "stochastic_k": 79.87,
+    "obv": 12179731.0,
+    "atr": 4.82,
+    "stop_loss": 98.91,
+    "score": 1.32,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.04,
+        "rsi": 0.18
+      },
+      "dmp_dmn": null,
+      "macd": null,
+      "obv": {
+        "obv": 12179731.0
+      },
+      "price_sma": {
+        "close": 101.97000122070312,
+        "sma50": 91.9697998046875
+      },
+      "rsi": {
+        "rsi": 68.90722374026039
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 58.51498057337971,
+        "rsi": 68.90722374026039
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 75.93205674360702,
+        "%K": 79.87047200057123
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 101.97,
+    "volume": 578854
+  },
+  {
+    "symbol": "VERTOZ.NS",
+    "instrument_token": 4828929,
+    "adx": 35.01,
+    "dmp": 25.82,
+    "dmn": 5.54,
+    "rsi": 68.91,
+    "macd": 2.59,
+    "macd_signal": 1.22,
+    "bb": 1.02,
+    "stochastic_k": 79.87,
+    "obv": 12179731.0,
+    "atr": 4.82,
+    "stop_loss": 98.91,
+    "score": 1.32,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.04,
+        "rsi": 0.18
+      },
+      "dmp_dmn": null,
+      "macd": null,
+      "obv": {
+        "obv": 12179731.0
+      },
+      "price_sma": {
+        "close": 101.97000122070312,
+        "sma50": 91.9697998046875
+      },
+      "rsi": {
+        "rsi": 68.90722374026039
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 58.51498057337971,
+        "rsi": 68.90722374026039
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 75.93205674360702,
+        "%K": 79.87047200057123
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 101.97,
+    "volume": 578854
+  },
+  {
+    "symbol": "MAZDA.NS",
+    "instrument_token": 4829697,
+    "adx": 35.01,
+    "dmp": 25.82,
+    "dmn": 5.54,
+    "rsi": 68.91,
+    "macd": 2.59,
+    "macd_signal": 1.22,
+    "bb": 1.02,
+    "stochastic_k": 79.87,
+    "obv": 12179731.0,
+    "atr": 4.82,
+    "stop_loss": 98.91,
+    "score": 1.32,
+    "breakdown": {
+      "adx": null,
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.04,
+        "rsi": 0.18
+      },
+      "dmp_dmn": null,
+      "macd": null,
+      "obv": {
+        "obv": 12179731.0
+      },
+      "price_sma": {
+        "close": 101.97000122070312,
+        "sma50": 91.9697998046875
+      },
+      "rsi": {
+        "rsi": 68.90722374026039
+      },
+      "rsi_above_avg": {
+        "avg_rsi": 58.51498057337971,
+        "rsi": 68.90722374026039
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 75.93205674360702,
+        "%K": 79.87047200057123
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 101.97,
+    "volume": 578854
+  },
+  {
+    "symbol": "GILLANDERS.NS",
+    "instrument_token": 4566785,
+    "adx": 23.71,
+    "dmp": 18.93,
+    "dmn": 12.92,
+    "rsi": 60.2,
+    "macd": 3.06,
+    "macd_signal": 1.67,
+    "bb": 0.9,
+    "stochastic_k": 79.44,
+    "obv": 2097262.0,
+    "atr": 8.53,
+    "stop_loss": 140.64,
+    "score": 1.31,
+    "breakdown": {
+      "adx": {
+        "adx": 23.70543576110503
+      },
+      "bb": null,
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.09,
+        "rsi": 0.09
+      },
+      "dmp_dmn": {
+        "dmn": 12.922434985632885,
+        "dmp": 18.933415373325037,
+        "gap": 6.010980387692152
+      },
+      "late_entry_penalty": null,
+      "macd": null,
+      "obv": {
+        "obv": 2097262.0
+      },
+      "price_sma": {
+        "close": 144.99000549316406,
+        "sma50": 133.720400390625
+      },
+      "rsi": null,
+      "rsi_above_avg": {
+        "avg_rsi": 53.32234012769802,
+        "rsi": 60.19658117994333
+      },
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 76.2735723564557,
+        "%K": 79.44113616291958
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 144.99,
+    "volume": 41978
+  },
+  {
+    "symbol": "AUTOAXLES.NS",
+    "instrument_token": 71169,
+    "adx": 32.9,
+    "dmp": 28.41,
+    "dmn": 7.45,
+    "rsi": 63.65,
+    "macd": 8.53,
+    "macd_signal": 6.34,
+    "bb": 0.84,
+    "stochastic_k": 71.11,
+    "obv": 5465364.0,
+    "atr": 14.01,
+    "stop_loss": 229.89,
+    "score": 1.28,
+    "breakdown": {
+      "adx": {
+        "adx": 32.897119714069234
+      },
+      "bb": {
+        "%B": 0.8367889060816501,
+        "width": 30.03825568781089
+      },
+      "breakout_ready": {
+        "bb": 0.0,
+        "macd_hist": 0.16,
+        "rsi": 0.0
+      },
+      "dmp_dmn": null,
+      "late_entry_penalty": null,
+      "macd": {
+        "cap": 25,
+        "gap": 2.1861307006486737,
+        "macd": 8.529258164718925,
+        "macd_signal": 6.3431274640702515
+      },
+      "obv": {
+        "obv": 5465364.0
+      },
+      "price_sma": {
+        "close": 237.0,
+        "sma50": 205.20220001220704
+      },
+      "rsi": {
+        "rsi": 63.64752581497615
+      },
+      "rsi_above_avg": null,
+      "rsi_slope": null,
+      "stochastic": {
+        "%D": 68.81403660031017,
+        "%K": 71.10932482113293
+      },
+      "stochastic_overbought": null,
+      "volume_surge": null
+    },
+    "close": 237.0,
+    "volume": 173538
+  }
+]

@@ -24,5 +24,13 @@ def load_suggestions_file(index: str) -> list:
         return json.load(f)
 
 def suggestions_file_exists(index: str) -> bool:
-    return os.path.exists(get_suggestions_file_path(index))
+    path = get_suggestions_file_path(index)
+    if not os.path.exists(path):
+        return False
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+            return bool(data)  # True if list/dict is non-empty
+    except Exception:
+        return False
 

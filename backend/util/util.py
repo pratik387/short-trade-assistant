@@ -8,6 +8,7 @@ import math
 import json
 import time
 import functools
+from datetime import datetime, timedelta
 from jobs.refresh_holidays import download_nse_holidays
 from exceptions.exceptions import InvalidTokenException, DataUnavailableException
 from brokers.kite.kite_client import set_access_token_from_file
@@ -197,3 +198,8 @@ def is_trading_day(date):
         logger.warning(f"⚠️ is_trading_day fallback triggered: {e}")
         return True  # fallback to assume trading day
 
+def get_previous_trading_day(ref_date: datetime) -> datetime:
+    prev_day = ref_date - timedelta(days=1)
+    while not is_trading_day(prev_day):
+        prev_day -= timedelta(days=1)
+    return prev_day

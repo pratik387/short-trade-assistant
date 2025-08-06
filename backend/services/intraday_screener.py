@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time as dt_time
 import threading
 import time
 from typing import List
@@ -6,6 +6,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from brokers.kite.kite_broker import KiteBroker
 from config.logging_config import get_loggers
 from services.indicator_enrichment_service import compute_intraday_breakout_score
+from util.util import get_previous_trading_day
+
 
 logger, _ = get_loggers()
 
@@ -25,15 +27,21 @@ def rate_limited_fetch(symbol, broker, from_date, to_date):
 
 def intraday_filter_passed(symbol: str, broker, config) -> bool:
     try:
-        market_open = datetime.now().replace(hour=9, minute=15, second=0, microsecond=0)
         now = datetime.now().replace(second=0, microsecond=0)
+        market_open = now.replace(hour=9, minute=15)
+        market_close = now.replace(hour=15, minute=30)
 
-        if now < market_open:
-            logger.info("⚠️ Market not open yet — skipping intraday filter")
-            return False
+        if now < market_open or now > market_close:
+            logger.warning(f"⚠️ Market not live. Using last available candles for {symbol}. Suggest caution.")
+            
+            # get previous trading day at 15:30
+            prev_day = get_previous_trading_day(datetime.now())
+            to_date = datetime.combine(prev_day, dt_time(15, 30))
+            from_date = to_date - timedelta(minutes=25)
 
-        to_date = now - timedelta(minutes=5)
-        from_date = to_date - timedelta(minutes=20)
+        else:
+            to_date = datetime.now() - timedelta(minutes=5)
+            from_date = to_date - timedelta(minutes=25)
 
         df = rate_limited_fetch(symbol, broker, from_date, to_date)
         if df is None or df.empty or len(df) < 3:

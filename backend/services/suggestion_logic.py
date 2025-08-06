@@ -7,6 +7,7 @@ from services.entry_service import EntryService
 from services.indicator_enrichment_service import enrich_with_indicators_and_score
 from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
+from brokers.yahoo.yahoo_broker import YahooBroker
 from config.logging_config import get_loggers
 from services.intraday_screener import screen_intraday_candidates
 from util.suggestion_storage import (
@@ -23,17 +24,18 @@ logger, trade_logger = get_loggers()
 def get_filtered_stock_suggestions(strategy="swing", index="nifty_50"):
     try:
         config = load_filters()
-        data_provider = KiteBroker()
-        entry_service = EntryService(data_provider, config, index)
-
+        
         if suggestions_file_exists(index):
             suggestions = load_suggestions_file(index)
         else:
+            data_provider_yahoo = YahooBroker()
+            entry_service = EntryService(data_provider_yahoo, config, index)
             suggestions = entry_service.get_suggestions()
             store_suggestions_file(suggestions, index)
 
         if strategy == "intraday":
             suggestions = load_suggestions_file(index)
+            data_provider = KiteBroker()
             return screen_intraday_candidates(suggestions, data_provider, config)
         else:
             return suggestions
