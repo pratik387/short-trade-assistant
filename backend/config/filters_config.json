@@ -97,34 +97,10 @@
       "macd_weight": 0.5
     }
   },
-  "intraday_hard_filters": {
-    "min_breakout_score": 0.5,
-    "min_volume_ratio": 2.5,
-    "max_top_wick_ratio": 0.6,
-    "require_green_candle": true,
-    "require_all_green_candles": true,
-    "require_higher_highs": true
-  },
-  "intraday_filters": {
-    "volume_ratio": {
-      "weight": 0.25,
-      "min": 1.5
-    },
-    "above_vwap": {
-      "weight": 0.15
-    },
-    "green_candle": {
-      "weight": 0.1
-    },
-    "adx_slope": {
-      "weight": 0.2,
-      "min_adx": 20
-    },
-    "rsi_slope": {
-      "weight": 0.15
-    },
-    "range_position": {
-      "weight": 0.15
-    }
-  }
+"intraday_core_filters": {
+  "min_rsi": 60,
+  "min_adx": 25,
+  "min_volume_ratio": 1.5,
+  "max_green_candles": 2
+}
 }

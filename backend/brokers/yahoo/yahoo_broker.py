@@ -4,6 +4,8 @@ import yfinance as yf
 from typing import List
 from brokers.base_broker import BaseBroker
 from brokers.data.indexes import get_index_symbols
+from config.logging_config import get_loggers
+logger, _ = get_loggers()
 
 class YahooBroker(BaseBroker):
     def get_symbols(self, index):
@@ -13,7 +15,7 @@ class YahooBroker(BaseBroker):
         return symbol if symbol.endswith(".NS") else f"{symbol.upper()}.NS"
 
     def fetch_candles(self, symbol: str, interval: str, days: int = None,
-                      from_date: datetime = None, to_date: datetime = None) -> pd.DataFrame:
+                    from_date: datetime = None, to_date: datetime = None) -> pd.DataFrame:
         symbol = self.format_symbol(symbol)
 
         if not from_date or not to_date:
@@ -28,23 +30,31 @@ class YahooBroker(BaseBroker):
             "15minute": "15m"
         }.get(interval.lower(), "1d")
 
-        df = yf.download(symbol, start=from_date.strftime('%Y-%m-%d'),
-                         end=(to_date + timedelta(days=1)).strftime('%Y-%m-%d'),
-                         interval=yf_interval, progress=False)
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(start=from_date, end=to_date + timedelta(days=1), interval=yf_interval)
 
+        if df is None or df.empty:
+            logger.warning(f"[YahooBroker] No data returned for {symbol}")
+            return pd.DataFrame()
+        
+        df.index.name = "date"  # rename index
+        df.reset_index(inplace=True)
+        df["date"] = pd.to_datetime(df["date"]).dt.tz_localize(None)
+
+        df = df[["date", "Open", "High", "Low", "Close", "Volume"]]
+
+        # Rename and normalize
         df.rename(columns={
-            "Open": "open",
-            "High": "high",
-            "Low": "low",
-            "Close": "close",
-            "Volume": "volume"
+            "Open": "open", "High": "high", "Low": "low",
+            "Close": "close", "Volume": "volume"
         }, inplace=True)
 
-        df.dropna(inplace=True)
-        df.index.name = "date"
-        df.reset_index(inplace=True)
-        df["date"] = pd.to_datetime(df["date"])
-        df.set_index("date", inplace=True)
+        # Final sanity check
+        expected = {"date", "open", "high", "low", "close", "volume"}
+        actual = set(df.columns)
+        if not expected.issubset(actual):
+            logger.warning(f"[YahooBroker] ❌ Unexpected columns in {symbol}: {actual}")
+            return pd.DataFrame()
 
         return df
 

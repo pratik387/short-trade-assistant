@@ -36,7 +36,7 @@ def evaluate_symbol(item, config, candle_cache, as_of_date):
             return None
 
         latest = df.iloc[-1]
-
+        
         # Load thresholds from config
         MIN_AVG_VOLUME = config.get("min_volume")
         MIN_PRICE = config.get("min_price")
@@ -145,7 +145,6 @@ class EntryService:
 
         filtered_symbols, candle_cache = preload_daily_cache(
             symbols=symbols,
-            broker=self.data_provider,
             config=self.config,
             interval="day",
             lookback_days=self.config.get("lookback_days", 180),
@@ -166,7 +165,7 @@ class EntryService:
                     suggestions.append(result)
 
         suggestions.sort(key=self.tie_breaker)
-        top_n = suggestions[:30]
+        top_n = suggestions[:50]
         total_time = (time.perf_counter() - start_all)
         logger.info(
             "Completed get_suggestions: %d out of %d symbols, returned %d suggestions in %.2fs",

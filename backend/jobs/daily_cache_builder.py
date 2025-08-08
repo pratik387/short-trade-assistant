@@ -110,20 +110,10 @@ def fetch_and_update(symbol, broker, config, interval, lookback_days, cache_dir)
         if df_new is None or df_new.empty:
             return
         
-        df_new = df_new.rename(columns={
-            "Open": "open", "High": "high", "Low": "low",
-            "Close": "close", "Volume": "volume"
-        })
-        df_new.index.name = "date"
-        df_new = df_new.reset_index()
-        df_new["date"] = pd.to_datetime(df_new["date"]).dt.tz_localize(None)
-        df_new.columns = [str(col).lower() if isinstance(col, str) else "unknown" for col in df_new.columns]
         expected_columns = ["date", "open", "high", "low", "close", "volume"]
         if len(df_new.columns) != len(expected_columns):
             raise ValueError(f"Length mismatch: got {len(df_new.columns)} columns, expected {len(expected_columns)}")
         df_new.columns = expected_columns
-
-
 
         df = pd.concat([df_old, df_new]).drop_duplicates(subset="date").sort_values(by="date")
         df = enrich_with_indicators_and_score(df, config)
@@ -142,13 +132,14 @@ def fetch_and_update(symbol, broker, config, interval, lookback_days, cache_dir)
         logger.exception(f"❌ Error updating {symbol}: {e}")
         return
 
-def preload_daily_cache(symbols: List[dict], broker, config, interval, lookback_days, cache_dir):
+def preload_daily_cache(symbols: List[dict], config, interval, lookback_days, cache_dir):
     cached_data = {}
     filtered_symbols = []
     lock = threading.Lock()
 
     def worker(symbol_obj):
         symbol = symbol_obj.get("symbol")
+        broker = YahooBroker()
         df = fetch_and_update(symbol, broker, config, interval, lookback_days, cache_dir)
         if df is not None and not df.empty:
             with lock:

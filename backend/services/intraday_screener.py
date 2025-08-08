@@ -30,6 +30,8 @@ def intraday_filter_passed(symbol: str, broker, config) -> bool:
         now = datetime.now().replace(second=0, microsecond=0)
         market_open = now.replace(hour=9, minute=15)
         market_close = now.replace(hour=15, minute=30)
+        now = datetime.now()
+        mode = 'early' if now.hour == 9 and now.minute < 45 else 'normal'
 
         if now < market_open or now > market_close:
             logger.warning(f"⚠️ Market not live. Using last available candles for {symbol}. Suggest caution.")
@@ -37,29 +39,29 @@ def intraday_filter_passed(symbol: str, broker, config) -> bool:
             # get previous trading day at 15:30
             prev_day = get_previous_trading_day(datetime.now())
             to_date = datetime.combine(prev_day, dt_time(15, 30))
-            from_date = to_date - timedelta(minutes=25)
 
         else:
             to_date = datetime.now() - timedelta(minutes=5)
-            from_date = to_date - timedelta(minutes=25)
+
+        from_date = to_date - timedelta(minutes=60)
 
         df = rate_limited_fetch(symbol, broker, from_date, to_date)
         if df is None or df.empty or len(df) < 3:
             logger.info(f"⚠️ Not enough candles to screen {symbol}")
             return False
 
-        df = compute_intraday_breakout_score(df, config)
+        df = compute_intraday_breakout_score(df, config, symbol, mode)
         last = df.iloc[-1]
 
         if not last.get("passes_all_hard_filters", False):
             logger.debug(f"❌ {symbol} rejected: {last.get('debug_reasons', 'unspecified')}")
             return False
 
-        logger.info(f"✅ {symbol} passed intraday filter with score {last['breakout_score']:.2f}")
+        logger.info(f"✅ {symbol} passed intraday filter")
         return True
 
     except Exception as e:
-        logger.warning(f"⚠️ Intraday check failed for {symbol}: {e}")
+        logger.exception(f"⚠️ Intraday check failed for {symbol}: {e}")
         return False
 
 
