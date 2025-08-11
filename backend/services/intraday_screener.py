@@ -1,81 +1,301 @@
+# services/intraday_screener.py
 from datetime import datetime, timedelta, time as dt_time
 import threading
 import time
+import os
 from typing import List
-from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import pandas as pd
+
 from brokers.kite.kite_broker import KiteBroker
 from config.logging_config import get_loggers
 from services.indicator_enrichment_service import compute_intraday_breakout_score
 from util.util import get_previous_trading_day
 
+# helpers you already have in separate files
+from services.intraday.levels import (
+    opening_range,
+    yesterday_levels,    # used only in rare fallback
+    broke_above,
+    distance_bpct,
+)
+from services.intraday.ranker import rank_candidates
+from services.intraday.planner import make_plan
 
 logger, _ = get_loggers()
 
+# -------------------- Rate limiter (for REST fetches) --------------------
 rate_limit_lock = threading.Lock()
 last_api_call_time = [0]
 API_MIN_INTERVAL = 0.35
-MAX_WORKERS = 5
 
-def rate_limited_fetch(symbol, broker, from_date, to_date):
+def _rate_limit():
     with rate_limit_lock:
         elapsed = time.time() - last_api_call_time[0]
         if elapsed < API_MIN_INTERVAL:
             time.sleep(API_MIN_INTERVAL - elapsed)
         last_api_call_time[0] = time.time()
-    return broker.fetch_candles(symbol=symbol, interval="5minute", from_date=from_date, to_date=to_date)
 
+def rate_limited_fetch_5m(symbol, broker, from_date, to_date):
+    _rate_limit()
+    return broker.fetch_candles(
+        symbol=symbol, interval="5minute", from_date=from_date, to_date=to_date
+    )
 
-def intraday_filter_passed(symbol: str, broker, config) -> bool:
+def rate_limited_fetch_daily(symbol, broker, lookback_days=5):
+    """Tiny DAILY fallback for y-high if cache missing."""
+    _rate_limit()
+    to_date = datetime.now()
+    from_date = to_date - timedelta(days=lookback_days + 3)
+    return broker.fetch_candles(
+        symbol=symbol, interval="day", from_date=from_date, to_date=to_date
+    )
+
+# -------------------- Daily cache helper (cache → broker → ORB fallback) --------------------
+# cache/swing_ohlcv_cache/<SYMBOL>/<SYMBOL>_day.feather
+_BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))  # -> backend/
+_CACHE_ROOT = os.path.join(_BASE_DIR, "cache", "swing_ohlcv_cache")
+
+def _daily_cache_path(symbol: str) -> str:
+    return os.path.abspath(os.path.join(_CACHE_ROOT, symbol, f"{symbol}_day.feather"))
+
+def get_yesterday_levels_from_cache(symbol: str):
+    """
+    Returns (y_high, y_low) from daily Feather cache, or (nan, nan) if missing.
+    Assumes columns: date, open, high, low, close, volume.
+    """
     try:
-        now = datetime.now().replace(second=0, microsecond=0)
-        market_open = now.replace(hour=9, minute=15)
-        market_close = now.replace(hour=15, minute=30)
-        now = datetime.now()
-        mode = 'early' if now.hour == 9 and now.minute < 45 else 'normal'
-
-        if now < market_open or now > market_close:
-            logger.warning(f"⚠️ Market not live. Using last available candles for {symbol}. Suggest caution.")
-            
-            # get previous trading day at 15:30
-            prev_day = get_previous_trading_day(datetime.now())
-            to_date = datetime.combine(prev_day, dt_time(15, 30))
-
+        path = _daily_cache_path(symbol)
+        if not os.path.exists(path):
+            return float("nan"), float("nan")
+        df = pd.read_feather(path)
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+            df = df.sort_values("date")
         else:
-            to_date = datetime.now() - timedelta(minutes=5)
+            df = df.sort_index()
+            if "date" not in df.columns:
+                df = df.reset_index().rename(columns={"index": "date"})
+                df["date"] = pd.to_datetime(df["date"])
+        if len(df) < 2:
+            return float("nan"), float("nan")
+        latest_day = df["date"].iloc[-1].date()
+        today = datetime.now().date()
+        prev_row = df.iloc[-2] if latest_day == today else df.iloc[-1]
+        return float(prev_row["high"]), float(prev_row["low"])
+    except Exception:
+        return float("nan"), float("nan")
 
-        from_date = to_date - timedelta(minutes=60)
+# =====================================================================
+# ============ Single-path Phase‑1: rank + plans output ===============
+# =====================================================================
 
-        df = rate_limited_fetch(symbol, broker, from_date, to_date)
-        if df is None or df.empty or len(df) < 3:
-            logger.info(f"⚠️ Not enough candles to screen {symbol}")
-            return False
+def screen_and_rank_intraday_candidates(
+    suggestions: List[dict], broker: KiteBroker, config, top_n: int = 7
+) -> List[dict]:
+    """
+    Phase‑1 (REST‑only):
+      1) fetch last ~60 mins of 5m bars
+      2) compute intraday features (RSI/ADX/VWAP/volume/etc.) on CLOSED bars
+      3) lenient gate: price > vwap AND volume_ratio >= 1.3
+      4) require break of (Yesterday High from cache → broker → ORB‑15) with buffer
+      5) rank by 0.6*daily_score + 0.4*intraday_strength
+      6) attach a deterministic plan (entry zone, stop, targets)
+    Returns top N rows, JSON‑ready.
+    """
+    logger.info("🔍 [Intraday] Phase‑1 screen+rank (REST‑only) starting…")
 
-        df = compute_intraday_breakout_score(df, config, symbol, mode)
-        last = df.iloc[-1]
+    rows = []
 
-        if not last.get("passes_all_hard_filters", False):
-            logger.debug(f"❌ {symbol} rejected: {last.get('debug_reasons', 'unspecified')}")
-            return False
+    # time window like before
+    now = datetime.now().replace(second=0, microsecond=0)
+    market_open = now.replace(hour=9, minute=15)
+    market_close = now.replace(hour=15, minute=30)
 
-        logger.info(f"✅ {symbol} passed intraday filter")
-        return True
+    if now < market_open or now > market_close:
+        prev_day = get_previous_trading_day(datetime.now())
+        to_date = datetime.combine(prev_day, dt_time(15, 30))
+        logger.info(f"ℹ️ [Intraday] Market not live; using last session up to {to_date}")
+    else:
+        to_date = datetime.now() - timedelta(minutes=5)
+        logger.info(f"ℹ️ [Intraday] Live window ends at {to_date}")
+    from_date = to_date - timedelta(minutes=90)
 
-    except Exception as e:
-        logger.exception(f"⚠️ Intraday check failed for {symbol}: {e}")
-        return False
+    gate_cfg = config.get("intraday_gate")
+    min_vr = float(gate_cfg.get("min_volume_ratio"))
+    require_above_vwap = bool(gate_cfg.get("require_above_vwap"))
+    logger.info(f"ℹ️ [Intraday] Gates → min_volume_ratio={min_vr}, require_above_vwap={require_above_vwap}")
+
+    # Debug counters
+    dbg_counts = {
+        "start": 0,
+        "fetch_skip": 0,
+        "gate_fail": 0,
+        "level_fail": 0,
+        "break_fail": 0,
+        "final_pass": 0,
+    }
+
+    for s in suggestions:
+        sym = s.get("symbol")
+        if not sym:
+            continue
+        dbg_counts["start"] += 1
+        try:
+            logger.info(f"— ▶️ {sym}: fetching 5m {from_date} → {to_date}")
+            df5 = rate_limited_fetch_5m(sym, broker, from_date, to_date)
+            if df5 is None or df5.empty or len(df5) < 6:
+                dbg_counts["fetch_skip"] += 1
+                logger.info(f"— ⛔ {sym}: insufficient 5m bars (have={0 if df5 is None else len(df5)})")
+                continue
+
+            df5 = compute_intraday_breakout_score(df5, config, symbol=sym, mode="normal")
+            last = df5.iloc[-1]
+
+            # ----------------- Lenient gate -----------------
+            vr = float(last.get("volume_ratio", 0) or 0)
+            above = int(last.get("above_vwap", 0) or 0)
+            
+            close_px = float(last.get("close", float('nan')))
+            vwap_px = float(last.get("vwap", float('nan')))
+            if pd.notna(vwap_px):
+                vwap_str = f"{vwap_px:.2f}"
+            else:
+                vwap_str = "nan"
+
+            logger.info(
+                f"— 🔎 {sym}: VR={vr:.2f} | above_vwap={above} | close={close_px:.2f} | vwap={vwap_str}"
+            )
+            
+            relax_vwap_bpct = float(gate_cfg.get("vwap_relax_bpct", 0.2))  # 0.2% default buffer
+
+            vwap_check = True
+            if require_above_vwap:
+                if pd.notna(vwap_px) and close_px >= vwap_px * (1 - relax_vwap_bpct / 100):
+                    vwap_check = True
+                else:
+                    vwap_check = False
+
+            if not (vr >= min_vr and vwap_check):
+                dbg_counts["gate_fail"] += 1
+                logger.info(f"— ⛔ {sym}: gate fail (VR={vr:.2f} < {min_vr} or close not within {relax_vwap_bpct:.2f}% of VWAP)")
+                continue
 
 
-def screen_intraday_candidates(suggestions: List[dict], broker: KiteBroker, config) -> List[dict]:
-    logger.info("🔍 Running intraday screener with threading")
-    passed = []
-    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-        futures = {
-            executor.submit(intraday_filter_passed, s["symbol"], broker, config): s for s in suggestions
+            # ----------------- Level selection -----------------
+            y_hi, _y_lo = get_yesterday_levels_from_cache(sym)
+            level_px = y_hi
+            chosen_level_name = "y_high(cache)"
+
+            if not (level_px == level_px):  # NaN check
+                logger.info(f"— ℹ️ {sym}: y_high cache missing; trying broker daily…")
+                dfd = rate_limited_fetch_daily(sym, broker, lookback_days=5)
+                if dfd is not None and not dfd.empty:
+                    try:
+                        y2_hi, _ = yesterday_levels(dfd)
+                        level_px = y2_hi
+                        chosen_level_name = "y_high(broker)"
+                    except Exception:
+                        dfd = dfd.copy()
+                        if "date" in dfd.columns:
+                            dfd["date"] = pd.to_datetime(dfd["date"])
+                            dfd = dfd.sort_values("date")
+                        if len(dfd) >= 2:
+                            level_px = float(dfd.iloc[-2]["high"])
+                            chosen_level_name = "y_high(broker-manual)"
+                        else:
+                            level_px = float("nan")
+
+            if not (level_px == level_px):  # still NaN → ORB fallback
+                logger.info(f"— ℹ️ {sym}: y_high unavailable; using ORB‑15 fallback…")
+                orb_hi, _ = opening_range(df5)
+                level_px = orb_hi
+                chosen_level_name = "orb15_high"
+
+            if pd.isna(level_px):
+                dbg_counts["level_fail"] += 1
+                logger.info(f"— ⛔ {sym}: level selection failed (NaN after fallbacks)")
+                continue
+
+            logger.info(f"— 📏 {sym}: level={chosen_level_name} @ {level_px:.2f}")
+
+            # ----------------- Breakout check -----------------
+            if not broke_above(level_px, close_px):
+                dist = distance_bpct(level_px, close_px)
+                dbg_counts["break_fail"] += 1
+                logger.info(f"— ⛔ {sym}: no break (close={close_px:.2f}, level={level_px:.2f}, dist={dist:.2f}%)")
+                continue
+
+            # ----------------- Feature collection for ranking/plan -----------------
+            dist = distance_bpct(level_px, close_px)
+
+            adx_val = float(last.get("ADX_ACTIVE", 0) or 0)
+            adx_slope = float(last.get("adx_slope", 0) or 0)
+
+            rsi_val = float(last.get("RSI", 0) or 0)
+            rsi_slope = float(last.get("rsi_slope", 0) or 0)
+
+            # ATR-like proxy: mean of last 5 ranges (robust for planning)
+            try:
+                atr_proxy = float((df5["high"] - df5["low"]).rolling(5).mean().iloc[-1])
+                if pd.isna(atr_proxy):
+                    atr_proxy = float((df5["high"] - df5["low"]).tail(5).mean())
+            except Exception:
+                atr_proxy = 0.0
+
+            rows.append(
+                {
+                    "symbol": sym,
+                    "daily_score": float(s.get("score", 0.0)),
+                    "level": {
+                        "name": chosen_level_name,
+                        "px": float(level_px),
+                    },
+                    "intraday": {
+                        "volume_ratio": vr,
+                        "rsi": rsi_val,
+                        "rsi_slope": rsi_slope,
+                        "adx": adx_val,
+                        "adx_slope": adx_slope,
+                        "above_vwap": above,
+                        "dist_from_level_bpct": float(dist if dist == dist else 9.99),
+                    },
+                    "last_close": close_px,
+                    "vwap": float(last.get("vwap", float("nan"))),
+                    "atr5": float(atr_proxy or 0.0),
+                }
+            )
+            dbg_counts["final_pass"] += 1
+            logger.info(f"— ✅ {sym}: PASSED gate+break | ADX={adx_val:.2f} (slope {adx_slope:.2f}), RSI={rsi_val:.2f} (slope {rsi_slope:.2f}), VR={vr:.2f}, dist={dist:.2f}%")
+
+        except Exception as e:
+            # We log at info as requested
+            logger.info(f"— ⚠️ {sym}: exception, skipping → {e}")
+
+    # ----------------- Rank & attach plans -----------------
+    ranked = rank_candidates(rows, top_n=top_n)
+    for r in ranked:
+        plan = make_plan(
+            r["level"]["px"], r["last_close"], r.get("atr5", 0.0), r.get("vwap", float("nan"))
+        )
+        r["plan"] = {
+            "entry_note": plan["entry_note"],
+            "entry_zone": plan["entry_zone"],
+            "stop": plan["stop"],
+            "targets": plan["targets"],
+            "confidence": plan["confidence"],
+            "rr_first": plan["rr_first"],
         }
-        for future in as_completed(futures):
-            symbol_obj = futures[future]
-            if future.result():
-                passed.append(symbol_obj)
 
-    logger.info(f"✅ {len(passed)}/{len(suggestions)} passed intraday filter")
-    return passed
+    # Summary
+    logger.info(
+        "[Intraday Summary] start=%d | fetch_skip=%d | gate_fail=%d | level_fail=%d | break_fail=%d | final_pass=%d",
+        dbg_counts["start"],
+        dbg_counts["fetch_skip"],
+        dbg_counts["gate_fail"],
+        dbg_counts["level_fail"],
+        dbg_counts["break_fail"],
+        dbg_counts["final_pass"],
+    )
+    logger.info(f"✅ Prepared {len(ranked)} ranked picks with plans")
+    return ranked

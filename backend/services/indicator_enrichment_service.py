@@ -52,7 +52,7 @@ def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
         logger.warning(f"[ADX] failed: {e}")
         df.attrs["missing_indicators"].append("ADX")
         df["ADX_14"] = df["DMP_14"] = df["DMN_14"] = None
-    adx_df = adx(df["high"], df["low"], df["close"])
+        adx_df = adx(df["high"], df["low"], df["close"])
 
     try:
         df["OBV"] = obv(df["close"], df["volume"])
@@ -122,7 +122,7 @@ def enrich_with_indicators(df: pd.DataFrame) -> pd.DataFrame:
         def get_pattern_name(row):
             for col in pattern_df.columns:
                 if row[col] != 0:
-                    return col.replace("CDL_", "")  # return cleaned pattern name
+                    return col.replace("CDL_", "")
             return None
 
         df["CANDLE_PATTERN"] = pattern_df.apply(get_pattern_name, axis=1)
@@ -143,7 +143,7 @@ def calculate_entry_score(df: pd.DataFrame, config: dict) -> pd.DataFrame:
         score, breakdown, extras = calculate_score(row, config, full_df=df.iloc[:i+1])
         scores.append(score)
 
-        # ✅ Flatten breakdown to a single merged dict
+        # Flatten breakdown list into a dict of filter -> details
         merged = {}
         if isinstance(breakdown, list):
             for item in breakdown:
@@ -160,24 +160,17 @@ def calculate_entry_score(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     df.reset_index(inplace=True)
     return df
 
-
 def enrich_with_indicators_and_score(df: pd.DataFrame, config: dict) -> pd.DataFrame:
     df = enrich_with_indicators(df)
     df = calculate_entry_score(df, config)
     return df
 
 def calculate_fibonacci_levels(series: pd.Series) -> dict:
-    """
-    Given a price series (usually 20-day close), calculate key Fibonacci retracement levels.
-    Returns a dictionary with levels: 0.0, 0.236, 0.382, 0.5, 0.618, 0.786, 1.0
-    """
     if series.empty or len(series) < 2:
         return {}
-
     high = series.max()
     low = series.min()
     diff = high - low
-
     return {
         "0.0": round(high, 2),
         "0.236": round(high - 0.236 * diff, 2),
@@ -194,93 +187,99 @@ def calculate_slope(series: pd.Series, window: int = 3) -> pd.Series:
         raw=False
     )
 
+# -------------------------------------------------------
+# Intraday metrics (Wilder-14, closed bars, no hard gates)
+# -------------------------------------------------------
+def _drop_forming_last_bar(df: pd.DataFrame) -> pd.DataFrame:
+    """Remove the last row if it is likely the still-forming 5‑min candle."""
+    try:
+        ts = pd.to_datetime(df.iloc[-1]["date"] if "date" in df.columns else df.index[-1])
+        # consider a bar "closed" if it's <= now-5min
+        if ts > pd.Timestamp.now(tz=ts.tz) - pd.Timedelta(minutes=5):
+            return df.iloc[:-1].copy()
+    except Exception:
+        pass
+    return df
 
 def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str = None, mode: str = 'normal') -> pd.DataFrame:
+    """
+    Returns a dataframe enriched with intraday features on CLOSED 5-min bars:
+      - VWAP
+      - RSI(14) Wilder (RMA)
+      - ADX(14) (Wilder)
+      - simple slopes for RSI/ADX over last 3 bars
+      - short-term volume metrics
+      - above_vwap / green-candle streak
+    No pass/fail flags here — gating is done in the screener.
+    """
     df = df.copy()
+    if df is None or df.empty:
+        return df
 
-    core = config.get("intraday_core_filters", {})
+    # Use closed bars only
+    df = _drop_forming_last_bar(df)
 
-    # VWAP (manual for few candles)
-    typical_price = (df['high'] + df['low'] + df['close']) / 3
-    df['vwap'] = (typical_price * df['volume']).cumsum() / df['volume'].cumsum()
+    # VWAP
+    try:
+        typical_price = (df["high"] + df["low"] + df["close"]) / 3.0
+        df["vwap"] = (typical_price * df["volume"]).cumsum() / df["volume"].cumsum()
+    except Exception:
+        df["vwap"] = np.nan
 
-    # True RSI and slope
-    df['RSI'] = rsi(df['close'], length=5)
-    df['rsi_slope'] = calculate_slope(df['RSI'], window=3)
+    # Wilder settings (match Kite/TV defaults)
+    params = config.get("intraday_params")
+    rsi_len = int(params.get("rsi_len"))
+    adx_len = int(params.get("adx_len"))
 
-    # ADX and slope using pandas_ta
-    adx_df = adx(df['high'], df['low'], df['close'], length=5)
-    df['ADX_5'] = adx_df['ADX_5']
-    df['adx_slope'] = calculate_slope(df['ADX_5'], window=3)
+    # RSI(14) Wilder via pandas_ta (mamode='rma')
+    try:
+        df["RSI"] = rsi(df["close"], length=rsi_len)
+    except Exception as e:
+        logger.warning(f"[RSI intraday] failed: {e}")
+        df["RSI"] = np.nan
+
+    # ADX 14 and 7 fallback
+    def compute_adx_safe(df, length):
+        try:
+            adx_df = adx(df["high"], df["low"], df["close"], length=length, mamode="rma")
+            return adx_df[f"ADX_{length}"], adx_df[f"DMP_{length}"], adx_df[f"DMN_{length}"]
+        except Exception:
+            return pd.Series(np.nan, index=df.index), pd.Series(np.nan, index=df.index), pd.Series(np.nan, index=df.index)
+
+    # Primary ADX_14
+    df[f"ADX_{adx_len}"], df[f"DMP_{adx_len}"], df[f"DMN_{adx_len}"] = compute_adx_safe(df, adx_len)
+    # Backup ADX_7
+    df["ADX_7"], df["DMP_7"], df["DMN_7"] = compute_adx_safe(df, 7)
+
+    # ADX_ACTIVE → fallback to ADX_7 if ADX_14 not available
+    df["ADX_ACTIVE"] = df[f"ADX_{adx_len}"].combine_first(df["ADX_7"])
+
+
+    # Slopes (simple, transparent)
+    def simple_slope(s: pd.Series, win: int = 3) -> pd.Series:
+        try:
+            return (s - s.shift(win)) / win
+        except Exception:
+            return pd.Series(index=s.index, dtype=float)
+
+    df["rsi_slope"] = simple_slope(df["RSI"], win=3)
+    df["adx_slope"] = simple_slope(df["ADX_ACTIVE"], win=3)
 
     # Volume surge (short-term)
-    df['volume_avg_5'] = df['volume'].rolling(5).mean()
-    df['volume_ratio'] = df['volume'] / df['volume_avg_5']
+    try:
+        df["volume_avg_5"] = df["volume"].rolling(5).mean()
+        df["volume_ratio"] = df["volume"] / df["volume_avg_5"]
+    except Exception:
+        df["volume_ratio"] = np.nan
 
     # Candle info
-    df['is_green'] = (df['close'] > df['open']).astype(int)
-    df['above_vwap'] = (df['close'] > df['vwap']).astype(int)
-    df['is_green_rolling_sum_3'] = df['is_green'].rolling(3).sum()
+    try:
+        df["is_green"] = (df["close"] > df["open"]).astype(int)
+        df["above_vwap"] = (df["close"] > df["vwap"]).astype(int)
+        df["is_green_rolling_sum_3"] = df["is_green"].rolling(3).sum()
+    except Exception:
+        df["above_vwap"] = 0
+        df["is_green_rolling_sum_3"] = np.nan
 
-    # Core filters from config
-    df['passes_rsi'] = (df['RSI'] > core["min_rsi"]) & (df['rsi_slope'] > 0)
-    df['passes_adx'] = (df['ADX_5'] > core["min_adx"]) & (df['adx_slope'] > 0)
-    df['passes_volume'] = df['volume_ratio'] > core["min_volume_ratio"]
-    df['passes_vwap'] = df['close'] > df['vwap']
-    df['not_late'] = df['is_green_rolling_sum_3'] <= core["max_green_candles"]
-
-    # Early vs normal mode
-    if mode == 'early':
-        df['passes_all_hard_filters'] = (
-            df['passes_volume'] &
-            df['passes_vwap']
-        )
-    else:
-        df['passes_all_hard_filters'] = (
-            df['passes_rsi'] &
-            df['passes_adx'] &
-            df['passes_volume'] &
-            df['passes_vwap'] &
-            df['not_late']
-        )
-
-    row = df.iloc[-1]
-    reasons = []
-    values = {}
-    if not row['passes_rsi']:
-        reasons.append("rsi")
-        values["RSI"] = round(row['RSI'], 2)
-        values["RSI_slope"] = round(row['rsi_slope'], 2)
-    if not row['passes_adx']:
-        reasons.append("adx")
-        values["ADX"] = round(row['ADX_5'], 2) if not pd.isna(row['ADX_5']) else None
-        values["ADX_slope"] = round(row['adx_slope'], 2) if not pd.isna(row['adx_slope']) else None
-    if not row['passes_volume']:
-        reasons.append("volume")
-        values["volume_ratio"] = round(row['volume_ratio'], 2)
-    if not row['passes_vwap']:
-        reasons.append("vwap")
-        values["close"] = round(row['close'], 2)
-        values["vwap"] = round(row['vwap'], 2)
-    if not row['not_late']:
-        reasons.append("late_entry")
-        values["green_candle_count"] = int(0 if pd.isna(row.get('is_green_rolling_sum_3')) else row['is_green_rolling_sum_3'])
-
-    if reasons:
-        logger.info(json.dumps({
-            "symbol": symbol,
-            "timestamp": str(row.name),
-            "status": "REJECTED",
-            "reasons": reasons,
-            "values": values,
-            "mode": mode
-        }))
-    else:
-        logger.info(json.dumps({
-            "symbol": symbol,
-            "timestamp": str(row.name),
-            "status": "PASSED",
-            "mode": mode
-        }))
-
+    # No pass/fail booleans or logs here — the screener will decide using lenient gates.
     return df

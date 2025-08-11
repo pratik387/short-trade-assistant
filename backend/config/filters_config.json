@@ -97,10 +97,17 @@
       "macd_weight": 0.5
     }
   },
-"intraday_core_filters": {
-  "min_rsi": 60,
-  "min_adx": 25,
-  "min_volume_ratio": 1.5,
-  "max_green_candles": 2
+"intraday_gate": {
+  "min_volume_ratio": 1.1,          
+  "require_above_vwap": true,    
+  "vwap_relax_bpct": 0.2,   
+  "min_rsi": 40,                    
+  "max_rsi": 70,                    
+  "min_adx": 15,                    
+  "max_adx": 50                     
+},
+"intraday_params": {
+  "rsi_len": 14,
+  "adx_len": 14
 }
 }

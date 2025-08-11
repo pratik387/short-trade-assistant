@@ -9,22 +9,28 @@ from exceptions.exceptions import InvalidTokenException
 from brokers.kite.kite_broker import KiteBroker
 from brokers.yahoo.yahoo_broker import YahooBroker
 from config.logging_config import get_loggers
-from services.intraday_screener import screen_intraday_candidates
+
+# NEW: use the single-path intraday screen+rank
+from services.intraday_screener import screen_and_rank_intraday_candidates
+
 from util.suggestion_storage import (
     store_suggestions_file,
     load_suggestions_file,
     suggestions_file_exists,
 )
 
-# Set up logging first
 logger, trade_logger = get_loggers()
 
 
-
-def get_filtered_stock_suggestions(strategy="swing", index="nifty_50"):
+def get_filtered_stock_suggestions(strategy="swing", index="nifty_50", top_n_intraday: int = 7):
+    """
+    Entry point used by routes. For 'swing' keeps legacy behavior (no changes).
+    For 'intraday', runs the new Phase-1 screen+rank to return a compact list
+    of high-quality picks with plan objects.
+    """
     try:
         config = load_filters()
-        
+
         if suggestions_file_exists(index):
             suggestions = load_suggestions_file(index)
         else:
@@ -34,9 +40,14 @@ def get_filtered_stock_suggestions(strategy="swing", index="nifty_50"):
             store_suggestions_file(suggestions, index)
 
         if strategy == "intraday":
-            suggestions = load_suggestions_file(index)
             data_provider = KiteBroker()
-            return screen_intraday_candidates(suggestions, data_provider, config)
+            # New: single-path ranked picks with plans (VWAP+vol gate, level-break confirm)
+            return screen_and_rank_intraday_candidates(
+                suggestions=suggestions,
+                broker=data_provider,
+                config=config,
+                top_n=top_n_intraday,
+            )
         else:
             return suggestions
 

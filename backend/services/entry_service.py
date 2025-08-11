@@ -165,7 +165,7 @@ class EntryService:
                     suggestions.append(result)
 
         suggestions.sort(key=self.tie_breaker)
-        top_n = suggestions[:50]
+        top_n = suggestions[:100]
         total_time = (time.perf_counter() - start_all)
         logger.info(
             "Completed get_suggestions: %d out of %d symbols, returned %d suggestions in %.2fs",
