@@ -97,17 +97,34 @@
       "macd_weight": 0.5
     }
   },
-"intraday_gate": {
-  "min_volume_ratio": 1.1,          
-  "require_above_vwap": true,    
-  "vwap_relax_bpct": 0.2,   
-  "min_rsi": 40,                    
-  "max_rsi": 70,                    
-  "min_adx": 15,                    
-  "max_adx": 50                     
-},
-"intraday_params": {
-  "rsi_len": 14,
-  "adx_len": 14
-}
+  "intraday_gate": {
+    "min_volume_ratio": 1.1,
+    "require_above_vwap": true,
+    "vwap_relax_bpct": 0.2,
+    "min_rsi": 40,
+    "max_rsi": 70,
+    "min_adx": 15,
+    "max_adx": 50
+  },
+  "intraday_params": {
+    "rsi_len": 14,
+    "adx_len": 14
+  },
+  "swing_gate": {
+    "enabled": true,
+    "min_rsi": 50,
+    "max_rsi": 70,
+    "min_adx": 20,
+    "max_adx": 50,
+    "rsi_slope_min": 0,
+    "adx_slope_min": 0,
+    "require_above_vwap": true,
+    "require_volume_surge": true,
+    "volume_surge_lookback": 5,
+    "volume_surge_ratio": 1.2
+  },
+  "swing_params": {
+    "rsi_len": 14,
+    "adx_len": 14
+  }
 }

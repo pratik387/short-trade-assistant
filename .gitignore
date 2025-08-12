@@ -2,3 +2,5 @@
 .vscode/launch.json
 *.feather
 .score_cache/
+backend/cache/
+node_modules/

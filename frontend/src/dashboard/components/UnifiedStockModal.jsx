@@ -25,7 +25,7 @@ export default function UnifiedStockModal({ entryResult, exitResult, onClose, mo
               onClick={() => setActiveTab("entry")}
               className={`px-3 py-1 rounded ${activeTab === "entry" ? "bg-blue-500 text-white" : "bg-gray-200"}`}
             >
-              Entry Score
+              Entry Plan
             </button>
             <button
               onClick={() => setActiveTab("exit")}
@@ -37,55 +37,79 @@ export default function UnifiedStockModal({ entryResult, exitResult, onClose, mo
         )}
 
         {activeTab === "entry" && (
-          <div className="space-y-1">
+          <div className="space-y-2 text-sm">
             <p>Score: <strong>{entryResult.score}</strong></p>
-            <p className={suggestionColor}>Suggestion: {entryResult.suggestion.toUpperCase()}</p>
+            <p className={suggestionColor}>Suggestion: {entryResult.suggestion?.toUpperCase()}</p>
             <p>Close Price: ₹{entryResult.close}</p>
             <p>Volume: {typeof entryResult.volume === "number" ? entryResult.volume.toLocaleString() : "N/A"}</p>
+
+            {entryResult.entry_zone && (
+              <p>Entry Zone: ₹{entryResult.entry_zone[0]} – ₹{entryResult.entry_zone[1]}</p>
+            )}
+            {entryResult.stop && <p>Stop Loss: ₹{entryResult.stop}</p>}
+            {entryResult.targets?.length >= 2 && (
+              <p>Targets: ₹{entryResult.targets[0]} / ₹{entryResult.targets[1]}</p>
+            )}
+            {entryResult.rr_first && <p>RR (Target 1): {entryResult.rr_first}</p>}
+            {entryResult.confidence && <p>Confidence: {entryResult.confidence}</p>}
+            {entryResult.entry_note && <p className="italic text-gray-600">Note: {entryResult.entry_note}</p>}
+
+            {entryResult.breakdown?.length > 0 && (
+              <div>
+                <p className="font-medium mt-2">Filter Breakdown:</p>
+                <ul className="list-disc list-inside">
+                  {entryResult.breakdown.map((b, i) => (
+                    <li key={i}>
+                      <strong>{b.filter}</strong> (w: {b.weight}) – {b.details ? JSON.stringify(b.details) : ""}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === "exit" && (
-  <div className="space-y-1">
-    {exitResult ? (
-      <>
-        <p>Entry Price: ₹{exitResult.entry_price}</p>
-        <p>Current Price: ₹{exitResult.current_price}</p>
-        <p>P&L: ₹{exitResult.pnl}</p>
-        <p>P&L %: {exitResult.pnl_percent}%</p>
-        <p>Days Held: {exitResult.days_held}</p>
-        <p className={recommendationColor}>Recommendation: {exitResult.recommendation}</p>
-        {exitResult.exit_reason && (
-          <p className="italic text-sm text-gray-600">Reason: {exitResult.exit_reason}</p>
-        )}
-        {exitResult.reasons?.length > 0 && (
-          <div>
-            <p>Reasons:</p>
-            <ul className="list-disc list-inside text-sm">
-              {exitResult.reasons.map((r, i) => (
-                <li key={i}>{r.reason}</li>
-              ))}
-            </ul>
+          <div className="space-y-1 text-sm">
+            {exitResult ? (
+              <>
+                <p>Entry Price: ₹{exitResult.entry_price}</p>
+                <p>Current Price: ₹{exitResult.current_price}</p>
+                <p>P&L: ₹{exitResult.pnl}</p>
+                <p>P&L %: {exitResult.pnl_percent}%</p>
+                <p>Days Held: {exitResult.days_held}</p>
+                <p className={recommendationColor}>Recommendation: {exitResult.recommendation}</p>
+                {exitResult.exit_reason && (
+                  <p className="italic text-sm text-gray-600">Reason: {exitResult.exit_reason}</p>
+                )}
+                {exitResult.reasons?.length > 0 && (
+                  <div>
+                    <p>Reasons:</p>
+                    <ul className="list-disc list-inside text-sm">
+                      {exitResult.reasons.map((r, i) => (
+                        <li key={i}>{r.reason}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {exitResult.breakdown?.length > 0 && (
+                  <div>
+                    <p>Filter Breakdown:</p>
+                    <ul className="list-disc list-inside text-sm">
+                      {exitResult.breakdown.map(([filter, weight, reason], i) => (
+                        <li key={i}>
+                          <strong>{filter}</strong> (w: {weight}) – {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="text-gray-500 italic">No exit result available.</p>
+            )}
           </div>
         )}
-        {exitResult.breakdown?.length > 0 && (
-          <div>
-            <p>Filter Breakdown:</p>
-            <ul className="list-disc list-inside text-sm">
-              {exitResult.breakdown.map(([filter, weight, reason], i) => (
-                <li key={i}>
-                  <strong>{filter}</strong> (w: {weight}) – {reason}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </>
-    ) : (
-      <p className="text-gray-500 italic">No exit result available.</p>
-    )}
-  </div>
-)}
 
         <div className="flex justify-end pt-4">
           <button

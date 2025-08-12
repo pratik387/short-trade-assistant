@@ -12,6 +12,7 @@ from config.logging_config import get_loggers
 
 # NEW: use the single-path intraday screen+rank
 from services.intraday_screener import screen_and_rank_intraday_candidates
+from services.swing_screener import screen_and_rank_swing_candidates
 
 from util.suggestion_storage import (
     store_suggestions_file,
@@ -49,7 +50,14 @@ def get_filtered_stock_suggestions(strategy="swing", index="nifty_50", top_n_int
                 top_n=top_n_intraday,
             )
         else:
-            return suggestions
+            data_provider = KiteBroker()
+            # New: single-path ranked picks with plans (VWAP+vol gate, level-break confirm)
+            return screen_and_rank_swing_candidates(
+                suggestions=suggestions,
+                broker=data_provider,
+                config=config,
+                top_n=top_n_intraday,
+            )
 
     except InvalidTokenException:
         raise
