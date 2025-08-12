@@ -276,7 +276,16 @@ def screen_and_rank_intraday_candidates(
     ranked = rank_candidates(rows, top_n=top_n)
     for r in ranked:
         plan = make_plan(
-            r["level"]["px"], r["last_close"], r.get("atr5", 0.0), r.get("vwap", float("nan"))
+            symbol=r["symbol"],
+            indicators=r["intraday"],
+            context={
+                "price": r["last_close"],
+                "vwap": r.get("vwap", float("nan")),
+                "orb_high": r["level"]["px"],
+                "orb_low": None,  # optional
+                "prev_high": r["level"]["px"],
+                "prev_low": None
+            }
         )
         r["plan"] = {
             "entry_note": plan["entry_note"],

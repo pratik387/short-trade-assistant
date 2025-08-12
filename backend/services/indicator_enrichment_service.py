@@ -216,8 +216,9 @@ def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str 
     if df is None or df.empty:
         return df
 
-    # Use closed bars only
-    df = _drop_forming_last_bar(df)
+    # Use closed bars only — drop only if sufficient candles
+    if len(df) > 4:
+        df = _drop_forming_last_bar(df)
 
     # VWAP
     try:
@@ -233,7 +234,10 @@ def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str 
 
     # RSI(14) Wilder via pandas_ta (mamode='rma')
     try:
-        df["RSI"] = rsi(df["close"], length=rsi_len)
+        if len(df) >= rsi_len:
+            df["RSI"] = rsi(df["close"], length=rsi_len)
+        else:
+            df["RSI"] = np.nan
     except Exception as e:
         logger.warning(f"[RSI intraday] failed: {e}")
         df["RSI"] = np.nan
@@ -241,8 +245,11 @@ def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str 
     # ADX 14 and 7 fallback
     def compute_adx_safe(df, length):
         try:
-            adx_df = adx(df["high"], df["low"], df["close"], length=length, mamode="rma")
-            return adx_df[f"ADX_{length}"], adx_df[f"DMP_{length}"], adx_df[f"DMN_{length}"]
+            if len(df) >= length:
+                adx_df = adx(df["high"], df["low"], df["close"], length=length, mamode="rma")
+                return adx_df[f"ADX_{length}"], adx_df[f"DMP_{length}"], adx_df[f"DMN_{length}"]
+            else:
+                return pd.Series(np.nan, index=df.index), pd.Series(np.nan, index=df.index), pd.Series(np.nan, index=df.index)
         except Exception:
             return pd.Series(np.nan, index=df.index), pd.Series(np.nan, index=df.index), pd.Series(np.nan, index=df.index)
 
@@ -281,5 +288,4 @@ def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str 
         df["above_vwap"] = 0
         df["is_green_rolling_sum_3"] = np.nan
 
-    # No pass/fail booleans or logs here — the screener will decide using lenient gates.
     return df

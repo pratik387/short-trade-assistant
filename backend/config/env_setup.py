@@ -35,5 +35,6 @@ class EnvConfig:
     YOUR_PHONE         = os.getenv("YOUR_PHONE")
     FRONTEND_URL       = os.getenv("FRONTEND_URL")
     TRADE_MODE         = os.getenv("TRADE_MODE", "mock").lower()
+    OPENAI_API_KEY     = os.getenv("OPENAI_API_KEY")
 
 env = EnvConfig()
