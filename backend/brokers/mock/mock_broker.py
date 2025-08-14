@@ -56,6 +56,8 @@ class MockBroker(BaseBroker):
                     df = pd.read_feather(file_path)
                     df = df.set_index("date").sort_index()
                     df = df.sort_values("date")
+                    if df.index.tz is not None:
+                        df.index = df.index.tz_convert("Asia/Kolkata").tz_localize(None)
                     if from_date:
                         df = df[df.index >= from_date]
                     if to_date:
@@ -101,6 +103,8 @@ class MockBroker(BaseBroker):
         interval = interval or self.interval
         if interval == "day":
             interval = "1d"
+        if interval == "5minute":
+            interval = "5m"
         folder = self.cache_root / symbol
         if not folder.exists():
             return None

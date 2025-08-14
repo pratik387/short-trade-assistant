@@ -7,7 +7,6 @@ from typing import List
 
 import pandas as pd
 
-from brokers.kite.kite_broker import KiteBroker
 from config.logging_config import get_loggers
 from services.indicator_enrichment_service import compute_intraday_breakout_score
 from util.util import get_previous_trading_day
@@ -20,7 +19,8 @@ from services.intraday.levels import (
     distance_bpct,
 )
 from services.intraday.ranker import rank_candidates
-from services.intraday.planner import make_plan
+# from services.intraday.planner import make_plan
+from services.intraday.planner_internal import generate_trade_plan
 
 logger, _ = get_loggers()
 
@@ -91,7 +91,13 @@ def get_yesterday_levels_from_cache(symbol: str):
 # =====================================================================
 
 def screen_and_rank_intraday_candidates(
-    suggestions: List[dict], broker: KiteBroker, config, top_n: int = 7
+    suggestions,
+    broker,
+    config,
+    top_n=7,
+    *,
+    override_from_date: datetime | None = None,
+    override_to_date: datetime | None = None,
 ) -> List[dict]:
     """
     Phase‑1 (REST‑only):
@@ -120,11 +126,16 @@ def screen_and_rank_intraday_candidates(
         to_date = datetime.now() - timedelta(minutes=5)
         logger.info(f"ℹ️ [Intraday] Live window ends at {to_date}")
     from_date = to_date - timedelta(minutes=90)
+    
+    # ✅ apply overrides individually (don’t tie them together)
+    if override_to_date is not None:
+        to_date = override_to_date
+    if override_from_date is not None:
+        from_date = override_from_date
 
     gate_cfg = config.get("intraday_gate")
     min_vr = float(gate_cfg.get("min_volume_ratio"))
     require_above_vwap = bool(gate_cfg.get("require_above_vwap"))
-    logger.info(f"ℹ️ [Intraday] Gates → min_volume_ratio={min_vr}, require_above_vwap={require_above_vwap}")
 
     # Debug counters
     dbg_counts = {
@@ -146,7 +157,7 @@ def screen_and_rank_intraday_candidates(
             df5 = rate_limited_fetch_5m(sym, broker, from_date, to_date)
             if df5 is None or df5.empty or len(df5) < 6:
                 dbg_counts["fetch_skip"] += 1
-                logger.info(f"— ⛔ {sym}: insufficient 5m bars (have={0 if df5 is None else len(df5)})")
+                logger.debug(f"— ⛔ {sym}: insufficient 5m bars (have={0 if df5 is None else len(df5)})")
                 continue
 
             df5 = compute_intraday_breakout_score(df5, config, symbol=sym, mode="normal")
@@ -163,7 +174,7 @@ def screen_and_rank_intraday_candidates(
             else:
                 vwap_str = "nan"
 
-            logger.info(
+            logger.debug(
                 f"— 🔎 {sym}: VR={vr:.2f} | above_vwap={above} | close={close_px:.2f} | vwap={vwap_str}"
             )
             
@@ -178,7 +189,7 @@ def screen_and_rank_intraday_candidates(
 
             if not (vr >= min_vr and vwap_check):
                 dbg_counts["gate_fail"] += 1
-                logger.info(f"— ⛔ {sym}: gate fail (VR={vr:.2f} < {min_vr} or close not within {relax_vwap_bpct:.2f}% of VWAP)")
+                logger.debug(f"— ⛔ {sym}: gate fail (VR={vr:.2f} < {min_vr} or close not within {relax_vwap_bpct:.2f}% of VWAP)")
                 continue
 
 
@@ -188,7 +199,7 @@ def screen_and_rank_intraday_candidates(
             chosen_level_name = "y_high(cache)"
 
             if not (level_px == level_px):  # NaN check
-                logger.info(f"— ℹ️ {sym}: y_high cache missing; trying broker daily…")
+                logger.debug(f"— ℹ️ {sym}: y_high cache missing; trying broker daily…")
                 dfd = rate_limited_fetch_daily(sym, broker, lookback_days=5)
                 if dfd is not None and not dfd.empty:
                     try:
@@ -223,7 +234,7 @@ def screen_and_rank_intraday_candidates(
             if not broke_above(level_px, close_px):
                 dist = distance_bpct(level_px, close_px)
                 dbg_counts["break_fail"] += 1
-                logger.info(f"— ⛔ {sym}: no break (close={close_px:.2f}, level={level_px:.2f}, dist={dist:.2f}%)")
+                logger.debug(f"— ⛔ {sym}: no break (close={close_px:.2f}, level={level_px:.2f}, dist={dist:.2f}%)")
                 continue
 
             # ----------------- Feature collection for ranking/plan -----------------
@@ -263,6 +274,7 @@ def screen_and_rank_intraday_candidates(
                     "last_close": close_px,
                     "vwap": float(last.get("vwap", float("nan"))),
                     "atr5": float(atr_proxy or 0.0),
+                    "df": df5,
                 }
             )
             dbg_counts["final_pass"] += 1
@@ -273,28 +285,37 @@ def screen_and_rank_intraday_candidates(
             logger.info(f"— ⚠️ {sym}: exception, skipping → {e}")
 
     # ----------------- Rank & attach plans -----------------
+    final_ranked = []
+
     ranked = rank_candidates(rows, top_n=top_n)
     for r in ranked:
-        plan = make_plan(
-            symbol=r["symbol"],
-            indicators=r["intraday"],
-            context={
-                "price": r["last_close"],
-                "vwap": r.get("vwap", float("nan")),
-                "orb_high": r["level"]["px"],
-                "orb_low": None,  # optional
-                "prev_high": r["level"]["px"],
-                "prev_low": None
-            }
-        )
+        # plan = make_plan(
+        #     symbol=r["symbol"],
+        #     indicators=r["intraday"],
+        #     context={
+        #         "price": r["last_close"],
+        #         "vwap": r.get("vwap", float("nan")),
+        #         "orb_high": r["level"]["px"],
+        #         "orb_low": None,  # optional
+        #         "prev_high": r["level"]["px"],
+        #         "prev_low": None
+        #     }
+        # )
+        df = r.get("df")
+        if df is None or df.empty:
+            continue
+        plan = generate_trade_plan(df=df, symbol=r["symbol"], config=config)
+        if not plan:
+            continue 
         r["plan"] = {
-            "entry_note": plan["entry_note"],
-            "entry_zone": plan["entry_zone"],
+            "entry_note": plan["entry"]["trigger"],
+            "entry_zone": plan["entry"]["zone"],
             "stop": plan["stop"],
             "targets": plan["targets"],
-            "confidence": plan["confidence"],
-            "rr_first": plan["rr_first"],
+            "confidence": plan["strategy"],
+            "rr_first": plan["targets"][0]["rr"] if plan.get("targets") else None,
         }
+        final_ranked.append(r)
 
     # Summary
     logger.info(
@@ -306,5 +327,5 @@ def screen_and_rank_intraday_candidates(
         dbg_counts["break_fail"],
         dbg_counts["final_pass"],
     )
-    logger.info(f"✅ Prepared {len(ranked)} ranked picks with plans")
-    return ranked
+    logger.info(f"✅ Prepared {len(final_ranked)} ranked picks with plans")
+    return final_ranked
