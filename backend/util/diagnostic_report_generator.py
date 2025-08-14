@@ -5,6 +5,7 @@ import pandas as pd
 class DiagnosticsTracker:
     def __init__(self):
         self.trades = []
+        self.intraday_diagnostics = []
 
     def record_entry(self, symbol, entry_time, entry_price, score, filters=None, indicators=None):
         trade = {
@@ -45,12 +46,60 @@ class DiagnosticsTracker:
                     "result": "win" if pnl > 0 else ("loss" if pnl < 0 else "neutral")
                 })
                 return
+            
+    def record_intraday_entry_diagnostics(self, symbol, entry_time, price, trade_id, plan, df, reasons):
+        last_close = df["close"].iloc[-1]
+        vwap = df["vwap"].iloc[-1] if "vwap" in df.columns else None
+        high = df["high"].max()
+        low = df["low"].min()
+        volatility = round((high - low) / last_close, 4)
 
+        record = {
+            "trade_id": trade_id,
+            "symbol": symbol,
+            "entry_time": entry_time.isoformat(),
+            "entry_price": price,
+            "confidence": plan.get("confidence"),
+            "rr_first": plan.get("rr_first"),
+            "entry_zone": plan.get("entry_zone"),
+            "stop": plan.get("stop", {}).get("hard"),
+            "t1": plan.get("targets", [{}])[0].get("level"),
+            "atr": plan.get("atr"),
+            "vwap": vwap,
+            "close": last_close,
+            "volatility": volatility,
+            "rsi": reasons.get("rsi"),
+            "rsi_slope": reasons.get("rsi_slope"),
+            "adx": reasons.get("adx"),
+            "adx_slope": reasons.get("adx_slope"),
+            "volume_ratio": reasons.get("volume_ratio"),
+            "dist_from_level_bpct": reasons.get("dist_from_level_bpct"),
+        }
+
+        self.intraday_diagnostics.append(record)
+        
+    def record_intraday_exit_diagnostics(self, trade_id, exit_price, pnl, exit_time, reason):
+        for row in self.intraday_diagnostics:
+            if row.get("trade_id") == trade_id:
+                row["exit_price"] = exit_price
+                row["exit_time"] = exit_time
+                row["pnl"] = pnl
+                row["exit_reason"] = reason
+                return
 
     def export(self, output_path):
         df = pd.DataFrame(self.trades)
         df.to_csv(output_path, index=False)
         print(f"✅ Diagnostics exported to: {output_path}")
+        
+    def export_intraday_diagnostics(self, path: str):
+        if not self.intraday_diagnostics:
+            print("⚠️ No intraday diagnostics recorded — skipping export.")
+            return
+
+        df = pd.DataFrame(self.intraday_diagnostics)
+        df.to_csv(path, index=False)
+
 
 
 if __name__ == "__main__":

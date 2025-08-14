@@ -153,7 +153,7 @@ def screen_and_rank_intraday_candidates(
             continue
         dbg_counts["start"] += 1
         try:
-            logger.info(f"— ▶️ {sym}: fetching 5m {from_date} → {to_date}")
+            logger.debug(f"— ▶️ {sym}: fetching 5m {from_date} → {to_date}")
             df5 = rate_limited_fetch_5m(sym, broker, from_date, to_date)
             if df5 is None or df5.empty or len(df5) < 6:
                 dbg_counts["fetch_skip"] += 1
@@ -228,7 +228,7 @@ def screen_and_rank_intraday_candidates(
                 logger.info(f"— ⛔ {sym}: level selection failed (NaN after fallbacks)")
                 continue
 
-            logger.info(f"— 📏 {sym}: level={chosen_level_name} @ {level_px:.2f}")
+            logger.debug(f"— 📏 {sym}: level={chosen_level_name} @ {level_px:.2f}")
 
             # ----------------- Breakout check -----------------
             if not broke_above(level_px, close_px):

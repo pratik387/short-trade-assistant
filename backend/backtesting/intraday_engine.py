@@ -32,6 +32,7 @@ from brokers.mock.mock_broker import MockBroker
 from trade_recorder import TradeRecorder
 from config.filters_setup import load_filters
 from config.logging_config import get_loggers
+from util.diagnostic_report_generator import diagnostics_tracker
 
 logger, trade_logger = get_loggers()
 config = load_filters()
@@ -41,7 +42,7 @@ CACHE_BASE = ROOT / "backtesting" / "ohlcv_archive"
 TOP_N = 12
 INTERVAL_MIN = 5
 START_TIME = (9, 20)
-END_TIME = (15, 30)
+END_TIME = (15, 15)
 LOOKBACK_MIN = 90
 
 @dataclass
@@ -104,15 +105,16 @@ class IntradayBacktestEngine:
 
         self._force_flatten(date_ist)
     def run(self) -> Dict[str, Any]:
+        logger.info(f"🚀 Starting backtest: {self.cfg.test_date.date()} to {self.cfg.end_date.date() if self.cfg.end_date else self.cfg.test_date.date()}")
         current_date = self.cfg.test_date.date()
         final_date = self.cfg.end_date.date() if self.cfg.end_date else current_date
 
         while current_date <= final_date:
-            print(f"📅 Running for {current_date}")
+            logger.info(f"📅 Running for {current_date}")
             suggestion_file = self._resolve_suggestion_file(current_date)
 
             if not suggestion_file.exists():
-                print(f"⚠️ Skipping {current_date} — suggestions file not found: {suggestion_file.name}")
+                logger.warning(f"⚠️ Skipping {current_date} — suggestions file not found: {suggestion_file.name}")
                 current_date += timedelta(days=1)
                 continue
             self.suggestions = self._load_suggestions(str(suggestion_file))
@@ -158,6 +160,8 @@ class IntradayBacktestEngine:
         return "long" if t1 >= mid else "short"
 
     def _evaluate_entries(self, ranked: List[Dict[str, Any]], tick: datetime) -> List[Dict[str, Any]]:
+        if tick.time() >= dt_time(15, 0):
+            return []
         events: List[Dict[str, Any]] = []
         for row in ranked:
             sym = row.get("symbol")
@@ -186,6 +190,7 @@ class IntradayBacktestEngine:
 
             enter = in_zone(close) or (low <= z_hi and high >= z_lo and in_zone((high + low + close) / 3.0))
             if not enter:
+                logger.debug(f"[{sym}] Zone mismatch at {tick}: close={close}, zone={zone}, high={high}, low={low}")
                 continue
 
             # ✅ Always 1 share for win-rate testing
@@ -214,8 +219,31 @@ class IntradayBacktestEngine:
             )
             self.open_trades.append(trade)
 
+            logger.info(f"✅ ENTRY: {sym} at {close:.2f} (tick: {tick.strftime('%H:%M')})")
+            trade_logger.info(json.dumps({
+                "event": "ENTRY",
+                "symbol": sym,
+                "trade_id": trade_id,
+                "time": tick.strftime("%Y-%m-%d %H:%M"),
+                "price": close,
+                "side": side,
+                "zone": zone,
+                "stop": stop_hard,
+                "t1": t1_level,
+                "investment": investment
+            }))
+
             # Record using project TradeRecorder API
             self.recorder.record_entry(symbol=sym, date=tick.isoformat(), price=close, investment=investment)
+            diagnostics_tracker.record_intraday_entry_diagnostics(
+                symbol=sym,
+                entry_time=tick,
+                price=close,
+                trade_id = trade_id,
+                plan=plan,
+                df=df,
+                reasons=row.get("intraday")
+            )
             events.append({"symbol": sym, "trade_id": trade_id, "reason": "entry_zone_met"})
         return events
 
@@ -249,8 +277,21 @@ class IntradayBacktestEngine:
                     exit_price = trade.t1
 
             if exit_reason:
+                logger.debug(f"[{trade.symbol}] Exit triggered at {tick}: close={close}, reason={exit_reason}, price={exit_price}")
+                trade_logger.info(json.dumps({
+                    "event": "EXIT",
+                    "symbol": trade.symbol,
+                    "trade_id": trade.trade_id,
+                    "time": tick.strftime("%Y-%m-%d %H:%M"),
+                    "price": exit_price,
+                    "reason": exit_reason
+                }))
                 # Record with project TradeRecorder
                 self.recorder.record_exit(symbol=trade.symbol, date=tick.isoformat(), exit_price=exit_price)
+                pnl = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
+                diagnostics_tracker.record_intraday_exit_diagnostics(
+                   trade_id=trade.trade_id, exit_price=exit_price, pnl=pnl, exit_time=tick.strftime("%Y-%m-%d %H:%M"), reason=exit_reason
+                )
                 self.open_trades.remove(trade)
                 events.append({"symbol": trade.symbol, "trade_id": trade.trade_id, "reason": exit_reason})
         return events
@@ -258,69 +299,57 @@ class IntradayBacktestEngine:
     def _force_flatten(self, day: Optional[datetime.date] = None):
         if not self.open_trades:
             return
+
         day = day or self.cfg.test_date.date()
-        eod_time = dt_time(*END_TIME)
-        tick = datetime.combine(day, eod_time)
+        eod_candidates = [
+            (dt_time(*END_TIME), "default EOD flatten"),
+        ]
 
-        for trade in list(self.open_trades):
-            df = self.broker.fetch_candles(trade.symbol, interval="5m", from_date=tick - timedelta(minutes=30), to_date=tick)
-            if df is None or df.empty:
-                exit_price = trade.meta.get("last_close", trade.entry_price)
-            else:
-                last = df.iloc[-1]
-                exit_price = float(last.get("close", last.get("Close", trade.entry_price)))
+        for eod_time, label in eod_candidates:
+            if not self.open_trades:
+                return
 
-            pnl = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
-            self.recorder.record_exit(
-                trade_id=trade.trade_id,
-                exit_time=tick.isoformat(),
-                exit_price=exit_price,
-                exit_reason="EOD",
-                pnl=pnl,
-            )
-            self.open_trades.remove(trade)
-        # Force close remaining trades near EOD (cfg.eod_flatten_time)
-        if not self.open_trades:
-            return
-        eod_time = dt_time(self.cfg.eod_flatten_time[0], self.cfg.eod_flatten_time[1])
-        tick = datetime.combine(self.cfg.test_date.date(), eod_time)
-        for trade in list(self.open_trades):
-            df = self.broker.fetch_candles(trade.symbol, interval="5m", from_date=tick - timedelta(minutes=30), to_date=tick)
-            if df is None or df.empty:
-                exit_price = trade.meta.get("last_close", trade.entry_price)
-            else:
-                last = df.iloc[-1]
-                exit_price = float(last.get("close", last.get("Close", trade.entry_price)))
-            self.recorder.record_exit(symbol=trade.symbol, date=tick.isoformat(), exit_price=exit_price)
-            self.open_trades.remove(trade)
-        # Force close remaining trades near EOD (cfg.eod_flatten_time)
-        if not self.open_trades:
-            return
-        eod_time = dt_time(self.cfg.eod_flatten_time[0], self.cfg.eod_flatten_time[1])
-        tick = datetime.combine(self.cfg.test_date.date(), eod_time)
-        for trade in list(self.open_trades):
-            df = self.broker.fetch_candles(trade.symbol, interval="5m", from_date=tick - timedelta(minutes=30), to_date=tick)
-            if df is None or df.empty:
-                # fall back to last known price
-                exit_price = trade.t1 if trade.side == "long" else trade.t1
-            else:
-                last = df.iloc[-1]
-                exit_price = float(last["close"]) if "close" in last else float(last.get("Close", trade.entry_price))
-            pnl = (exit_price - trade.entry_price) * (trade.qty if trade.side == "long" else -trade.qty)
-            self.recorder.close_trade(
-                trade_id=trade.trade_id,
-                exit_time=tick.isoformat(),
-                exit_price=exit_price,
-                exit_reason="EOD",
-                pnl=pnl,
-            )
-            self.open_trades.remove(trade)
+            tick = datetime.combine(day, eod_time)
+
+            for trade in list(self.open_trades):
+                df = self.broker.fetch_candles(
+                    trade.symbol,
+                    interval="5m",
+                    from_date=tick - timedelta(minutes=30),
+                    to_date=tick
+                )
+
+                if df is None or df.empty:
+                    exit_price = trade.meta.get("last_close", trade.entry_price)
+                else:
+                    last = df.iloc[-1]
+                    exit_price = float(last.get("close", last.get("Close", trade.entry_price)))
+
+                pnl = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
+                self.recorder.record_exit(
+                    symbol=trade.symbol,
+                    date=tick.isoformat(),
+                    exit_price=exit_price
+                )
+                diagnostics_tracker.record_intraday_exit_diagnostics(
+                   trade_id=trade.trade_id, exit_price=exit_price, pnl=pnl, exit_time=tick.strftime("%Y-%m-%d %H:%M"), reason="EOD"
+                )
+                trade_logger.info(json.dumps({
+                    "event": "EXIT",
+                    "symbol": trade.symbol,
+                    "trade_id": trade.trade_id,
+                    "time": tick.strftime("%Y-%m-%d %H:%M"),
+                    "price": exit_price,
+                    "reason": "EOD",
+                    "pnl": pnl
+                }))
+                self.open_trades.remove(trade)
 
 
 # ----------------------------- Convenience CLI -----------------------------
 if __name__ == "__main__":
     TEST_DAY = datetime.strptime("2023-01-02", "%Y-%m-%d")
-    END_DAY = datetime.strptime("2023-01-03", "%Y-%m-%d")
+    END_DAY = datetime.strptime("2023-01-02", "%Y-%m-%d")
 
     ENGINE = IntradayBacktestEngine(
         EngineConfig(
