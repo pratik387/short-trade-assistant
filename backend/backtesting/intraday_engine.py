@@ -33,6 +33,7 @@ from trade_recorder import TradeRecorder
 from config.filters_setup import load_filters
 from config.logging_config import get_loggers
 from util.diagnostic_report_generator import diagnostics_tracker
+from util.util import is_trading_day
 
 logger, trade_logger = get_loggers()
 config = load_filters()
@@ -86,6 +87,7 @@ class IntradayBacktestEngine:
         )
         for tick in ticks:
             from_dt = tick - timedelta(minutes=LOOKBACK_MIN)
+            logger.info(f" Running screener at tick: {tick.strftime('%H:%M')}")
             try:
                 ranked = screen_and_rank_intraday_candidates(
                     self.suggestions,
@@ -110,9 +112,14 @@ class IntradayBacktestEngine:
         final_date = self.cfg.end_date.date() if self.cfg.end_date else current_date
 
         while current_date <= final_date:
+            if not is_trading_day(current_date):
+                logger.info(f"⏩ Skipping {current_date} — market not active")
+                current_date += timedelta(days=1)
+                continue
+            
             logger.info(f"📅 Running for {current_date}")
             suggestion_file = self._resolve_suggestion_file(current_date)
-
+            
             if not suggestion_file.exists():
                 logger.warning(f"⚠️ Skipping {current_date} — suggestions file not found: {suggestion_file.name}")
                 current_date += timedelta(days=1)
@@ -348,7 +355,7 @@ class IntradayBacktestEngine:
 
 # ----------------------------- Convenience CLI -----------------------------
 if __name__ == "__main__":
-    TEST_DAY = datetime.strptime("2023-01-02", "%Y-%m-%d")
+    TEST_DAY = datetime.strptime("2023-01-01", "%Y-%m-%d")
     END_DAY = datetime.strptime("2023-01-02", "%Y-%m-%d")
 
     ENGINE = IntradayBacktestEngine(

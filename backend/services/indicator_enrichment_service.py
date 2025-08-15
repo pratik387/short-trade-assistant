@@ -287,5 +287,25 @@ def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str 
     except Exception:
         df["above_vwap"] = 0
         df["is_green_rolling_sum_3"] = np.nan
+        
+    # SQUEEZE (BB width & rolling percentile)
+    try:
+        bb_win = int(config.get("squeeze", {}).get("window", 20))
+        rank_win = int(config.get("squeeze", {}).get("rank_window", 30))
+        ma = df["close"].rolling(bb_win, min_periods=bb_win).mean()
+        sd = df["close"].rolling(bb_win, min_periods=bb_win).std()
+        df["bb_width"] = (4.0 * sd) / ma
+
+        def _pct_rank_last(x):
+            sx = pd.Series(x)
+            return float(sx.rank(pct=True).iloc[-1] * 100.0)
+
+        df["squeeze_pctile"] = df["bb_width"].rolling(rank_win, min_periods=rank_win).apply(_pct_rank_last, raw=False)
+        good_pct = float(config.get("squeeze", {}).get("good_pctile_max", 70))
+        df["squeeze_ok"] = (df["squeeze_pctile"] <= good_pct).astype("Int64")
+    except Exception:
+        df["bb_width"] = np.nan
+        df["squeeze_pctile"] = np.nan
+        df["squeeze_ok"] = pd.NA
 
     return df

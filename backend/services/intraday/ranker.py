@@ -14,6 +14,8 @@ def _intraday_strength(iv: Dict) -> float:
     adx_slope = float(iv.get('adx_slope', 0) or 0)
     above_vwap = 1 if iv.get('above_vwap', 0) else 0
     dist_bpct = float(iv.get('dist_from_level_bpct', 9.99) or 9.99)
+    squeeze_pct = float(iv.get('squeeze_pctile', float('nan')) if iv.get('squeeze_pctile', None) == iv.get('squeeze_pctile', None) else float('nan'))
+    acceptance_ok = 1 if iv.get('acceptance_ok', False) else 0
 
     # Components (caps keep outliers tame)
     s_vol  = min(vol_ratio / 2.0, 1.2)                  # 0..1.2
@@ -31,7 +33,13 @@ def _intraday_strength(iv: Dict) -> float:
     else:
         s_dist = -0.3
 
-    return s_vol + s_rsi + s_rsis + s_adx + s_adxs + s_vwap + s_dist
+    s_sq = 0.0
+    if squeeze_pct == squeeze_pct:
+        if squeeze_pct <= 50: s_sq = 0.25
+        elif squeeze_pct <= 70: s_sq = 0.15
+        elif squeeze_pct >= 90: s_sq = -0.15
+    s_acc = 0.35 if acceptance_ok else 0.0
+    return s_vol + s_rsi + s_rsis + s_adx + s_adxs + s_vwap + s_dist + s_sq + s_acc
 
 def rank_candidates(rows: List[Dict], top_n: int = 7) -> List[Dict]:
     """

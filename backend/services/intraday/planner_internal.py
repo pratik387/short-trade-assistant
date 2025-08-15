@@ -73,6 +73,7 @@ def _merge_config_dict(cfg: "PlannerConfig", user_cfg: Dict[str, Any]) -> "Plann
     extras_keys = [
         "intraday_gate", "late_entry_penalty", "entry_filters", "intraday_params",
         "swing_gate", "swing_params", "minimum_holding_days", "enable_soft_prefilter",
+        "planner_precision", "acceptance",
     ]
     cfg._extras = {k: user_cfg.get(k) for k in extras_keys if k in user_cfg}
     return cfg
@@ -258,6 +259,10 @@ def _strategy_selector(
 def _compose_exits_and_size(
     price: float, bias: str, atr: float, structure_stop: float, cfg: PlannerConfig, qty_scale: float = 1.0
 ) -> Dict[str, Any]:
+    # extras for planner precision
+    pp = getattr(cfg, "_extras", {}).get("planner_precision", {}) if hasattr(cfg, "_extras") else {}
+    min_tick = float(pp.get("min_tick", 0.05))
+
     if np.isnan(structure_stop):
         return {"eligible": False, "reason": "no_structure_stop"}
 
@@ -269,11 +274,25 @@ def _compose_exits_and_size(
 
     vol_stop = price - cfg.sl_atr_mult * atr if bias == "long" else price + cfg.sl_atr_mult * atr
     if bias == "long":
-        hard_sl = min(structure_stop - cfg.sl_below_swing_ticks, vol_stop)
-        risk_per_share = max(price - hard_sl, 1e-6)
+        hard_sl = max(structure_stop - cfg.sl_below_swing_ticks, vol_stop)
+        risk_per_share = max(price - hard_sl, 0.0)
     else:
-        hard_sl = max(structure_stop + cfg.sl_below_swing_ticks, vol_stop)
-        risk_per_share = max(hard_sl - price, 1e-6)
+        hard_sl = min(structure_stop + cfg.sl_below_swing_ticks, vol_stop)
+        risk_per_share = max(hard_sl - price, 0.0)
+
+    # tick-size guard
+    if risk_per_share < min_tick:
+        return {
+            "eligible": False,
+            "reason": f"risk_below_tick<{min_tick}",
+            "risk_per_share": round(risk_per_share, 4),
+            "hard_sl": round(hard_sl, 2),
+            "targets": [],
+            "trail": cfg.trail_to,
+            "entry_zone": None,
+            "qty": 0,
+            "notional": 0.0,
+        }
 
     base_qty = max(int(cfg.risk_per_trade_rupees // risk_per_share), 0)
     qty = max(int(base_qty * qty_scale), 0)
@@ -282,7 +301,7 @@ def _compose_exits_and_size(
     t1 = price + (cfg.t1_rr * risk_per_share) if bias == "long" else price - (cfg.t1_rr * risk_per_share)
     t2 = price + (cfg.t2_rr * risk_per_share) if bias == "long" else price - (cfg.t2_rr * risk_per_share)
 
-    # Entry zone logic
+    # Entry zone
     if fallback_zone:
         entry_zone = [round(price - 0.01, 2), round(price, 2)]
     else:
@@ -291,7 +310,7 @@ def _compose_exits_and_size(
 
     return {
         "eligible": qty > 0,
-        "risk_per_share": round(risk_per_share, 2),
+        "risk_per_share": round(risk_per_share, 4),
         "qty": int(qty),
         "notional": round(notional, 2),
         "hard_sl": round(hard_sl, 2),
@@ -417,6 +436,81 @@ def generate_trade_plan(
 
     entry_ref_price = float(sess.iloc[-1]["close"])  # refined by caller
     exits = _compose_exits_and_size(entry_ref_price, strat["bias"], atr, strat["structure_stop"], cfg, qty_scale=qty_scale)
+    
+    pp = cfg._extras.get("planner_precision") if hasattr(cfg, "_extras") else {}
+    measured_move = max(orh - orl, atr) if strat["bias"] in ("long","short") else atr
+    rps = float(exits.get("risk_per_share", 1e-6))
+    rr_clip_max = float(pp.get("rr_clip_max", 6.0))
+    
+    # --- target feasibility tightening ---
+    t1_max_pct = float(pp.get("t1_max_pct"))
+    t1_max_mm_frac = float(pp.get("t1_max_mm_frac"))
+    t2_max_pct = float(pp.get("t2_max_pct"))
+    t2_max_mm_frac = float(pp.get("t2_max_mm_frac"))
+
+    def _cap_move(max_pct, max_mm_frac):
+        return min(entry_ref_price * (max_pct / 100.0), measured_move * max_mm_frac)
+
+    cap1 = _cap_move(t1_max_pct, t1_max_mm_frac)
+    cap2 = _cap_move(t2_max_pct, t2_max_mm_frac)
+
+    t1_orig = exits["targets"][0]["level"] if exits.get("targets") else np.nan
+    t2_orig = exits["targets"][1]["level"] if exits.get("targets") and len(exits["targets"]) > 1 else np.nan
+
+    if strat["bias"] == "long":
+        t1_feasible = entry_ref_price + min(max(t1_orig - entry_ref_price, 0.0), cap1)
+        t2_feasible = entry_ref_price + min(max(t2_orig - entry_ref_price, 0.0), cap2)
+    else:  # short
+        t1_feasible = entry_ref_price - min(max(entry_ref_price - t1_orig, 0.0), cap1)
+        t2_feasible = entry_ref_price - min(max(entry_ref_price - t2_orig, 0.0), cap2)
+
+    # recompute RRs after tightening
+    t1_rr_eff = (t1_feasible - entry_ref_price) / rps if strat["bias"] == "long" else (entry_ref_price - t1_feasible) / rps
+    t2_rr_eff = (t2_feasible - entry_ref_price) / rps if strat["bias"] == "long" else (entry_ref_price - t2_feasible) / rps
+
+    # write back
+    if exits.get("targets"):
+        exits["targets"][0]["level"] = round(float(t1_feasible), 2)
+        exits["targets"][0]["rr"] = round(float(t1_rr_eff), 2)
+    if exits.get("targets") and len(exits["targets"]) > 1:
+        exits["targets"][1]["level"] = round(float(t2_feasible), 2)
+        exits["targets"][1]["rr"] = round(float(t2_rr_eff), 2)
+
+    
+    if strat["bias"] == "long":
+        next_objective = orh + 0.5 * measured_move
+        structural_rr = (next_objective - entry_ref_price) / max(rps, 1e-6)
+    elif strat["bias"] == "short":
+        next_objective = orl - 0.5 * measured_move
+        structural_rr = (entry_ref_price - next_objective) / max(rps, 1e-6)
+    else:
+        next_objective = float("nan")
+        structural_rr = float("nan")
+
+    if not np.isnan(structural_rr):
+        structural_rr = float(np.clip(structural_rr, 0.0, rr_clip_max))
+
+    acc_cfg = cfg._extras.get("acceptance") if hasattr(cfg, "_extras") else {}
+    acc_bars = int(acc_cfg.get("bars"))
+    acc_bpct = float(acc_cfg.get("retest_bpct"))
+    need_vwap = bool(acc_cfg.get("need_vwap_hold"))
+
+    _lvl = orh if strat["bias"] == "long" else orl
+    win = sess.tail(max(acc_bars, 2))
+
+    if strat["bias"] == "long":
+        # low did NOT violate more than acc_bpct below level
+        retest_ok = (win["low"].min() >= _lvl * (1 - acc_bpct/100.0))
+        hold_ok = (win["close"].iloc[-1] >= _lvl) and (not need_vwap or win["close"].iloc[-1] >= win["vwap"].iloc[-1])
+    elif strat["bias"] == "short":
+        # high did NOT violate more than acc_bpct above level
+        retest_ok = (win["high"].max() <= _lvl * (1 + acc_bpct/100.0))
+        hold_ok = (win["close"].iloc[-1] <= _lvl) and (not need_vwap or win["close"].iloc[-1] <= win["vwap"].iloc[-1])
+    else:
+        retest_ok = False
+        hold_ok  = False
+
+    acceptance_ok = bool(retest_ok and hold_ok)
 
     start_date, end_date = get_date_range_from_df(df)
     plan = {
@@ -429,7 +523,7 @@ def generate_trade_plan(
             "reference": round(entry_ref_price, 2),
             "trigger": strat["entry_trigger"],
             "zone": exits.get("entry_zone"),
-            "must": must_checks,
+            "must": must_checks + (["acceptance_ok"] if acceptance_ok else []),
             "should": should_checks,
             "filters": [
                 "above_VWAP" if strat["bias"] == "long" else "below_VWAP",
@@ -446,7 +540,7 @@ def generate_trade_plan(
         "trail": exits.get("trail"),
         "sizing": {
             "risk_per_share": exits.get("risk_per_share"),
-            "risk_rupees": PlannerConfig().risk_per_trade_rupees if (config is None or not isinstance(config, dict)) else cfg.risk_per_trade_rupees,
+            "risk_rupees": cfg.risk_per_trade_rupees,
             "qty": exits.get("qty"),
             "notional": exits.get("notional"),
             "qty_scale": round(qty_scale, 2),
@@ -468,10 +562,17 @@ def generate_trade_plan(
             "cautions": cautions,
         },
         "guardrails": [
-            "avoid_entries <5m before/after lunch window" if PlannerConfig().enable_lunch_pause else None,
+            "avoid_entries <5m before/after lunch window" if cfg.enable_lunch_pause else None,
             "cancel trade after 45m if trigger not met",
         ],
         "date_range": {"start": start_date, "end": end_date},
+        "quality": {
+            "structural_rr": None if np.isnan(structural_rr) else round(float(structural_rr), 2),
+            "acceptance_ok": acceptance_ok,
+            "t1_feasible": bool(not np.isnan(t1_orig) and (abs(t1_feasible - t1_orig) < 1e-6 or (abs(t1_feasible - entry_ref_price) <= cap1 + 1e-9))),
+            "t2_feasible": bool(not np.isnan(t2_orig) and (abs(t2_feasible - t2_orig) < 1e-6 or (abs(t2_feasible - entry_ref_price) <= cap2 + 1e-9)))
+        },
+
     }
     plan["guardrails"] = [g for g in plan["guardrails"] if g]
     return plan

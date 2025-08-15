@@ -28,7 +28,7 @@ def get_loggers():
     # Agent Logger
     _agent_logger = logging.getLogger("agent")
     if not _agent_logger.hasHandlers():
-        _agent_logger.setLevel(logging.INFO)
+        _agent_logger.setLevel(logging.DEBUG)
         agent_file = logging.FileHandler(log_dir / "agent.log",  encoding="utf-8")
         agent_file.setFormatter(formatter)
         _agent_logger.addHandler(agent_file)

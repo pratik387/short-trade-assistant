@@ -126,5 +126,44 @@
   "swing_params": {
     "rsi_len": 14,
     "adx_len": 14
+  },
+  "breakout_proximity": {
+    "max_bpct": 9.99,
+    "tight_bpct": 0.6
+  },
+  "acceptance": {
+    "retest_bpct": 0.35,
+    "bars": 2,
+    "need_vwap_hold": true
+  },
+  "squeeze": {
+    "window": 20,
+    "rank_window": 30,
+    "good_pctile_max": 70
+  },
+  "precision_screener": {
+    "buffer_bpct": 0.15,
+    "min_vol_ratio": 1.5,
+    "vwap_grace_bpct": 0.2,
+    "rsi_range": [45, 70],
+    "adx_range": [15, 50],
+    "ma20_min_slope": 0.01,
+    "max_breakout_dist_bpct": 1.5,
+    "confirm_bars": 3,
+    "retest_bpct": 0.35,
+    "lunch_window": {
+        "start": "12:15",
+        "end": "13:30"
+    },
+    "late_cutoff": "14:55"
+},
+  "planner_precision": {
+    "rr_clip_max": 6.0,
+    "min_tick": 0.05,
+    "t1_max_pct": 1.2,
+    "t1_max_mm_frac": 0.7,
+    "t2_max_pct": 2.0,
+    "t2_max_mm_frac": 1.0
   }
+
 }
