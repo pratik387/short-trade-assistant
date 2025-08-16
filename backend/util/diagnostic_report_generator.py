@@ -2,6 +2,21 @@ import os
 import sys
 import pandas as pd
 
+import threading
+_tls = threading.local()
+
+def _get_tracker():
+    if not hasattr(_tls, "inst"):
+        _tls.inst = DiagnosticsTracker()
+    return _tls.inst
+
+class _DiagnosticsProxy:
+    def __getattr__(self, name):
+        return getattr(_get_tracker(), name)
+
+# replace: diagnostics_tracker = DiagnosticsTracker()
+diagnostics_tracker = _DiagnosticsProxy()
+
 class DiagnosticsTracker:
     def __init__(self):
         self.trades = []
@@ -47,36 +62,9 @@ class DiagnosticsTracker:
                 })
                 return
             
-    def record_intraday_entry_diagnostics(self, symbol, entry_time, price, trade_id, plan, df, reasons):
-        last_close = df["close"].iloc[-1]
-        vwap = df["vwap"].iloc[-1] if "vwap" in df.columns else None
-        high = df["high"].max()
-        low = df["low"].min()
-        volatility = round((high - low) / last_close, 4)
-
-        record = {
-            "trade_id": trade_id,
-            "symbol": symbol,
-            "entry_time": entry_time.isoformat(),
-            "entry_price": price,
-            "confidence": plan.get("confidence"),
-            "rr_first": plan.get("rr_first"),
-            "entry_zone": plan.get("entry_zone"),
-            "stop": plan.get("stop", {}).get("hard"),
-            "t1": plan.get("targets", [{}])[0].get("level"),
-            "atr": plan.get("atr"),
-            "vwap": vwap,
-            "close": last_close,
-            "volatility": volatility,
-            "rsi": reasons.get("rsi"),
-            "rsi_slope": reasons.get("rsi_slope"),
-            "adx": reasons.get("adx"),
-            "adx_slope": reasons.get("adx_slope"),
-            "volume_ratio": reasons.get("volume_ratio"),
-            "dist_from_level_bpct": reasons.get("dist_from_level_bpct"),
-        }
-
-        self.intraday_diagnostics.append(record)
+    def record_intraday_entry_diagnostics(self, trade_id: str, diagnostics: dict):
+            diagnostics["trade_id"] = trade_id
+            self.intraday_diagnostics.append(diagnostics)
         
     def record_intraday_exit_diagnostics(self, trade_id, exit_price, pnl, exit_time, reason):
         for row in self.intraday_diagnostics:
@@ -111,4 +99,4 @@ if __name__ == "__main__":
     os.makedirs(output_dir, exist_ok=True)
     sample_output_path = os.path.join(output_dir, "diagnostic_output.csv")
 
-diagnostics_tracker = DiagnosticsTracker()
+diagnostics_tracker = _DiagnosticsProxy()

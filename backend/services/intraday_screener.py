@@ -9,6 +9,7 @@ import pandas as pd
 from config.logging_config import get_loggers
 from services.indicator_enrichment_service import compute_intraday_breakout_score
 from util.util import get_previous_trading_day
+from brokers.mock.mock_broker import MockBroker
 
 from services.intraday.levels import (
     opening_range,
@@ -33,12 +34,14 @@ def _rate_limit():
         last_api_call_time[0] = time.time()
 
 def rate_limited_fetch_5m(symbol, broker, from_date, to_date):
+    if isinstance(broker, MockBroker):
+        return broker.fetch_candles(symbol=symbol, interval="5minute",
+                                    from_date=from_date, to_date=to_date)
     _rate_limit()
     return broker.fetch_candles(symbol=symbol, interval="5minute", from_date=from_date, to_date=to_date)
 
-def rate_limited_fetch_daily(symbol, broker, lookback_days=5):
+def rate_limited_fetch_daily(symbol, broker, to_date, lookback_days=5):
     _rate_limit()
-    to_date = datetime.now()
     from_date = to_date - timedelta(days=lookback_days + 3)
     return broker.fetch_candles(symbol=symbol, interval="day", from_date=from_date, to_date=to_date)
 
@@ -204,7 +207,7 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
             level_px = float("nan")
             level_name = None
 
-            dfd = rate_limited_fetch_daily(sym, broker, lookback_days=5)
+            dfd = rate_limited_fetch_daily(sym, broker, to_date, lookback_days=5)
             if dfd is not None and not dfd.empty:
                 try:
                     y_hi, _ = yesterday_levels(dfd)
@@ -285,17 +288,10 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
         df = r.get("df")
         if df is None or df.empty:
             continue
-        plan = generate_trade_plan(df=df, symbol=r["symbol"], config=config)
+        plan = generate_trade_plan(df=df, symbol=r["symbol"], config=config, daily_df=dfd)
         if not plan:
             continue
-        r["plan"] = {
-            "entry_note": plan["entry"]["trigger"],
-            "entry_zone": plan["entry"]["zone"],
-            "stop": plan["stop"],
-            "targets": plan["targets"],
-            "confidence": plan["strategy"],
-            "rr_first": plan["targets"][0]["rr"] if plan.get("targets") else None,
-        }
+        r["plan"] = plan
         final_ranked.append(r)
 
     logger.info(

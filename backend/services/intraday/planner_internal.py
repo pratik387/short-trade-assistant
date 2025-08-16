@@ -162,6 +162,8 @@ def _pivot_swing_high(df_sess: pd.DataFrame, lookback: int = 10) -> float:
     return float(highs.max())
 
 def _prev_day_levels(df: pd.DataFrame) -> Dict[str, float]:
+    if df is None or df.empty:
+        return {"PDH": None, "PDL": None, "PDC": None}
     df = _ensure_datetime_index(df)
     last_day = df["date"].iloc[-1]
     prev_df = df[df["date"] < last_day]
@@ -326,7 +328,9 @@ def _compose_exits_and_size(
 # Public API
 # ----------------------------
 def generate_trade_plan(
-    df: pd.DataFrame, symbol: str, config: Optional[Union[PlannerConfig, Dict[str, Any]]] = None
+    df: pd.DataFrame, symbol: str,
+    config: Optional[Union[PlannerConfig, Dict[str, Any]]] = None,
+    daily_df: Optional[pd.DataFrame] = None
 ) -> Dict[str, Any]:
     """Build an intraday trade plan from a 5-min OHLCV DataFrame.
 
@@ -371,7 +375,7 @@ def generate_trade_plan(
     # Context
     atr = calculate_atr(df.tail(200), period=cfg.atr_period)
     orh, orl, or_end = _opening_range(sess, cfg)
-    pd_levels = _prev_day_levels(df)
+    pd_levels = _prev_day_levels(daily_df)
 
     # Gap context using prev close (annotate only)
     gap_pct = np.nan

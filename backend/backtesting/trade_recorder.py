@@ -4,7 +4,8 @@ from util.diagnostic_report_generator import diagnostics_tracker
 logger, trade_logger = get_loggers()
 
 class TradeRecorder:
-    def __init__(self):
+    def __init__(self, run_id: str | None = None):
+        self.run_id = run_id
         self.log_folder_path = get_log_directory()
         self.output_path = self.log_folder_path / "trades.csv"
         self.trades = []
@@ -39,9 +40,10 @@ class TradeRecorder:
             writer.writeheader()
             writer.writerows(self.trades)
 
-        output_csv_path = str(self.log_folder_path / "diagnostic_report.csv")
+        prefix = f"intraday_{self.run_id}_" if self.run_id else ""
+        output_csv_path = str(self.log_folder_path / f"{prefix}diagnostic_report.csv")
         diagnostics_tracker.export(output_csv_path)
-        output_intraday_csv_path = str(self.log_folder_path / "diagnostic_report_intraday.csv")
+        output_intraday_csv_path = str(self.log_folder_path / f"{prefix}diagnostic_report_intraday.csv")
         diagnostics_tracker.export_intraday_diagnostics(output_intraday_csv_path)
 
         logger.info(f"📊 Diagnostics report saved to: {output_csv_path}")

@@ -21,6 +21,7 @@ class MockBroker(BaseBroker):
         self.cache_root = Path(__file__).resolve().parents[2] / "backtesting" / "ohlcv_archive"
         self.live_broker = KiteBroker()
         self.interval = interval
+        self._feather_cache = {}
 
     def get_ltp(self, symbol: str) -> float:
     
@@ -50,25 +51,34 @@ class MockBroker(BaseBroker):
     ):
         try:
             if self.use_cache:
-                file_path = self._locate_latest_file(symbol, interval)
+                key = (symbol, interval)
+                if key not in self._feather_cache:
+                    file_path = self._locate_latest_file(symbol, interval)
 
-                if file_path is not None and file_path.exists():
-                    df = pd.read_feather(file_path)
-                    df = df.set_index("date").sort_index()
-                    df = df.sort_values("date")
-                    if df.index.tz is not None:
-                        df.index = df.index.tz_convert("Asia/Kolkata").tz_localize(None)
-                    if from_date:
-                        df = df[df.index >= from_date]
-                    if to_date:
-                        df = df[df.index <= to_date]
-                    if days and len(df) >= days:
-                        df = df.iloc[-days:]
-                    return df.copy()
+                    if file_path is not None and file_path.exists():
+                        df = pd.read_feather(file_path)
+                        df = df.set_index("date").sort_index()
+                        if df.index.tz is not None:
+                            df.index = df.index.tz_convert("Asia/Kolkata").tz_localize(None)
+                        self._feather_cache[key] = df.copy()
+                    else:
+                        logger.warning(f"[MOCK][fetch_candles] File not found for {symbol}")
+                        return None
+
+                df = self._feather_cache[key]
+
+                # Slice based on request
+                if from_date:
+                    df = df[df.index >= from_date]
+                if to_date:
+                    df = df[df.index <= to_date]
+                if days and len(df) >= days:
+                    df = df.iloc[-days:]
+                return df.copy()
             # fallback to API
             return self.live_broker.fetch_candles(symbol, interval, 180)
         except Exception as e:
-            logger.error(str(e))
+            logger.exception(f"[MOCK][fetch_candles] Exception for {symbol}: {e}")
             return None
 
     def place_order(

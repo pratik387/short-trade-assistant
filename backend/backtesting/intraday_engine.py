@@ -68,7 +68,8 @@ class OpenTrade:
 class IntradayBacktestEngine:
     def __init__(self, cfg: EngineConfig):
         self.cfg = cfg
-        self.recorder = TradeRecorder()
+        self.run_id = self.cfg.test_date.strftime("%Y-%m-%d")
+        self.recorder = TradeRecorder(run_id=self.run_id)
         self.config_blob = config
         self.broker = MockBroker()
 
@@ -173,7 +174,7 @@ class IntradayBacktestEngine:
         for row in ranked:
             sym = row.get("symbol")
             plan = row.get("plan", {}) or {}
-            zone: List[float] = list(plan.get("entry_zone") or [])
+            zone: List[float] = list(plan.get("entry", {}).get("zone") or [])
             targets: List[Dict[str, Any]] = list(plan.get("targets") or [])
             stop = plan.get("stop")
             stop_hard = float(stop.get("hard")) if isinstance(stop, dict) and stop.get("hard") is not None else None
@@ -242,15 +243,64 @@ class IntradayBacktestEngine:
 
             # Record using project TradeRecorder API
             self.recorder.record_entry(symbol=sym, date=tick.isoformat(), price=close, investment=investment)
-            diagnostics_tracker.record_intraday_entry_diagnostics(
-                symbol=sym,
-                entry_time=tick,
-                price=close,
-                trade_id = trade_id,
-                plan=plan,
-                df=df,
-                reasons=row.get("intraday")
-            )
+            diagnostics = {
+                "symbol": sym,
+                "entry_time": tick,
+                "entry_price": close,
+                "stop": plan.get("stop", {}).get("hard"),
+                "t1": plan.get("targets", [{}])[0].get("level"),
+                "rr_first": plan.get("targets", [{}])[0].get("rr"),
+                "entry_zone": plan.get("entry", {}).get("zone"),
+                "confidence": plan.get("strategy"),
+                "atr": row.get("atr5"),
+                "vwap": row.get("vwap"),
+                "close": close,
+                "volatility": round((df["high"].max() - df["low"].min()) / close, 4) if close else None,
+
+                # Indicators at entry
+                "RSI": last.get("RSI"),
+                "rsi_slope": row.get("intraday", {}).get("rsi_slope"),
+                "ADX": last.get("ADX_ACTIVE"),
+                "adx_slope": row.get("intraday", {}).get("adx_slope"),
+                "macd": last.get("macd"),
+                "macd_signal": last.get("macd_signal"),
+                "stochastic_k": last.get("stochastic_k"),
+                "obv": last.get("obv"),
+                "atr5": last.get("atr5"),
+                "ma20_slope": row.get("intraday", {}).get("ma20_slope"),
+                "supertrend_signal": last.get("supertrend_signal"),
+
+                # VWAP and price structure
+                "above_vwap": row.get("intraday", {}).get("above_vwap"),
+                "distance_from_vwap_bpct": ((close - row.get("vwap")) / row.get("vwap")) * 100 if close and row.get("vwap") else None,
+                "dist_from_level_bpct": ((close - row.get("level", {}).get("px", 0)) / row.get("level", {}).get("px", 1)) * 100 if close else None,
+
+                # Structural & quality metrics
+                "structural_rr": plan.get("quality", {}).get("structural_rr"),
+                "acceptance_ok": plan.get("quality", {}).get("acceptance_ok"),
+
+                # Confirmation checks
+                "retest_ok": row.get("intraday", {}).get("confirmation", {}).get("retest_ok"),
+                "vwap_hold": row.get("intraday", {}).get("confirmation", {}).get("vwap_hold"),
+
+                # Squeeze and ranking
+                "squeeze_pctile": row.get("intraday", {}).get("squeeze_pctile"),
+                "squeeze_ok": row.get("intraday", {}).get("squeeze_ok"),
+                "score": row.get("score"),
+                "rank_score": row.get("rank_score"),
+
+                # Level info
+                "level_type": row.get("level", {}).get("name"),
+                "level_px": row.get("level", {}).get("px"),
+
+                # Exit info (set to None at entry time)
+                "exit_reason": None,
+                "holding_minutes": None,
+            }
+
+
+            diagnostics_tracker.record_intraday_entry_diagnostics(trade_id=trade_id, diagnostics=diagnostics)
+
             events.append({"symbol": sym, "trade_id": trade_id, "reason": "entry_zone_met"})
         return events
 
@@ -356,7 +406,7 @@ class IntradayBacktestEngine:
 # ----------------------------- Convenience CLI -----------------------------
 if __name__ == "__main__":
     TEST_DAY = datetime.strptime("2023-01-01", "%Y-%m-%d")
-    END_DAY = datetime.strptime("2023-01-02", "%Y-%m-%d")
+    END_DAY = datetime.strptime("2023-01-15", "%Y-%m-%d")
 
     ENGINE = IntradayBacktestEngine(
         EngineConfig(
