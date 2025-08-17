@@ -174,9 +174,6 @@ class DiagnosticsTracker:
 
         summary_path = os.path.join(out_dir, f"diagnostic_report_intraday{f'_{run_id}' if run_id else ''}.csv")
         summary.to_csv(summary_path, index=False)
-        print(f"✅ Exported intraday diagnostics → Summary: {summary_path}  Events: {events_path}")
-
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
