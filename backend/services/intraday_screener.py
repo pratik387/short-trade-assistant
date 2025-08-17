@@ -41,6 +41,9 @@ def rate_limited_fetch_5m(symbol, broker, from_date, to_date):
     return broker.fetch_candles(symbol=symbol, interval="5minute", from_date=from_date, to_date=to_date)
 
 def rate_limited_fetch_daily(symbol, broker, to_date, lookback_days=5):
+    if isinstance(broker, MockBroker):
+        from_date = to_date - timedelta(days=lookback_days + 3)
+        return broker.fetch_candles(symbol=symbol, interval="day", from_date=from_date, to_date=to_date)
     _rate_limit()
     from_date = to_date - timedelta(days=lookback_days + 3)
     return broker.fetch_candles(symbol=symbol, interval="day", from_date=from_date, to_date=to_date)
@@ -86,12 +89,20 @@ def _passes_precision_breakout(df5, last, level_px, params):
         bar_time = last.name.time() if isinstance(last.name, pd.Timestamp) else pd.to_datetime(last.name).time()
     except Exception:
         return False
+    
+    """
+    Returns True only if a *fully accepted* breakout is present.
+    Also hard-blocks lunch window and late cutoff.
+    """
 
-    # time gates (avoid lunch/too late unless exceptional)
-    vol_ratio = _sf(last.get("volume_ratio"), 0.0)
-    if params["lunch_start"] <= bar_time <= params["lunch_end"] and vol_ratio < (params["vol_min"] * 1.25):
+    # --- Hard lunch & late cutoff ---
+    lunch_start = params["lunch_start"]
+    lunch_end   = params["lunch_end"]
+    if lunch_start <= bar_time <= lunch_end:
         return False
-    if bar_time >= params["late_cutoff"]:
+
+    late_cutoff = params["late_cutoff"]
+    if bar_time >= late_cutoff:
         return False
 
     # prices & indicators (NA-safe)
@@ -99,7 +110,7 @@ def _passes_precision_breakout(df5, last, level_px, params):
     vwap_px  = _sf(last.get("vwap"),  float("nan"))
     rsi      = _sf(last.get("RSI"),   float("nan"))
     adx      = _sf(last.get("ADX_ACTIVE"), float("nan"))
-
+    vol_ratio  = _sf(last.get("volume_ratio"), 0.0)
     ma20_ser   = df5["close"].ewm(span=20, adjust=False).mean()
     ma20       = _sf(ma20_ser.iloc[-1], float("nan"))
     ma20_slope = _sf(ma20_ser.diff().tail(3).mean(), 0.0)
@@ -200,6 +211,16 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
                 dbg_counts["gate_fail"] += 1
                 logger.debug(f"— ⛔ {sym}: gate fail (VR={vr:.2f} < {min_vr} or close not within {relax_vwap_bpct:.2f}% of VWAP)")
                 continue
+            
+             # --- Intraday trend alignment: EMA20 > EMA50 ---
+            try:
+                ema20 = df5['close'].ewm(span=20, adjust=False).mean().iloc[-1]
+                ema50 = df5['close'].ewm(span=50, adjust=False).mean().iloc[-1]
+                if not (pd.notna(ema20) and pd.notna(ema50) and ema20 > ema50):
+                    logger.debug(f"— ⛔ {sym}: EMA20 <= EMA50 trend filter")
+                    continue
+            except Exception:
+                pass
 
 
             logger.debug(f"— 🔎 {sym}: VR={vr:.2f} | above_vwap={above} | close={close_px:.2f} | vwap={vwap_px:.2f}")
@@ -249,7 +270,7 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
 
             rows.append({
                 "symbol": sym,
-                "daily_score": float(s.get("score", 0.0)),
+                "daily_score": float(s.get("daily_score", s.get("score", 0.0))),
                 "level": {"name": level_name, "px": float(level_px)},
                 "intraday": {
                     "volume_ratio": vr,
@@ -259,11 +280,14 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
                     "adx_slope": adx_slope,
                     "above_vwap": above,
                     "dist_from_level_bpct": float(dist if dist == dist else 9.99),
+                    "squeeze_pctile": _sf(last.get("squeeze_pctile"), float("nan")),
+                    "acceptance_ok": True,
                 },
                 "last_close": close_px,
                 "vwap": vwap_px,
                 "atr5": float(atr_proxy or 0.0),
                 "df": df5,
+                "daily_df": dfd,
             })
             dbg_counts["final_pass"] += 1
 
@@ -288,8 +312,14 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
         df = r.get("df")
         if df is None or df.empty:
             continue
-        plan = generate_trade_plan(df=df, symbol=r["symbol"], config=config, daily_df=dfd)
+        daily_df = r.get("daily_df")
+        plan = generate_trade_plan(df=df, symbol=r["symbol"], config=config, daily_df=daily_df)
         if not plan:
+            continue
+        # --- NEW: structural RR guard ---
+        struct_rr = (plan.get("quality", {}) or {}).get("structural_rr")
+        if struct_rr is not None and struct_rr < 1.0:
+            # skip low-upside / near overhead-supply structures
             continue
         r["plan"] = plan
         final_ranked.append(r)

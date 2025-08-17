@@ -98,12 +98,12 @@
     }
   },
   "intraday_gate": {
-    "min_volume_ratio": 1.1,
+    "min_volume_ratio": 2.0,     
     "require_above_vwap": true,
-    "vwap_relax_bpct": 0.2,
-    "min_rsi": 40,
+    "vwap_relax_bpct": 0.25,  
+    "min_rsi": 50,            
     "max_rsi": 70,
-    "min_adx": 15,
+    "min_adx": 22,         
     "max_adx": 50
   },
   "intraday_params": {
@@ -132,31 +132,28 @@
     "tight_bpct": 0.6
   },
   "acceptance": {
-    "retest_bpct": 0.35,
-    "bars": 2,
+    "retest_bpct": 0.20,          
+    "bars": 3,                    
     "need_vwap_hold": true
   },
   "squeeze": {
     "window": 20,
     "rank_window": 30,
-    "good_pctile_max": 70
+    "good_pctile_max": 60 
   },
   "precision_screener": {
-    "buffer_bpct": 0.15,
-    "min_vol_ratio": 1.5,
-    "vwap_grace_bpct": 0.2,
-    "rsi_range": [45, 70],
-    "adx_range": [15, 50],
-    "ma20_min_slope": 0.01,
-    "max_breakout_dist_bpct": 1.5,
-    "confirm_bars": 3,
-    "retest_bpct": 0.35,
-    "lunch_window": {
-        "start": "12:15",
-        "end": "13:30"
-    },
-    "late_cutoff": "14:55"
-},
+    "buffer_bpct": 0.20,          
+    "min_vol_ratio": 1.7,         
+    "vwap_grace_bpct": 0.05,      
+    "rsi_range": [50, 68],        
+    "adx_range": [22, 50],        
+    "ma20_min_slope": 0.02,       
+    "max_breakout_dist_bpct": 0.9,
+    "confirm_bars": 4,            
+    "retest_bpct": 0.20,          
+    "lunch_window": { "start": "12:15", "end": "13:30" },
+    "late_cutoff": "14:30"        
+  },
   "planner_precision": {
     "rr_clip_max": 6.0,
     "min_tick": 0.05,

@@ -48,7 +48,7 @@ def rank_candidates(rows: List[Dict], top_n: int = 7) -> List[Dict]:
     for r in rows:
         iv = r.get('intraday', {}) or {}
         r['intraday_score'] = _intraday_strength(iv)
-        r['rank_score'] = 0.6 * float(r.get('daily_score', 0.0)) + 0.4 * r['intraday_score']
+        r['rank_score'] = 0.2 * float(r.get('daily_score', 0.0)) + 0.8 * r['intraday_score']
 
     rows.sort(key=lambda x: x.get('rank_score', 0.0), reverse=True)
     return rows[:top_n]

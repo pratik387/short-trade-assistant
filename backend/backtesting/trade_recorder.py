@@ -43,8 +43,5 @@ class TradeRecorder:
         prefix = f"intraday_{self.run_id}_" if self.run_id else ""
         output_csv_path = str(self.log_folder_path / f"{prefix}diagnostic_report.csv")
         diagnostics_tracker.export(output_csv_path)
-        output_intraday_csv_path = str(self.log_folder_path / f"{prefix}diagnostic_report_intraday.csv")
-        diagnostics_tracker.export_intraday_diagnostics(output_intraday_csv_path)
 
         logger.info(f"📊 Diagnostics report saved to: {output_csv_path}")
-        logger.info(f"📊 Intraday Diagnostics report saved to: {output_intraday_csv_path}")

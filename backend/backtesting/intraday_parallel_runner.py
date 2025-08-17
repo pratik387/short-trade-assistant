@@ -45,7 +45,7 @@ def run_parallel_backtest(start_date_str: str, end_date_str: str, max_workers: i
 
 if __name__ == "__main__":
     # 🔁 Example usage
-    result = run_parallel_backtest("2023-01-01", "2023-01-12", max_workers=5)
+    result = run_parallel_backtest("2023-01-02", "2023-03-01", max_workers=5)
 
     for r in result:
         print(r)
