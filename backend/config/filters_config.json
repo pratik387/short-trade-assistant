@@ -132,26 +132,35 @@
     "tight_bpct": 0.6
   },
   "acceptance": {
-    "retest_bpct": 0.20,          
-    "bars": 3,                    
+    "retest_bpct": 0.20,
+    "bars": 3,
     "need_vwap_hold": true
   },
   "squeeze": {
     "window": 20,
     "rank_window": 30,
-    "good_pctile_max": 60 
+    "good_pctile_max": 60
   },
   "precision_screener": {
     "buffer_bpct": 0.20,
     "min_vol_ratio": 1.5,
     "vwap_grace_bpct": 0.25,
-    "rsi_range": [45, 72],
-    "adx_range": [18, 55],
+    "rsi_range": [
+      45,
+      72
+    ],
+    "adx_range": [
+      18,
+      55
+    ],
     "ma20_min_slope": 0.02,
     "max_breakout_dist_bpct": 1.2,
     "confirm_bars": 4,
     "retest_bpct": 0.30,
-    "lunch_window": { "start": "12:15", "end": "13:30" },
+    "lunch_window": {
+      "start": "12:15",
+      "end": "13:30"
+    },
     "late_cutoff": "15:00"
   },
   "planner_precision": {
@@ -160,7 +169,9 @@
     "t1_max_pct": 1.2,
     "t1_max_mm_frac": 0.7,
     "t2_max_pct": 2.0,
-    "t2_max_mm_frac": 1.0
+    "t2_max_mm_frac": 1.0,
+    "min_rps_bpct": 0.45,
+    "atr_rps_mult": 0.35,
+    "t1_min_rr": 1.5
   }
-
 }

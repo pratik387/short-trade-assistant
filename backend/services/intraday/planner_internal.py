@@ -290,12 +290,14 @@ def _compose_exits_and_size(
     if np.isnan(structure_stop):
         return {"eligible": False, "reason": "no_structure_stop"}
 
+    # --- ATR fallback if missing ---
     fallback_zone = False
     if np.isnan(atr) or atr == 0.0:
         logger.warning(f"⚠️ ATR unavailable for price={price}, using fallback")
         atr = price * 0.005
         fallback_zone = True
 
+    # --- Initial stop from structure & volatility (defines hard_sl, risk_per_share) ---
     vol_stop = price - cfg.sl_atr_mult * atr if bias == "long" else price + cfg.sl_atr_mult * atr
     if bias == "long":
         hard_sl = max(structure_stop - cfg.sl_below_swing_ticks, vol_stop)
@@ -304,7 +306,21 @@ def _compose_exits_and_size(
         hard_sl = min(structure_stop + cfg.sl_below_swing_ticks, vol_stop)
         risk_per_share = max(hard_sl - price, 0.0)
 
-    # tick-size guard
+    # --- RPS floors (widen too-tight stops) — read ONLY from planner_precision ---
+    min_rps_bpct = float(pp.get("min_rps_bpct", 0.45))  # percent of price
+    atr_rps_mult = float(pp.get("atr_rps_mult", 0.35))  # ATR multiplier
+    floor_by_px  = price * (min_rps_bpct / 100.0)
+    floor_by_atr = (atr or 0.0) * atr_rps_mult
+    rps_floor    = max(floor_by_px, floor_by_atr, 0.0)
+
+    if risk_per_share < rps_floor:
+        if bias == "long":
+            hard_sl = price - rps_floor
+        else:
+            hard_sl = price + rps_floor
+        risk_per_share = rps_floor
+
+    # --- Tick-size guard ---
     if risk_per_share < min_tick:
         return {
             "eligible": False,
@@ -318,14 +334,16 @@ def _compose_exits_and_size(
             "notional": 0.0,
         }
 
+    # --- Position sizing ---
     base_qty = max(int(cfg.risk_per_trade_rupees // risk_per_share), 0)
     qty = max(int(base_qty * qty_scale), 0)
     notional = qty * price
 
+    # --- Targets (RR-based) ---
     t1 = price + (cfg.t1_rr * risk_per_share) if bias == "long" else price - (cfg.t1_rr * risk_per_share)
     t2 = price + (cfg.t2_rr * risk_per_share) if bias == "long" else price - (cfg.t2_rr * risk_per_share)
 
-    # Entry zone
+    # --- Entry zone ---
     if fallback_zone:
         entry_zone = [round(price - 0.01, 2), round(price, 2)]
     else:
@@ -483,26 +501,37 @@ def generate_trade_plan(
     t1_orig = exits["targets"][0]["level"] if exits.get("targets") else np.nan
     t2_orig = exits["targets"][1]["level"] if exits.get("targets") and len(exits["targets"]) > 1 else np.nan
 
-    if strat["bias"] == "long":
-        t1_feasible = entry_ref_price + min(max(t1_orig - entry_ref_price, 0.0), cap1)
-        t2_feasible = entry_ref_price + min(max(t2_orig - entry_ref_price, 0.0), cap2)
-    else:  # short
-        t1_feasible = entry_ref_price - min(max(entry_ref_price - t1_orig, 0.0), cap1)
-        t2_feasible = entry_ref_price - min(max(entry_ref_price - t2_orig, 0.0), cap2)
-
-    # Minimum epsilon to avoid div/0. Use ATR if available; else 0.1% of price or 0.01 absolute.
+    # --- Safe RPS before using it anywhere ---
     eps = max(entry_ref_price * 0.001, 0.01)
-    try:
-        if (not rps) or rps <= 0:
+    if (not rps) or rps <= 0:
+        try:
             atr_col = "atr5" if "atr5" in df.columns else ("ATR" if "ATR" in df.columns else None)
             if atr_col is not None:
                 atr_val = float(df[atr_col].iloc[-1])
                 rps = max(abs(atr_val) * 0.25, eps)
             else:
                 rps = eps
-    except Exception:
-        rps = eps
-    
+        except Exception:
+            rps = eps
+
+    # --- Compute feasibility-capped targets deterministically ---
+    if strat["bias"] == "long":
+        # keep direction; clip move size by cap
+        t1_feasible = entry_ref_price + min(max(float(t1_orig) - entry_ref_price, 0.0), cap1) if not np.isnan(t1_orig) else entry_ref_price + cfg.t1_rr * rps
+        t2_feasible = entry_ref_price + min(max(float(t2_orig) - entry_ref_price, 0.0), cap2) if not np.isnan(t2_orig) else entry_ref_price + cfg.t2_rr * rps
+    else:  # short
+        t1_feasible = entry_ref_price - min(max(entry_ref_price - float(t1_orig), 0.0), cap1) if not np.isnan(t1_orig) else entry_ref_price - cfg.t1_rr * rps
+        t2_feasible = entry_ref_price - min(max(entry_ref_price - float(t2_orig), 0.0), cap2) if not np.isnan(t2_orig) else entry_ref_price - cfg.t2_rr * rps
+
+    t1_min_rr = float(pp.get("t1_min_rr"))
+    if strat["bias"] == "long":
+        t1_floor = entry_ref_price + t1_min_rr * rps
+        t1_feasible = max(t1_feasible, t1_floor)
+    else:
+        t1_floor = entry_ref_price - t1_min_rr * rps
+        t1_feasible = min(t1_feasible, t1_floor)
+
+    # --- Effective RR after feasibility / floor ---
     t1_rr_eff = (t1_feasible - entry_ref_price) / rps if strat["bias"] == "long" else (entry_ref_price - t1_feasible) / rps
     t2_rr_eff = (t2_feasible - entry_ref_price) / rps if strat["bias"] == "long" else (entry_ref_price - t2_feasible) / rps
 
