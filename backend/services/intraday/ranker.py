@@ -16,6 +16,7 @@ def _intraday_strength(iv: Dict) -> float:
     dist_bpct = float(iv.get('dist_from_level_bpct', 9.99) or 9.99)
     squeeze_pct = float(iv.get('squeeze_pctile', float('nan')) if iv.get('squeeze_pctile', None) == iv.get('squeeze_pctile', None) else float('nan'))
     acceptance_ok = 1 if iv.get('acceptance_ok', False) else 0
+    bias = (iv.get('bias') or 'long').lower()
 
     # Components (caps keep outliers tame)
     s_vol  = min(vol_ratio / 2.0, 1.2)                  # 0..1.2
@@ -23,15 +24,16 @@ def _intraday_strength(iv: Dict) -> float:
     s_rsis = max(min(rsi_slope, 0.8), 0.0)              # 0..0.8
     s_adx  = max((adx - 18.0) / 20.0, -0.5)             # -0.5..1.0
     s_adxs = max(min(adx_slope, 0.8), 0.0)              # 0..0.8
-    s_vwap = 0.3 if above_vwap else -0.3
+    if bias == 'short':
+        s_vwap = 0.3 if not above_vwap else -0.3
+    else:
+        s_vwap = 0.3 if above_vwap else -0.3
 
     # Prefer near level (<=0.6%); mildly OK up to 1.0%; penalize farther
-    if 0.0 <= dist_bpct <= 0.6:
-        s_dist = 0.4
-    elif dist_bpct <= 1.0:
-        s_dist = 0.1
-    else:
-        s_dist = -0.3
+    adist = abs(dist_bpct)
+    if adist <= 0.6: s_dist = 0.4
+    elif adist <= 1.0: s_dist = 0.1
+    else: s_dist = -0.3
 
     s_sq = 0.0
     if squeeze_pct == squeeze_pct:

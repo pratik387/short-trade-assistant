@@ -84,23 +84,23 @@ def _precision_params(config):
         "late_cutoff": dt_time(*map(int, str(p["late_cutoff"]).split(":"))),
     }
 
-def _passes_precision_breakout(df5, last, level_px, params):
+def _passes_precision_breakout(df5, last, level_px: float, params: dict, side: str) -> bool:
+    """
+    Unified precision check for both LONG breakouts and SHORT breakdowns.
+    side: "long" or "short"
+    Returns True only if a fully accepted break is present.
+    Also hard-blocks lunch window and late cutoff.
+    """
     try:
         bar_time = last.name.time() if isinstance(last.name, pd.Timestamp) else pd.to_datetime(last.name).time()
     except Exception:
         return False
-    
-    """
-    Returns True only if a *fully accepted* breakout is present.
-    Also hard-blocks lunch window and late cutoff.
-    """
 
     # --- Hard lunch & late cutoff ---
     lunch_start = params["lunch_start"]
     lunch_end   = params["lunch_end"]
     if lunch_start <= bar_time <= lunch_end:
         return False
-
     late_cutoff = params["late_cutoff"]
     if bar_time >= late_cutoff:
         return False
@@ -111,6 +111,8 @@ def _passes_precision_breakout(df5, last, level_px, params):
     rsi      = _sf(last.get("RSI"),   float("nan"))
     adx      = _sf(last.get("ADX_ACTIVE"), float("nan"))
     vol_ratio  = _sf(last.get("volume_ratio"), 0.0)
+
+    # 20-EMA + slope over recent few bars
     ma20_ser   = df5["close"].ewm(span=20, adjust=False).mean()
     ma20       = _sf(ma20_ser.iloc[-1], float("nan"))
     ma20_slope = _sf(ma20_ser.diff().tail(3).mean(), 0.0)
@@ -118,28 +120,41 @@ def _passes_precision_breakout(df5, last, level_px, params):
     if not (pd.notna(close_px) and pd.notna(level_px)):
         return False
 
-    # primary trigger
-    broke    = close_px > level_px * (1 + params["buf_bpct"]/100.0)
+    # thresholds
+    buf      = params["buf_bpct"] / 100.0
     vol_ok   = vol_ratio >= params["vol_min"]
-    vwap_ok  = pd.notna(vwap_px) and (close_px >= vwap_px * (1 - params["vwap_grace"]/100.0))
-    trend_ok = pd.notna(ma20) and (close_px >= ma20) and (ma20_slope >= params["ma20_min_slope"])
     rsi_ok   = pd.notna(rsi) and (params["rsi_lo"] <= rsi <= params["rsi_hi"])
     adx_ok   = pd.notna(adx) and (params["adx_lo"] <= adx <= params["adx_hi"])
+    dist_bp  = distance_bpct(level_px, close_px)
+    not_chased = (pd.notna(dist_bp) and dist_bp <= params["max_breakout_dist"])
+
+    if side == "long":
+        broke    = close_px > level_px * (1 + buf)
+        vwap_ok  = pd.notna(vwap_px) and (close_px >= vwap_px * (1 - params["vwap_grace"]/100.0))
+        trend_ok = pd.notna(ma20) and (close_px >= ma20) and (ma20_slope >= params["ma20_min_slope"])
+        # confirmation: lows shouldn’t dip back below level beyond retest_bpct; hold above level & VWAP
+        win = df5.tail(max(params["confirm_bars"], 2))
+        low_min   = _sf(win["low"].min(), float("nan"))
+        retest_ok = pd.notna(low_min) and (low_min >= level_px * (1 - params["retest_bpct"]/100.0))
+        hold_ok   = close_px >= level_px
+        vwap_hold = pd.notna(vwap_px) and (close_px >= vwap_px)
+    else:
+        # short
+        broke    = close_px < level_px * (1 - buf)
+        vwap_ok  = pd.notna(vwap_px) and (close_px <= vwap_px * (1 + params["vwap_grace"]/100.0))
+        trend_ok = pd.notna(ma20) and (close_px <= ma20) and (ma20_slope <= -params["ma20_min_slope"])
+        # confirmation: highs shouldn’t reclaim above level beyond retest_bpct; hold below level & VWAP
+        win = df5.tail(max(params["confirm_bars"], 2))
+        high_max  = _sf(win["high"].max(), float("nan"))
+        retest_ok = pd.notna(high_max) and (high_max <= level_px * (1 + params["retest_bpct"]/100.0))
+        hold_ok   = close_px <= level_px
+        vwap_hold = pd.notna(vwap_px) and (close_px <= vwap_px)
+
     if not (broke and vol_ok and vwap_ok and trend_ok and rsi_ok and adx_ok):
         return False
-
-    # confirmation: retest & hold
-    win = df5.tail(max(params["confirm_bars"], 2))
-    low_min   = _sf(win["low"].min(), float("nan"))
-    retest_ok = pd.notna(low_min) and (low_min >= level_px * (1 - params["retest_bpct"]/100.0))
-    hold_ok   = close_px >= level_px
-    vwap_hold = pd.notna(vwap_px) and (close_px >= vwap_px)
     if not (retest_ok and hold_ok and vwap_hold):
         return False
-
-    # chase guard
-    dist = distance_bpct(level_px, close_px)
-    if pd.notna(dist) and dist > params["max_breakout_dist"]:
+    if not not_chased:
         return False
 
     return True
@@ -169,7 +184,6 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
     gate_cfg = config.get("intraday_gate")
     min_vr = float(gate_cfg.get("min_volume_ratio"))
     require_above_vwap = bool(gate_cfg.get("require_above_vwap"))
-    relax_vwap_bpct = float(gate_cfg.get("vwap_relax_bpct", 0.2))
     params = _precision_params(config)
 
     dbg_counts = {"start": 0, "fetch_skip": 0, "gate_fail": 0, "level_fail": 0, "break_fail": 0, "final_pass": 0}
@@ -201,27 +215,16 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
                 f"— 🔎 {sym}: VR={vr:.2f} | above_vwap={above} | close={close_px:.2f} | vwap={vwap_str}"
             )
 
-            relax_vwap_bpct = float(gate_cfg.get("vwap_relax_bpct", 0.2))
+            relax_vwap_bpct = float(gate_cfg.get("vwap_relax_bpct"))
 
             vwap_check = True
             if require_above_vwap:
-                vwap_check = (pd.notna(vwap_px) and close_px >= vwap_px * (1 - relax_vwap_bpct / 100))
+                vwap_check = (pd.notna(vwap_px) and abs((close_px - vwap_px) / vwap_px) * 100.0 <= relax_vwap_bpct)
 
             if not (vr >= min_vr and vwap_check):
                 dbg_counts["gate_fail"] += 1
-                logger.debug(f"— ⛔ {sym}: gate fail (VR={vr:.2f} < {min_vr} or close not within {relax_vwap_bpct:.2f}% of VWAP)")
+                logger.debug(f"— ⛔ {sym}: gate fail (VR={vr:.2f} < {min_vr} or |close-vwap| > {relax_vwap_bpct:.2f}%)")
                 continue
-            
-             # --- Intraday trend alignment: EMA20 > EMA50 ---
-            try:
-                ema20 = df5['close'].ewm(span=20, adjust=False).mean().iloc[-1]
-                ema50 = df5['close'].ewm(span=50, adjust=False).mean().iloc[-1]
-                if not (pd.notna(ema20) and pd.notna(ema50) and ema20 > ema50):
-                    logger.debug(f"— ⛔ {sym}: EMA20 <= EMA50 trend filter")
-                    continue
-            except Exception:
-                pass
-
 
             logger.debug(f"— 🔎 {sym}: VR={vr:.2f} | above_vwap={above} | close={close_px:.2f} | vwap={vwap_px:.2f}")
             
@@ -229,66 +232,84 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
             level_name = None
 
             dfd = rate_limited_fetch_daily(sym, broker, to_date, lookback_days=5)
-            if dfd is not None and not dfd.empty:
-                try:
-                    y_hi, _ = yesterday_levels(dfd)
-                    if pd.notna(y_hi):
-                        level_px = y_hi
-                        level_name = "y_high(daily)"
-                except Exception:
-                    pass
-
-            if pd.isna(level_px):
-                orb_hi, _ = opening_range(df5)
-                level_px = orb_hi
-                level_name = "orb15_high"
-
-            if pd.isna(level_px):
-                dbg_counts["level_fail"] += 1
-                continue
-
-            logger.debug(f"— 📏 {sym}: level={level_name} @ {level_px:.2f}")
-
-            if not _passes_precision_breakout(df5, last, level_px, params):
-                dist = distance_bpct(level_px, close_px)
-                dbg_counts["break_fail"] += 1
-                logger.debug(f"— ⛔ {sym}: precision breakout fail (close={close_px:.2f}, level={level_px:.2f}, dist={dist:.2f}%)")
-                continue
-
-            dist = distance_bpct(level_px, close_px)
-            adx_val = _sf(last.get("ADX_ACTIVE"), 0.0)
-            adx_slope = _sf(last.get("adx_slope"), 0.0)
-            rsi_val = _sf(last.get("RSI"), 0.0)
-            rsi_slope = _sf(last.get("rsi_slope"), 0.0)
-
+            # Resolve yesterday levels robustly
+            y_hi = y_lo = None
             try:
-                atr_proxy = float((df5["high"] - df5["low"]).rolling(5).mean().iloc[-1])
-                if pd.isna(atr_proxy):
-                    atr_proxy = float((df5["high"] - df5["low"]).tail(5).mean())
+                y_levels = yesterday_levels(dfd) if (dfd is not None and not dfd.empty) else None
+                if isinstance(y_levels, (list, tuple)) and len(y_levels) >= 2:
+                    y_hi, y_lo = float(y_levels[0]), float(y_levels[1])
             except Exception:
-                atr_proxy = 0.0
+                pass
 
-            rows.append({
-                "symbol": sym,
-                "daily_score": float(s.get("daily_score", s.get("score", 0.0))),
-                "level": {"name": level_name, "px": float(level_px)},
-                "intraday": {
-                    "volume_ratio": vr,
-                    "rsi": rsi_val,
-                    "rsi_slope": rsi_slope,
-                    "adx": adx_val,
-                    "adx_slope": adx_slope,
-                    "above_vwap": above,
-                    "dist_from_level_bpct": float(dist if dist == dist else 9.99),
-                    "squeeze_pctile": _sf(last.get("squeeze_pctile"), float("nan")),
-                    "acceptance_ok": True,
-                },
-                "last_close": close_px,
-                "vwap": vwap_px,
-                "atr5": float(atr_proxy or 0.0),
-                "df": df5,
-                "daily_df": dfd,
-            })
+            # Opening range
+            orb_hi = orb_lo = None
+            try:
+                orb_hi, orb_lo = opening_range(df5)
+                orb_hi = float(orb_hi) if pd.notna(orb_hi) else None
+                orb_lo = float(orb_lo) if pd.notna(orb_lo) else None
+            except Exception:
+                pass
+
+            made_any = False
+            for side in ("long", "short"):
+                if side == "long":
+                    level_px = y_hi if (y_hi is not None and pd.notna(y_hi)) else (orb_hi if orb_hi is not None else float("nan"))
+                    level_name = "y_high(daily)" if (y_hi is not None and pd.notna(y_hi)) else ("orb15_high" if orb_hi is not None else None)
+                else:
+                    level_px = y_lo if (y_lo is not None and pd.notna(y_lo)) else (orb_lo if orb_lo is not None else float("nan"))
+                    level_name = "y_low(daily)" if (y_lo is not None and pd.notna(y_lo)) else ("orb15_low" if orb_lo is not None else None)
+
+                if (level_name is None) or pd.isna(level_px):
+                    continue
+
+                logger.debug(f"— 📏 {sym} [{side}]: level={level_name} @ {level_px:.2f}")
+                ok = _passes_precision_breakout(df5, last, level_px, params, side=side)
+                if not ok:
+                    continue
+
+                dist = distance_bpct(level_px, close_px)
+                adx_val   = _sf(last.get("ADX_ACTIVE"), 0.0)
+                adx_slope = _sf(last.get("adx_slope"), 0.0)
+                rsi_val   = _sf(last.get("RSI"), 0.0)
+                rsi_slope = _sf(last.get("rsi_slope"), 0.0)
+
+                try:
+                    atr_proxy = float((df5["high"] - df5["low"]).rolling(5).mean().iloc[-1])
+                    if pd.isna(atr_proxy):
+                        atr_proxy = float((df5["high"] - df5["low"]).tail(5).mean())
+                except Exception:
+                    atr_proxy = 0.0
+
+                rows.append({
+                    "symbol": sym,
+                    "daily_score": float(s.get("daily_score", s.get("score", 0.0))),
+                    "level": {"name": level_name, "px": float(level_px)},
+                    "intraday": {
+                        "volume_ratio": vr,
+                        "rsi": rsi_val,
+                        "rsi_slope": rsi_slope,
+                        "adx": adx_val,
+                        "adx_slope": adx_slope,
+                        "ma20_slope": float(df5["close"].ewm(span=20, adjust=False).mean().diff().tail(3).mean()),
+                        "above_vwap": _si(last.get("above_vwap"), 0),
+                        "dist_from_level_bpct": float(dist if dist == dist else 9.99),
+                        "squeeze_pctile": _sf(last.get("squeeze_pctile"), float("nan")),
+                        "acceptance_ok": True,
+                        "bias": side,  # << keep side info for downstream/diagnostics
+                    },
+                    "last_close": close_px,
+                    "vwap": vwap_px,
+                    "atr5": float(atr_proxy or 0.0),
+                    "df": df5,
+                    "daily_df": dfd,
+                })
+                made_any = True
+
+            if not made_any:
+                dbg_counts["break_fail"] += 1
+                logger.debug(f"— ⛔ {sym}: precision break fail (neither long nor short)")
+                continue
+
             dbg_counts["final_pass"] += 1
 
         except Exception as e:
@@ -309,11 +330,12 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
         #         "prev_low": None
         #     }
         # )
-        df = r.get("df")
-        if df is None or df.empty:
+        session_start = datetime.combine(to_date.date(), dt_time(9, 15))
+        plan_df = rate_limited_fetch_5m(r["symbol"], broker, session_start, to_date)
+        if plan_df is None or plan_df.empty:
             continue
         daily_df = r.get("daily_df")
-        plan = generate_trade_plan(df=df, symbol=r["symbol"], config=config, daily_df=daily_df)
+        plan = generate_trade_plan(df=plan_df, symbol=r["symbol"], config=config, daily_df=daily_df)
         if not plan:
             continue
         # --- NEW: structural RR guard ---

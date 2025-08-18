@@ -233,6 +233,28 @@ def _strategy_selector(
             "structure_stop": float(stop_structure),
             "context": {"reason": ["VWAP_reclaim"], "levels": {"ORH": orh, "ORL": orl, **pd_levels}}
         }
+        
+    # Strategy 2b: PDH Break + Hold Long
+    if close > pd_levels.get("PDH", float("inf")) and close > vwap.iloc[-1] and ema20.iloc[-1] > ema50.iloc[-1]:
+        basis = "pdh_break_hold_long"
+        stop_structure = max(orl, _pivot_swing_low(df_sess, 10))
+        return {
+            "name": basis, "bias": "long",
+            "entry_trigger": f"retest/hold above PDH({pd_levels['PDH']:.2f})",
+            "structure_stop": float(stop_structure),
+            "context": {"reason": ["above_PDH","above_VWAP","ema20>ema50"], "levels": {"ORH": orh, "ORL": orl, **pd_levels}}
+        }
+
+    # Strategy 3b: PDL Break + Hold Short
+    if close < pd_levels.get("PDL", float("-inf")) and close < vwap.iloc[-1] and ema20.iloc[-1] < ema50.iloc[-1]:
+        basis = "pdl_break_hold_short"
+        stop_structure = min(orh, _pivot_swing_high(df_sess, 10))
+        return {
+            "name": basis, "bias": "short",
+            "entry_trigger": f"retest/hold below PDL({pd_levels['PDL']:.2f})",
+            "structure_stop": float(stop_structure),
+            "context": {"reason": ["below_PDL","below_VWAP","ema20<ema50"], "levels": {"ORH": orh, "ORL": orl, **pd_levels}}
+        }
 
     # Strategy 3: Range Break + Retest Short (trend_down)
     if regime == "trend_down" and close < orl and close < vwap.iloc[-1] and ema20.iloc[-1] < ema50.iloc[-1]:
@@ -468,7 +490,19 @@ def generate_trade_plan(
         t1_feasible = entry_ref_price - min(max(entry_ref_price - t1_orig, 0.0), cap1)
         t2_feasible = entry_ref_price - min(max(entry_ref_price - t2_orig, 0.0), cap2)
 
-    # recompute RRs after tightening
+    # Minimum epsilon to avoid div/0. Use ATR if available; else 0.1% of price or 0.01 absolute.
+    eps = max(entry_ref_price * 0.001, 0.01)
+    try:
+        if (not rps) or rps <= 0:
+            atr_col = "atr5" if "atr5" in df.columns else ("ATR" if "ATR" in df.columns else None)
+            if atr_col is not None:
+                atr_val = float(df[atr_col].iloc[-1])
+                rps = max(abs(atr_val) * 0.25, eps)
+            else:
+                rps = eps
+    except Exception:
+        rps = eps
+    
     t1_rr_eff = (t1_feasible - entry_ref_price) / rps if strat["bias"] == "long" else (entry_ref_price - t1_feasible) / rps
     t2_rr_eff = (t2_feasible - entry_ref_price) / rps if strat["bias"] == "long" else (entry_ref_price - t2_feasible) / rps
 

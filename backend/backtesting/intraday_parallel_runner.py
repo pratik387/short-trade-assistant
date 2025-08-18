@@ -22,7 +22,7 @@ def run_single_day(date: datetime) -> dict:
         logger.info(f"✅ Finished {date.date()} — {result}")
         return {"date": str(date.date()), "result": result}
     except Exception as e:
-        logger.error(f"❌ Error on {date.date()}: {e}")
+        logger.exception(f"❌ Error on {date.date()}: {e}")
         return {"date": str(date.date()), "error": str(e)}
 
 def run_parallel_backtest(start_date_str: str, end_date_str: str, max_workers: int = 5):
@@ -88,4 +88,4 @@ def _merge_and_write_diagnostics(results, start_date_str: str, end_date_str: str
 
 
 if __name__ == "__main__":
-    run_parallel_backtest("2023-01-02", "2023-03-05", max_workers=5)
+    run_parallel_backtest("2023-01-02", "2023-01-05", max_workers=5)

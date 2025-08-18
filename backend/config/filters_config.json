@@ -98,13 +98,13 @@
     }
   },
   "intraday_gate": {
-    "min_volume_ratio": 2.0,     
+    "min_volume_ratio": 1.5,
     "require_above_vwap": true,
-    "vwap_relax_bpct": 0.25,  
-    "min_rsi": 50,            
-    "max_rsi": 70,
-    "min_adx": 22,         
-    "max_adx": 50
+    "vwap_relax_bpct": 0.25,
+    "min_rsi": 45,
+    "max_rsi": 72,
+    "min_adx": 18,
+    "max_adx": 55
   },
   "intraday_params": {
     "rsi_len": 14,
@@ -142,17 +142,17 @@
     "good_pctile_max": 60 
   },
   "precision_screener": {
-    "buffer_bpct": 0.20,          
-    "min_vol_ratio": 1.7,         
-    "vwap_grace_bpct": 0.05,      
-    "rsi_range": [50, 68],        
-    "adx_range": [22, 50],        
-    "ma20_min_slope": 0.02,       
-    "max_breakout_dist_bpct": 0.9,
-    "confirm_bars": 4,            
-    "retest_bpct": 0.20,          
+    "buffer_bpct": 0.20,
+    "min_vol_ratio": 1.5,
+    "vwap_grace_bpct": 0.25,
+    "rsi_range": [45, 72],
+    "adx_range": [18, 55],
+    "ma20_min_slope": 0.02,
+    "max_breakout_dist_bpct": 1.2,
+    "confirm_bars": 4,
+    "retest_bpct": 0.30,
     "lunch_window": { "start": "12:15", "end": "13:30" },
-    "late_cutoff": "14:30"        
+    "late_cutoff": "15:00"
   },
   "planner_precision": {
     "rr_clip_max": 6.0,
