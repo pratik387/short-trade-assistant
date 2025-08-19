@@ -300,7 +300,9 @@ def compute_intraday_breakout_score(df: pd.DataFrame, config: dict, symbol: str 
             sx = pd.Series(x)
             return float(sx.rank(pct=True).iloc[-1] * 100.0)
 
-        df["squeeze_pctile"] = df["bb_width"].rolling(rank_win, min_periods=rank_win).apply(_pct_rank_last, raw=False)
+        minp = max(bb_win, min(rank_win, len(df)))
+        df["squeeze_pctile"] = df["bb_width"].rolling(rank_win, min_periods=minp).apply(_pct_rank_last, raw=False)
+
         good_pct = float(config.get("squeeze", {}).get("good_pctile_max", 70))
         df["squeeze_ok"] = (df["squeeze_pctile"] <= good_pct).astype("Int64")
     except Exception:

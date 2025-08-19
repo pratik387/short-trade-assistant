@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta, time as dt_time
 import threading
 import time
-import os
 from typing import List
 
 import pandas as pd
@@ -84,26 +83,24 @@ def _precision_params(config):
         "late_cutoff": dt_time(*map(int, str(p["late_cutoff"]).split(":"))),
     }
 
-def _passes_precision_breakout(df5, last, level_px: float, params: dict, side: str) -> bool:
+def _passes_precision_breakout(df5, last, level_px: float, params: dict, side: str):
     """
     Unified precision check for both LONG breakouts and SHORT breakdowns.
-    side: "long" or "short"
-    Returns True only if a fully accepted break is present.
-    Also hard-blocks lunch window and late cutoff.
+    Returns (ok: bool, confirmations: dict)
+    confirmations = {"retest_ok": bool, "vwap_hold": bool}
     """
     try:
         bar_time = last.name.time() if isinstance(last.name, pd.Timestamp) else pd.to_datetime(last.name).time()
     except Exception:
-        return False
+        return False, {"retest_ok": False, "vwap_hold": False}
 
     # --- Hard lunch & late cutoff ---
-    lunch_start = params["lunch_start"]
-    lunch_end   = params["lunch_end"]
+    lunch_start = params["lunch_start"]; lunch_end = params["lunch_end"]
     if lunch_start <= bar_time <= lunch_end:
-        return False
+        return False, {"retest_ok": False, "vwap_hold": False}
     late_cutoff = params["late_cutoff"]
     if bar_time >= late_cutoff:
-        return False
+        return False, {"retest_ok": False, "vwap_hold": False}
 
     # prices & indicators (NA-safe)
     close_px = _sf(last.get("close"), float("nan"))
@@ -118,7 +115,7 @@ def _passes_precision_breakout(df5, last, level_px: float, params: dict, side: s
     ma20_slope = _sf(ma20_ser.diff().tail(3).mean(), 0.0)
 
     if not (pd.notna(close_px) and pd.notna(level_px)):
-        return False
+        return False, {"retest_ok": False, "vwap_hold": False}
 
     # thresholds
     buf      = params["buf_bpct"] / 100.0
@@ -132,32 +129,32 @@ def _passes_precision_breakout(df5, last, level_px: float, params: dict, side: s
         broke    = close_px > level_px * (1 + buf)
         vwap_ok  = pd.notna(vwap_px) and (close_px >= vwap_px * (1 - params["vwap_grace"]/100.0))
         trend_ok = pd.notna(ma20) and (close_px >= ma20) and (ma20_slope >= params["ma20_min_slope"])
-        # confirmation: lows shouldn’t dip back below level beyond retest_bpct; hold above level & VWAP
         win = df5.tail(max(params["confirm_bars"], 2))
         low_min   = _sf(win["low"].min(), float("nan"))
         retest_ok = pd.notna(low_min) and (low_min >= level_px * (1 - params["retest_bpct"]/100.0))
         hold_ok   = close_px >= level_px
         vwap_hold = pd.notna(vwap_px) and (close_px >= vwap_px)
     else:
-        # short
         broke    = close_px < level_px * (1 - buf)
         vwap_ok  = pd.notna(vwap_px) and (close_px <= vwap_px * (1 + params["vwap_grace"]/100.0))
         trend_ok = pd.notna(ma20) and (close_px <= ma20) and (ma20_slope <= -params["ma20_min_slope"])
-        # confirmation: highs shouldn’t reclaim above level beyond retest_bpct; hold below level & VWAP
         win = df5.tail(max(params["confirm_bars"], 2))
         high_max  = _sf(win["high"].max(), float("nan"))
         retest_ok = pd.notna(high_max) and (high_max <= level_px * (1 + params["retest_bpct"]/100.0))
         hold_ok   = close_px <= level_px
         vwap_hold = pd.notna(vwap_px) and (close_px <= vwap_px)
 
-    if not (broke and vol_ok and vwap_ok and trend_ok and rsi_ok and adx_ok):
-        return False
-    if not (retest_ok and hold_ok and vwap_hold):
-        return False
-    if not not_chased:
-        return False
+    confirmations = {"retest_ok": bool(retest_ok), "vwap_hold": bool(vwap_hold)}
 
-    return True
+    if not (broke and vol_ok and vwap_ok and trend_ok and rsi_ok and adx_ok):
+        return False, confirmations
+    if not (retest_ok and hold_ok and vwap_hold):
+        return False, confirmations
+    if not not_chased:
+        return False, confirmations
+
+    return True, confirmations
+
 
 
 def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *, override_from_date=None, override_to_date=None) -> List[dict]:
@@ -263,7 +260,7 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
                     continue
 
                 logger.debug(f"— 📏 {sym} [{side}]: level={level_name} @ {level_px:.2f}")
-                ok = _passes_precision_breakout(df5, last, level_px, params, side=side)
+                ok, confirmations = _passes_precision_breakout(df5, last, level_px, params, side=side)
                 if not ok:
                     continue
 
@@ -282,7 +279,7 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
 
                 rows.append({
                     "symbol": sym,
-                    "daily_score": float(s.get("daily_score", s.get("score", 0.0))),
+                    "intraday_score": float(s.get("intraday_score", s.get("score", 0.0))),
                     "level": {"name": level_name, "px": float(level_px)},
                     "intraday": {
                         "volume_ratio": vr,
@@ -294,8 +291,11 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
                         "above_vwap": _si(last.get("above_vwap"), 0),
                         "dist_from_level_bpct": float(dist if dist == dist else 9.99),
                         "squeeze_pctile": _sf(last.get("squeeze_pctile"), float("nan")),
+                        "squeeze_ok": _si(last.get("squeeze_ok"), 0), 
+                        "retest_ok": confirmations.get("retest_ok"),
+                        "vwap_hold": confirmations.get("vwap_hold"),
                         "acceptance_ok": True,
-                        "bias": side,  # << keep side info for downstream/diagnostics
+                        "bias": side,
                     },
                     "last_close": close_px,
                     "vwap": vwap_px,
@@ -313,7 +313,7 @@ def screen_and_rank_intraday_candidates(suggestions, broker, config, top_n=7, *,
             dbg_counts["final_pass"] += 1
 
         except Exception as e:
-            logger.info(f"— ⚠️ {sym}: exception, skipping → {e}")
+            logger.exception(f"— ⚠️ {sym}: exception, skipping → {e}")
 
     final_ranked = []
     ranked = rank_candidates(rows, top_n=top_n)

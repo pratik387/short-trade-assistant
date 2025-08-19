@@ -81,11 +81,11 @@ def _merge_and_write_diagnostics(results, start_date_str: str, end_date_str: str
         tracker.intraday_entries = combined_entries
         tracker.intraday_exit_events = combined_events
         out_dir   = first_log_dir or "logs"
-        run_label = f"{start_date_str}__{end_date_str}"
+        run_label = f"{start_date_str}_{end_date_str}"
         tracker.export_intraday_csv(out_dir=out_dir, run_id=run_label)
         return str(Path(out_dir) / f"diagnostic_report_intraday_{run_label}.csv")
 
 
 
 if __name__ == "__main__":
-    run_parallel_backtest("2023-01-02", "2023-01-05", max_workers=5)
+    run_parallel_backtest("2023-01-02", "2023-03-03", max_workers=5)

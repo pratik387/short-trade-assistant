@@ -350,64 +350,62 @@ class IntradayBacktestEngine:
             # BACKWARD‑COMPAT call to recorder
             self.recorder.record_entry(symbol=sym, date=tick.isoformat(), price=entry_px, investment=investment)
 
+            iv = row.get("intraday") or {}
             diagnostics_tracker.record_intraday_entry_diagnostics(
                 trade_id=trade_id,
                 diagnostics={
+                    # --- economics ---
                     "symbol": sym,
+                    "side": side,
+                    "qty": qty,
+                    "investment": investment,
                     "entry_time": tick,
                     "entry_price": entry_px,
+
+                    # --- plan / levels ---
                     "stop": plan.get("stop", {}).get("hard"),
                     "t1": plan.get("targets", [{}])[0].get("level"),
                     "rr_first": plan.get("targets", [{}])[0].get("rr"),
                     "entry_zone": plan.get("entry", {}).get("zone"),
                     "confidence": plan.get("strategy"),
-                    "atr": row.get("atr5"),
-                    "vwap": row.get("vwap"),
-                    "close": entry_px,
-                    "volatility": round((df["high"].max() - df["low"].min()) / close, 4) if close else None,
-
-                    # Indicators at entry
-                    "RSI": last.get("RSI"),
-                    "rsi_slope": row.get("intraday", {}).get("rsi_slope"),
-                    "ADX": last.get("ADX_ACTIVE"),
-                    "adx_slope": row.get("intraday", {}).get("adx_slope"),
-                    "macd": last.get("macd"),
-                    "macd_signal": last.get("macd_signal"),
-                    "stochastic_k": last.get("stochastic_k"),
-                    "obv": last.get("obv"),
-                    "atr5": last.get("atr5"),
-                    "ma20_slope": row.get("intraday", {}).get("ma20_slope"),
-                    "supertrend_signal": last.get("supertrend_signal"),
-
-                    # VWAP and price structure
-                    "above_vwap": row.get("intraday", {}).get("above_vwap"),
-                    "distance_from_vwap_bpct": (((entry_px - row.get("vwap")) / row.get("vwap")) * 100) if entry_px and row.get("vwap") else None,
-                    "dist_from_level_bpct": ((close - row.get("level", {}).get("px", 0)) / row.get("level", {}).get("px", 1)) * 100 if close else None,
-
-                    # Structural & quality metrics
-                    "structural_rr": plan.get("quality", {}).get("structural_rr"),
-                    "acceptance_ok": plan.get("quality", {}).get("acceptance_ok"),
-
-                    # Confirmation checks
-                    "retest_ok": row.get("intraday", {}).get("confirmation", {}).get("retest_ok"),
-                    "vwap_hold": row.get("intraday", {}).get("confirmation", {}).get("vwap_hold"),
-
-                    # Squeeze and ranking
-                    "squeeze_pctile": row.get("intraday", {}).get("squeeze_pctile"),
-                    "squeeze_ok": row.get("intraday", {}).get("squeeze_ok"),
-                    "score": row.get("score"),
-                    "rank_score": row.get("rank_score"),
-
-                    # Level info
                     "level_type": row.get("level", {}).get("name"),
                     "level_px": row.get("level", {}).get("px"),
 
-                    # Extra trigger diagnostics
+                    # --- features used by logic (from intraday) ---
+                    "RSI": iv.get("rsi"),
+                    "rsi_slope": iv.get("rsi_slope"),
+                    "ADX": iv.get("adx"),
+                    "adx_slope": iv.get("adx_slope"),
+                    "ma20_slope": iv.get("ma20_slope"),
+                    "above_vwap": iv.get("above_vwap"),
+                    "squeeze_pctile": iv.get("squeeze_pctile"),
+                    "squeeze_ok": iv.get("squeeze_ok"),
+                    "retest_ok": iv.get("retest_ok"),
+                    "vwap_hold": iv.get("vwap_hold"),
+                    "atr5": row.get("atr5"),
+                    "vwap": row.get("vwap"),
+
+                    # --- ranking/score context ---
+                    "score": row.get("score"),
+                    "rank_score": row.get("rank_score"),
+
+                    # --- trigger context ---
                     "trigger_type": trigger_type,
                     "dist_to_zone_bpct": round(dist_to_zone_bpct, 4),
+                    "dist_from_level_bpct": iv.get("dist_from_level_bpct"),
 
-                    # Exit info (set to None at entry time)
+                    # --- structural quality ---
+                    "structural_rr": (plan.get("quality") or {}).get("structural_rr"),
+                    "acceptance_ok": (plan.get("quality") or {}).get("acceptance_ok"),
+
+                    # --- exit placeholders (ensure columns exist) ---
+                    "exit_time": None,
                     "exit_reason": None,
+                    "exit_price": None,
+                    "exit_qty": None,
+                    "pnl_per_share": None,
+                    "pnl_actual": None,
+                    "pnl_pct": None,
                     "holding_minutes": None,
                 }
             )
@@ -438,97 +436,71 @@ class IntradayBacktestEngine:
             # STOP
             if stop_hit:
                 exit_price = trade.stop
-                if trade.qty_open > 0:
+                exit_qty = trade.qty_open
+                if exit_qty > 0:
                     self.recorder.record_exit(symbol=trade.symbol, date=tick.isoformat(), exit_price=exit_price)
                     trade_logger.info(json.dumps({
                         "event": "EXIT", "symbol": trade.symbol, "trade_id": trade.trade_id,
                         "time": tick.strftime("%Y-%m-%d %H:%M"), "price": exit_price,
-                        "reason": "STOP", "qty": trade.qty_open
+                        "reason": "STOP", "qty": exit_qty
                     }))
-                pnl = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
-                diagnostics_tracker.record_intraday_exit_diagnostics(
-                   trade_id=trade.trade_id, exit_price=exit_price, pnl=pnl,
-                   exit_time=tick.strftime("%Y-%m-%d %H:%M"), reason="STOP"
-                )
+                self._record_exit_diag(trade, exit_price, "STOP", tick, exit_qty)
                 self.open_trades.remove(trade)
                 events.append({"symbol": trade.symbol, "trade_id": trade.trade_id, "reason": "STOP"})
                 continue
 
-            # T2 (only after T1 partial done)
-            if t2_hit and trade.t1_done and trade.qty_open > 0:
-                exit_price = float(trade.t2)
-                self.recorder.record_exit(symbol=trade.symbol, date=tick.isoformat(), exit_price=exit_price)
-                trade_logger.info(json.dumps({
-                    "event": "EXIT", "symbol": trade.symbol, "trade_id": trade.trade_id,
-                    "time": tick.strftime("%Y-%m-%d %H:%M"), "price": exit_price,
-                    "reason": "T2", "qty": trade.qty_open
-                }))
-                pnl = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
-                diagnostics_tracker.record_intraday_exit_diagnostics(
-                   trade_id=trade.trade_id, exit_price=exit_price, pnl=pnl,
-                   exit_time=tick.strftime("%Y-%m-%d %H:%M"), reason="T2"
-                )
-                trade.qty_closed += trade.qty_open
-                trade.qty_open = 0
-                self.open_trades.remove(trade)
-                events.append({"symbol": trade.symbol, "trade_id": trade.trade_id, "reason": "T2"})
-                continue
-
-            # T1 partial + EV decision
             if t1_hit and (not trade.t1_done) and trade.qty_open > 0:
                 part_qty = max(int(round(trade.qty_open * trade.t1_book_pct)), 1)
                 part_qty = min(part_qty, trade.qty_open)
-                self.recorder.record_exit(symbol=trade.symbol, date=tick.isoformat(), exit_price=trade.t1)
-                trade_logger.info(json.dumps({
-                    "event": "EXIT", "symbol": trade.symbol, "trade_id": trade.trade_id,
-                    "time": tick.strftime("%Y-%m-%d %H:%M"), "price": trade.t1,
-                    "reason": "T1_PARTIAL", "qty": part_qty
-                }))
-                pnl = (trade.t1 - trade.entry_price) * (1 if trade.side == "long" else -1)
-                diagnostics_tracker.record_intraday_exit_diagnostics(
-                   trade_id=trade.trade_id, exit_price=trade.t1, pnl=pnl,
-                   exit_time=tick.strftime("%Y-%m-%d %H:%M"), reason="T1_PARTIAL"
-                )
 
-                trade.qty_open -= part_qty
-                trade.qty_closed += part_qty
-                trade.t1_done = True
-
-                # raise stop to BE/VWAP/EMA20
-                be = trade.entry_price
-                try:
-                    vwap = float(last.get("vwap", float("nan")))
-                except Exception:
-                    vwap = float("nan")
-                try:
-                    ema20 = float(df["close"].ewm(span=20, adjust=False).mean().iloc[-1])
-                except Exception:
-                    ema20 = float("nan")
-                anchors = [x for x in [be, vwap, ema20] if x == x]
-                if anchors:
-                    if trade.side == "long":
-                        trade.stop = max(anchors) * 0.999
-                    else:
-                        trade.stop = min(anchors) * 1.001
-
-                hold_runner = _should_hold_runner(trade, last, df, self.config_blob)
-                if not hold_runner and trade.qty_open > 0:
-                    self.recorder.record_exit(symbol=trade.symbol, date=tick.isoformat(), exit_price=trade.t1)
+                if part_qty >= trade.qty_open:
+                    exit_qty = trade.qty_open
+                    self._record_exit_diag(trade, trade.t1, "T1_FULL", tick, exit_qty)
                     trade_logger.info(json.dumps({
-                        "event": "EXIT", "symbol": trade.symbol, "trade_id": trade.trade_id,
-                        "time": tick.strftime("%Y-%m-%d %H:%M"), "price": trade.t1,
-                        "reason": "T1_FULL", "qty": trade.qty_open
+                        "event": "EXIT",
+                        "symbol": trade.symbol,
+                        "trade_id": trade.trade_id,
+                        "time": tick.strftime("%Y-%m-%d %H:%M"),
+                        "price": float(trade.t1),
+                        "reason": "T1_FULL",
+                        "qty": int(exit_qty),
                     }))
-                    pnl = (trade.t1 - trade.entry_price) * (1 if trade.side == "long" else -1)
-                    diagnostics_tracker.record_intraday_exit_diagnostics(
-                       trade_id=trade.trade_id, exit_price=trade.t1, pnl=pnl,
-                       exit_time=tick.strftime("%Y-%m-%d %H:%M"), reason="T1_FULL"
-                    )
-
-                    trade.qty_closed += trade.qty_open
+                    trade.qty_closed += exit_qty
                     trade.qty_open = 0
+                    trade.t1_done = True
                     self.open_trades.remove(trade)
-                    events.append({"symbol": trade.symbol, "trade_id": trade.trade_id, "reason": "T1_FULL"})
+                    continue
+
+                exit_qty = part_qty
+                self._record_exit_diag(trade, trade.t1, "T1_PARTIAL", tick, exit_qty)
+                trade_logger.info(json.dumps({
+                    "event": "EXIT",
+                    "symbol": trade.symbol,
+                    "trade_id": trade.trade_id,
+                    "time": tick.strftime("%Y-%m-%d %H:%M"),
+                    "price": float(trade.t1),
+                    "reason": "T1_PARTIAL",
+                    "qty": int(exit_qty),
+                }))
+                trade.qty_open   -= exit_qty
+                trade.qty_closed += exit_qty
+                trade.t1_done     = True
+
+            if t2_hit and trade.t1_done and trade.qty_open > 0:
+                exit_qty = trade.qty_open
+                self._record_exit_diag(trade, float(trade.t2), "T2", tick, exit_qty)
+                trade_logger.info(json.dumps({
+                    "event": "EXIT",
+                    "symbol": trade.symbol,
+                    "trade_id": trade.trade_id,
+                    "time": tick.strftime("%Y-%m-%d %H:%M"),
+                    "price": float(trade.t2),
+                    "reason": "T2",
+                    "qty": int(exit_qty),
+                }))
+                trade.qty_closed += exit_qty
+                trade.qty_open = 0
+                self.open_trades.remove(trade)
                 continue
 
         return events
@@ -539,6 +511,10 @@ class IntradayBacktestEngine:
         day = day or self.cfg.test_date.date()
         eod_tick = datetime.combine(day, dt_time(*END_TIME))
         for trade in list(self.open_trades):
+            if trade.qty_open <= 0:
+                continue  # already flat; skip
+            # Use exactly qty_open, never fallback to original size
+            exit_qty = trade.qty_open
             df = self.broker.fetch_candles(trade.symbol, interval="5m", from_date=eod_tick - timedelta(minutes=30), to_date=eod_tick)
             if df is None or df.empty:
                 exit_price = trade.meta.get("last_close", trade.entry_price)
@@ -547,15 +523,34 @@ class IntradayBacktestEngine:
                 exit_price = float(last.get("close", last.get("Close", trade.entry_price)))
             self.recorder.record_exit(symbol=trade.symbol, date=eod_tick.isoformat(), exit_price=exit_price)
             trade_logger.info(json.dumps({
-                "event": "EXIT", "symbol": trade.symbol, "trade_id": trade.trade_id, "time": eod_tick.strftime("%Y-%m-%d %H:%M"), "price": exit_price, "reason": "EOD", "qty": getattr(trade, 'qty_open', 0) or trade.qty
+                "event": "EXIT", 
+                "symbol": trade.symbol, 
+                "trade_id": trade.trade_id, 
+                "time": eod_tick.strftime("%Y-%m-%d %H:%M"), 
+                "price": exit_price, 
+                "reason": "EOD", 
+                "qty": exit_qty
             }))
-            pnl = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
-            diagnostics_tracker.record_intraday_exit_diagnostics(
-               trade_id=trade.trade_id, exit_price=exit_price, pnl=pnl,
-               exit_time=eod_tick.strftime("%Y-%m-%d %H:%M"), reason="EOD"
-            )
-
+            self._record_exit_diag(trade, exit_price, "EOD", eod_tick, exit_qty)
+            trade.qty_closed += exit_qty
+            trade.qty_open = 0
             self.open_trades.remove(trade)
+            
+    def _record_exit_diag(self, trade: OpenTrade, exit_price: float, reason: str, when: datetime, exit_qty: int):
+        pnl_ps = (exit_price - trade.entry_price) * (1 if trade.side == "long" else -1)
+        pnl_actual = pnl_ps * exit_qty
+        pnl_pct = (pnl_ps / trade.entry_price) * 100 if trade.entry_price else None
+
+        diagnostics_tracker.record_intraday_exit_diagnostics(
+            trade_id=trade.trade_id,
+            exit_price=exit_price,
+            pnl=pnl_ps,
+            exit_time=when.strftime("%Y-%m-%d %H:%M"),
+            reason=reason,
+            exit_qty=exit_qty,
+            pnl_actual=pnl_actual,
+            pnl_pct=pnl_pct,
+        )
 
 
 # ----------------------------- Convenience CLI -----------------------------
